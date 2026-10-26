@@ -1,8 +1,4 @@
-"""Dev B: raw events -> fingerprint (capability-tagged, ordered, attributed, noise-filtered).
-
-STUB-LEVEL v0 that already works on the fixtures. TODO(Dev B): richer path/env classifiers, baseline subtraction from
-strace noise, dependency attribution, whitelist loader merge with bench/calibration/noise_whitelist.yaml, unit tests.
-"""
+"""Dev B: raw events -> fingerprint (capability-tagged, ordered, attributed, noise-filtered)."""
 from __future__ import annotations
 
 import fnmatch
@@ -22,7 +18,11 @@ PERSIST_PATH = re.compile(
     r"authorized_keys|\.ssh/authorized_keys|/etc/init\.d|rc\.local|\.git/hooks)"
 )
 SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)", re.I)
-PROBE_ENV = {"CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "JENKINS_URL", "BUILDKITE", "CIRCLECI", "CONTAINER", "KUBERNETES_SERVICE_HOST"}
+PROBE_ENV = {
+    "CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "JENKINS_URL",
+    "BUILDKITE", "CIRCLECI", "CONTAINER", "KUBERNETES_SERVICE_HOST",
+    "HOSTNAME", "NUMBER_OF_PROCESSORS"
+}
 PROBE_PATH = ("/.dockerenv", "/proc/1/cgroup", "/proc/uptime", "/proc/self/cgroup", "/proc/cpuinfo")
 SAFE_WRITE = re.compile(r"^(/tmp/|/var/tmp/|/w/site/|/pkg/|/w/[^/]+\.egg-info|~/\.cache/|.*/site-packages/)")
 
@@ -52,7 +52,7 @@ def _whitelisted(cap: str, detail: dict, rules: list[dict], has_canary: bool = F
     return False
 
 
-def classify(e: dict, written_paths: set[str] | None = None) -> tuple[str | None, dict]:
+def classify(e: dict, written_paths: set[str] | None = None, net_seen: set[tuple[str, str]] | None = None) -> tuple[str | None, dict]:
     """raw event -> (capability or None to drop, normalized detail)."""
     k, d = e["kind"], dict(e.get("detail", {}))
     if k == "file.read":
@@ -88,7 +88,10 @@ def classify(e: dict, written_paths: set[str] | None = None) -> tuple[str | None
         return ("env_secrets", d) if SECRET_ENV.search(n) else (None, d)
     if k in ("dyn.exec", "dyn.compile"):
         co_fn = str(d.get("co_filename", ""))
-        if written_paths and any(wp for wp in written_paths if wp and (wp == co_fn or co_fn.endswith(wp))):
+        prof_var = (e.get("profile", ""), e.get("variant", ""))
+        has_net = net_seen and prof_var in net_seen
+        has_written = written_paths and any(wp for wp in written_paths if wp and (wp == co_fn or co_fn.endswith(wp)))
+        if has_written or has_net:
             d["lineage"] = "download_exec"
             return "download_exec", d
         return "dynamic_exec", d
@@ -122,17 +125,34 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
     rules = _load_whitelist() if whitelist is None else whitelist
     events, dropped = [], 0
     written_paths: set[str] = set()
+    net_seen: set[tuple[str, str]] = set()
     seen_events: dict[tuple, int] = {}
+    cov_coverage = run_meta.setdefault("coverage", {})
 
     for e in iter_jsonl(raw_events_path):
-        if e.get("attributed_to") == "toolchain":
+        is_toolchain = e.get("attributed_to") == "toolchain"
+        if e.get("kind") == "run.error":
+            cov_coverage["run_error"] = True
+            msg = str(e.get("detail", {}).get("message", ""))
+            if "timeout" in msg.lower():
+                cov_coverage["run_timeout"] = True
+            not_obs = cov_coverage.setdefault("not_observed", [])
+            phase = e.get("phase", "execution")
+            err_line = f"Error during {phase}: {msg}" if msg else f"Error during {phase}"
+            if err_line not in not_obs:
+                not_obs.append(err_line)
+
+        if is_toolchain:
             dropped += 1
             continue
         if e.get("kind") in ("file.write", "file.new"):
             wp = _home(e.get("detail", {}).get("path", ""))
             if wp:
                 written_paths.add(wp)
-        cap, detail = classify(e, written_paths)
+        if e.get("kind") in ("net.http", "net.send"):
+            net_seen.add((e.get("profile", ""), e.get("variant", "")))
+
+        cap, detail = classify(e, written_paths, net_seen)
         cm = list(e.get("canary_match") or [])
         has_canary = bool(cm) or bool(detail.get("canary_in_bytes"))
 
@@ -144,7 +164,13 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
         dedupe_key = (
             e["phase"], e["trigger"], e["profile"], e["variant"],
             cap, e["outcome"], e.get("attributed_to", "unknown"),
-            detail_target, bool(cm)
+            detail_target,
+            detail.get("decoded_snippet"),
+            detail.get("co_filename"),
+            detail.get("url"),
+            detail.get("host"),
+            detail.get("dest"),
+            bool(cm)
         )
         if dedupe_key in seen_events:
             idx = seen_events[dedupe_key]
@@ -172,6 +198,6 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
         seen = {(ev["profile"], ev["variant"]) for ev in evs}
         summary[cap] = {"phases": sorted({ev["phase"] for ev in evs}), "profiles": sorted({ev["profile"] for ev in evs}),
                         "conditional": bool(combos) and seen != combos, "count": len(evs), "canary_hit": any(ev["canary_hit"] for ev in evs)}
-    cov = dict(run_meta["coverage"], whitelisted_or_dropped_events=dropped)
+    cov = dict(cov_coverage, whitelisted_or_dropped_events=dropped)
     return {"schema_version": "1.0", "package": package, "run": run_meta["run"], "events": events, "static_signals": static_signals or [],
             "coverage": cov, "canaries": run_meta.get("canaries", []), "capability_summary": summary}

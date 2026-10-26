@@ -30,6 +30,9 @@ Below is the sensitivity analysis testing a ±20% variation on each parameter ac
 | `dep_multiplier` | 0.7 | 0.56 | 0.84 | **None** | Only discounts non-canary dependency findings; does not affect clean or malicious verdicts. |
 | `block_min_independent_signals` | 2 | 1 (strict) | 3 (conservative) | **None** at 3: `evil_slug` has canary-in-bytes; `delayed_slug` has 3 classes; `_synthetic_pth_startup` has 3 classes. | Dual-signal threshold prevents any single heuristic from blocking. |
 | `min_callable_ratio_for_benign` | 0.5 | 0.4 | 0.6 | **None** | `clean_slug` and `rest_wrapper` exercise 100% (1/1) of declared callables. |
+| `high_confidence_min_classes` | 3 | 2 | 4 | **None** | Minimum distinct strong signal classes required for high confidence without canary-in-bytes. |
+| `severity_cutoffs` | 12/7/4 | ±20% | ±20% | **None** | Thresholds for critical (12), high (7), and medium (4) finding labels; scores < 4 mapped to low/info. |
+| `static_signal_weight` | 0.5 | 0.4 | 0.6 | **None** | Weak additive score for optional static analysis signals. |
 
 ## False-Positive Calibration Loop with Dev C (Task B9)
 
@@ -58,8 +61,9 @@ All events attributed to third-party dependencies (`attributed_to: dep:<name>`) 
 ## Multi-Language README Fallback (Task B12)
 
 README files written predominantly in non-English scripts (CJK, Cyrillic, Arabic, Devanagari, Hebrew, etc.) are detected via non-Latin character density (`_is_non_english` threshold > 20%):
-- **Conservative Fallback**: If intent cannot be reliably verified in English and no explicit standard packaging metadata (such as `classifiers` or `entry_points`) is declared, the engine marks `unknown_intent: True` and licenses **nothing** (`claims: []`).
-- **Adversarial Keyword Immunity**: Buried English keywords inside non-English text (e.g. an attacker embedding "requests" or "network" in a foreign-language README) are ignored, preventing capability licensing bypasses.
+- **Skip Hostile/Unreliable Keywords**: English keyword matching is skipped on the non-English README text to prevent adversarial evasion (e.g. an attacker embedding "requests" or "network" inside foreign text).
+- **Retain Standard Packaging Metadata**: Claims from standard packaging metadata (`classifiers`, `entry_points`, and English summary descriptions) are preserved. For example, a Chinese README with classifier `"Topic :: Internet :: WWW/HTTP"` keeps `http_client` and licenses `network`.
+- **Honest Abstention**: `unknown_intent` is marked `True` (licensing nothing) only when no valid intent remains across metadata sources, or when the cleaned README is under 20 characters.
 - **Safety**: Pure offline heuristics with zero external translation network calls or LLM dependency.
 
 ## Determinism & Property Fuzz Testing (Task B13)

@@ -1,10 +1,4 @@
-"""Dev B: observed minus claimed -> findings -> verdict. STUB-LEVEL v0 that already produces verdicts on the fixtures.
-
-Rules (docs/CONTRACTS.md 3.3): hard rules canary read + network; unclaimed install-phase network; decoded exec;
-env-differential behaviour; startup hook; persistence. MALICIOUS-EVIDENT needs >= 2 independent strong signal classes
-or a canary inside outgoing bytes. INCONCLUSIVE when coverage is too thin to call a package benign.
-TODO(Dev B): per-rule tests, explanation polish, dependency attribution, version-diff hook, weights calibration with C.
-"""
+"""Dev B: observed minus claimed -> findings -> verdict."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,7 +16,8 @@ VERB = {"fs_read_sensitive": "read the sensitive file", "env_secrets": "read the
 
 
 def _sev_label(score: float) -> str:
-    return "critical" if score >= 12 else "high" if score >= 7 else "medium" if score >= 4 else "low" if score > 0 else "info"
+    cutoffs = W.get("severity_cutoffs", {"critical": 12, "high": 7, "medium": 4})
+    return "critical" if score >= cutoffs.get("critical", 12) else "high" if score >= cutoffs.get("high", 7) else "medium" if score >= cutoffs.get("medium", 4) else "low" if score > 0 else "info"
 
 
 def _desc(ev: dict) -> str:
@@ -41,12 +36,31 @@ def _claim_for(claims: dict, cap: str, phase: str) -> dict:
 
 
 def _explain(rule: str, ev: dict, claim: dict, extra: str = "") -> str:
-    e = ev["evidence"]
-    where = f"{Path(e['file']).name if e.get('file') else '?'}:{e.get('line') or '?'}"
-    claim_txt = (f'The README says: "{claim["quote"]}"' + (" (this licenses the behaviour)." if claim["status"] == "claimed" else " (nothing there licenses it)."))\
-        if claim.get("quote") else "No usable claim was found in the README/metadata, so no discount was applied."
-    return (f'During {ev["phase"]} ({ev["trigger"]}, profile {ev["profile"]}), {where} {VERB.get(ev["capability"], "did")} {_desc(ev)}. '
-            f'{claim_txt} Outcome: {ev["outcome"]}. {extra}').strip()
+    e = ev.get("evidence") or {}
+    file_name = Path(e['file']).name if e.get('file') else '?'
+    where = f"{file_name}:{e.get('line') or '?'}"
+    source = claim.get("source") or "metadata"
+    src_label = "README" if source == "readme" else source
+    quote = claim.get("quote")
+    if quote:
+        claim_part = f"The {src_label} says «{quote}» ({source});"
+    else:
+        claim_part = f"No usable claim was found in the {src_label};"
+    verb = VERB.get(ev.get("capability"), "did")
+    desc = _desc(ev)
+    action_part = f"during {ev.get('phase', 'run')} under {ev.get('profile', 'dev')} it {verb} {desc} at {where}"
+
+    canary_part = ""
+    canary_ids = ev.get("canary_ids") or []
+    if canary_ids:
+        where_canary = desc or where
+        canary_part = f" and the fake secret {', '.join(canary_ids)} appeared in {where_canary}"
+
+    outcome_part = f". Outcome: {ev.get('outcome', 'unknown')}."
+    res = f"{claim_part} {action_part}{canary_part}{outcome_part}"
+    if extra:
+        res = f"{res} {extra}"
+    return res.strip()
 
 
 def evaluate(fingerprint: dict, claims: dict) -> dict:
@@ -60,17 +74,25 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         first = ev_list[0]
         cap = first["capability"]
         claim = force_claim or _claim_for(claims, cap, first["phase"])
+        canary = canary or any(bool(e.get("canary_hit")) for e in ev_list)
         startup_escalated = any(e["phase"] == "startup" and e["capability"] in ("network", "fs_read_sensitive", "env_secrets") for e in ev_list)
         escalation_mult = W.get("startup_escalation_multiplier", 1.5) if startup_escalated else 1.0
         is_dep = all(str(e.get("attributed_to", "")).startswith("dep:") for e in ev_list)
         dep_mult = W.get("dep_multiplier", 0.7) if (is_dep and not canary) else 1.0
-        score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1) * escalation_mult * dep_mult
+
+        if signal_class == "info":
+            score = 0.0
+            sev_label = "info"
+        else:
+            score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1) * escalation_mult * dep_mult
+            sev_label = _sev_label(score)
+
         if startup_escalated and "[Escalated:" not in extra:
             extra = (extra + " [Escalated: executed during interpreter startup before user code].").strip()
         if is_dep and not canary and "[Attributed to dependency" not in extra:
             dep_name = first.get("attributed_to")
             extra = (extra + f" [Attributed to dependency: {dep_name}].").strip()
-        findings.append({"id": f"f{len(findings)}", "rule": rule, "title": title, "severity": _sev_label(score), "score": round(score, 2), "capability": cap,
+        findings.append({"id": f"f{len(findings)}", "rule": rule, "title": title, "severity": sev_label, "score": round(score, 2), "capability": cap,
                          "phases": sorted({e["phase"] for e in ev_list}), "profiles": sorted({e["profile"] for e in ev_list}), "env_differential": diff,
                          "canary_hit": canary, "signal_class": signal_class, "claim": claim, "events": [e["id"] for e in ev_list],
                          "evidence": [{"event_id": e["id"], "file": e["evidence"].get("file"), "line": e["evidence"].get("line"), "phase": e["phase"],
@@ -101,42 +123,47 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
             add("network_unclaimed", f"Network access in {ph} phase not licensed by the package's claims", un, "network_unclaimed")
     # R4 decoded/dynamic exec
     OBF_WORDS = ("base64", "b64decode", "zlib", "decompress", "xor", "chr(", "ord(", "marshal")
+    EXEC_WORDS = ("exec", "eval", "compile", "subprocess", "os.system")
     for e in by_cap.get("dynamic_exec", []):
         snippet = str(e["detail"].get("decoded_snippet", "")).lower()
-        has_network = any(w in snippet for w in NETWORK_WORDS)
+        has_network_or_exec = any(w in snippet for w in NETWORK_WORDS) or any(w in snippet for w in EXEC_WORDS)
         has_obf = any(w in snippet for w in OBF_WORDS)
         is_dep = str(e.get("attributed_to", "")).startswith("dep:")
         claimed_shim = _claim_for(claims, "dynamic_exec", e["phase"])["status"] == "claimed" or any(i["intent"] in ("cli_tool", "native_ext") for i in claims.get("intents", []))
-        if (is_dep or claimed_shim) and not (has_network or has_obf):
+        is_template_shim = "templateshim" in snippet
+        is_shim = (is_dep or claimed_shim or is_template_shim) and not (has_network_or_exec or has_obf)
+        if is_shim:
             add("decoded_exec", "Dynamic code execution (compatibility/templating shim)", [e], "info", obf=False,
                 extra=f'Code snippet: "{snippet[:90]}". Benign shim or template execution.')
         else:
             obf_reasons = []
-            if has_network:
+            if any(w in snippet for w in NETWORK_WORDS):
                 obf_reasons.append("touches network/process APIs")
             if has_obf:
                 obf_reasons.append("contains obfuscation decoding patterns (base64/zlib/xor/chr)")
             reason_str = " and ".join(obf_reasons) if obf_reasons else "runtime-built execution"
             add("decoded_exec", "Runtime-built code was executed", [e], "decoded_exec", obf=True,
                 extra=f'Decoded code: "{snippet[:100]}". Detected: {reason_str}.')
-        break
 
     # R5 environment-differential behaviour
     for cap, s in fingerprint["capability_summary"].items():
         if s["conditional"] and cap not in ("sandbox_probe", "native_code") and sev[cap] >= 3:
             evs = by_cap[cap]
-            active_profiles = sorted({e["profile"] for e in evs})
-            active_variants = sorted({e["variant"] for e in evs})
-            all_profiles = fingerprint["coverage"].get("profiles_run", ["dev", "ci"])
-            all_variants = fingerprint["coverage"].get("variants_run", ["default"])
-            gating_factors = []
-            if len(active_profiles) < len(all_profiles):
-                gating_factors.append(f"profile(s) {', '.join(active_profiles)} (gated from {', '.join(all_profiles)})")
-            if len(active_variants) < len(all_variants):
-                gating_factors.append(f"variant(s) {', '.join(active_variants)}")
-            gating_str = "; ".join(gating_factors) or f"profile(s) {', '.join(active_profiles)}"
-            add("env_differential", f"{cap} only appears under some environment profiles ({', '.join(active_profiles)})", evs, "env_differential", diff=True,
-                extra=f'Seen conditionally under {gating_str}: execution behaviour is gated on the environment.')
+            active_profiles = {e["profile"] for e in evs}
+            active_variants = {e["variant"] for e in evs}
+
+            ci_gated = ("ci" in active_profiles) and ("dev" not in active_profiles)
+            clock_gated = ("clock+30d" in active_variants) and ("default" not in active_variants)
+
+            if ci_gated or clock_gated:
+                gating_factors = []
+                if ci_gated:
+                    gating_factors.append(f"profile(s) {', '.join(sorted(active_profiles))} (gated from dev)")
+                if clock_gated:
+                    gating_factors.append(f"variant(s) {', '.join(sorted(active_variants))} (gated from default)")
+                gating_str = "; ".join(gating_factors)
+                add("env_differential", f"{cap} only appears under some environment profiles/variants", evs, "env_differential", diff=True,
+                    extra=f'Seen conditionally under {gating_str}: execution behaviour is gated on the environment.')
 
     # R6 startup hook
     if by_cap.get("startup_hook"):
@@ -177,32 +204,13 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         add("download_exec", "Downloaded or written file executed (dropper lineage)", evs, "dropper", extra=extra)
 
     # R9 other unclaimed capabilities (weak)
-    done = {f["capability"] for f in findings}
+    done = {f["capability"] for f in findings if f["signal_class"] != "info"}
     for cap in ("fs_read_sensitive", "env_secrets", "subprocess", "fs_write_outside_pkg"):
         evs = [e for e in by_cap.get(cap, []) if _claim_for(claims, cap, e["phase"])["status"] != "claimed"]
         if evs and cap not in done:
             add("capability_not_claimed", f"{cap} observed but not claimed", evs, "mismatch_other")
     for e in by_cap.get("sandbox_probe", [])[:1]:
         add("sandbox_probe", "Package inspects whether it is being watched", [e], "sandbox_probe", force_claim=_claim_for(claims, "sandbox_probe", e["phase"]))
-
-    # Weak static signals (from GuardDog)
-    for sig in fingerprint.get("static_signals", []):
-        r_name = sig.get("rule", "static_hit")
-        msg = sig.get("message") or r_name
-        src_file = sig.get("file") or "?"
-        src_line = sig.get("line") or 1
-        extra = f"Static detector flagged '{r_name}' in {src_file}:{src_line}. {msg}"
-        findings.append({
-            "id": f"f{len(findings)}", "rule": f"static_{r_name}", "title": f"Static signal: {r_name}",
-            "severity": "low", "score": 1.5, "capability": "dynamic_exec",
-            "phases": ["install"], "profiles": fingerprint["coverage"].get("profiles_run", ["dev"]),
-            "env_differential": False, "canary_hit": False, "signal_class": "static_signal",
-            "claim": {"status": "not_claimed", "quote": None, "source": None},
-            "events": [],
-            "evidence": [{"event_id": "static", "file": src_file, "line": src_line, "phase": "install",
-                          "profile": "dev", "outcome": "attempted", "detail": {"rule": r_name, "message": msg}}],
-            "explanation": extra
-        })
 
     strong = [c for c in W["strong_signal_classes"]]
     classes = sorted({f["signal_class"] for f in findings if f["signal_class"] in strong})
@@ -218,14 +226,19 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     callables_exercised = cov.get("callables_exercised", 0)
     install_note = str(cov.get("install_note", "")).lower()
 
-    run_err = any(e.get("kind") == "run.error" or "timeout" in str(e.get("detail", {})).lower() for e in events) or "timeout" in install_note
+    run_err = (
+        bool(cov.get("run_error"))
+        or bool(cov.get("run_timeout"))
+        or any(e.get("kind") == "run.error" or "timeout" in str(e.get("detail", {})).lower() for e in events)
+        or "timeout" in install_note
+    )
     callable_thin = bool(callables_total and (callables_exercised / callables_total < W.get("min_callable_ratio_for_benign", 0.5)))
     thin = (
         not install_completed
         or not phases_run
         or len(profiles_run) < 2
         or callable_thin
-        or (run_err and not classes and top < W.get("suspicious_threshold", 4.0))
+        or (run_err and len(classes) < W.get("block_min_independent_signals", 2) and "canary_in_bytes" not in classes)
     )
 
     if "canary_in_bytes" in classes or len(classes) >= W.get("block_min_independent_signals", 2):
@@ -237,7 +250,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     else:
         verdict, action = "BENIGN-CONSISTENT", "PASS"
 
-    if "canary_in_bytes" in classes or len(classes) >= 3:
+    if "canary_in_bytes" in classes or len(classes) >= W.get("high_confidence_min_classes", 3):
         confidence = "high"
     elif verdict in ("MALICIOUS-EVIDENT", "SUSPICIOUS"):
         confidence = "medium"
@@ -257,9 +270,13 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     elif verdict == "SUSPICIOUS":
         summary = f"{name}: unexplained behaviour found ({', '.join(classes) or 'low-confidence mismatch'}); review before use."
     elif verdict == "INCONCLUSIVE":
-        summary = f"{name}: nothing malicious seen, but coverage is too thin to call it safe (see coverage.not_observed)."
+        summary = f"{name}: nothing malicious seen, but coverage is too thin to verify claims (see coverage.not_observed)."
     else:
         summary = f"{name}: all observed behaviour is consistent with its stated purpose, within the coverage listed below."
+
+    static_rules = sorted({s.get("rule") for s in fingerprint.get("static_signals", []) if s.get("rule")})
+    if static_rules:
+        summary += f" Static signals noted: {', '.join(static_rules)}."
     dep_summary: dict[str, dict] = {}
     for e in events:
         attr = str(e.get("attributed_to") or "")

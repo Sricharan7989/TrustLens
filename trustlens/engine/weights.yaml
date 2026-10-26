@@ -9,4 +9,10 @@ suspicious_threshold: 4.0       # any finding score >= this -> at least SUSPICIO
 strong_signal_classes: [canary_access, canary_in_bytes, network_unclaimed, decoded_exec, env_differential, startup_hook, persistence, dropper]
 block_min_independent_signals: 2
 min_callable_ratio_for_benign: 0.5
+severity_cutoffs:
+  critical: 12
+  high: 7
+  medium: 4
+high_confidence_min_classes: 3
+static_signal_weight: 0.5
 

@@ -49,8 +49,8 @@ def test_evil_slug_has_canary_in_bytes_and_evidence_chain():
             assert "file" in ev and "line" in ev and "phase" in ev and "profile" in ev and "outcome" in ev
         # Verify sentence explanation structure
         exp = f["explanation"]
-        assert f"During {f['phases'][0]}" in exp
-        assert "The README says:" in exp or "claim" in exp
+        assert f"during {f['phases'][0]}" in exp.lower()
+        assert "says «" in exp or "claim" in exp
         assert "Outcome:" in exp
 
 
@@ -90,9 +90,11 @@ def test_plain_path_pth_is_info_not_strong(tmp_path):
     claims = extract_claims(str(BENCH / "clean/clean_slug"))
     fp = build_fingerprint(str(raw), meta, claims["package"])
     v = evaluate(fp, claims)
-    # Plain path should not be classified as strong startup_hook
+    # Plain path should not be classified as strong startup_hook and must forbid SUSPICIOUS
     assert "startup_hook" not in v["independent_signals"]
     assert v["verdict"] != "MALICIOUS-EVIDENT"
+    assert v["verdict"] != "SUSPICIOUS"
+    assert v["verdict"] == "BENIGN-CONSISTENT"
 
 
 def test_persistence_detection(tmp_path):
@@ -413,9 +415,11 @@ def test_benign_dynamic_exec_shim_not_strong(tmp_path):
     claims = extract_claims(str(BENCH / "clean/clean_slug"))
     fp = build_fingerprint(str(raw), meta, claims["package"])
     v = evaluate(fp, claims)
-    # Benign shim should have signal_class info, not strong decoded_exec
+    # Benign shim should have signal_class info, not strong decoded_exec and must forbid SUSPICIOUS
     assert "decoded_exec" not in v["independent_signals"]
     assert v["verdict"] != "MALICIOUS-EVIDENT"
+    assert v["verdict"] != "SUSPICIOUS"
+    assert v["verdict"] == "BENIGN-CONSISTENT"
 
 
 def test_static_signals_ingested_as_weak_evidence(tmp_path):
@@ -428,10 +432,11 @@ def test_static_signals_ingested_as_weak_evidence(tmp_path):
     ]
     fp = build_fingerprint(str(raw), meta, claims["package"], static_signals=static_sigs)
     v = evaluate(fp, claims)
-    assert any(f["rule"] == "static_shady-links" for f in v["findings"])
-    # Weak static signal cannot solely make the verdict MALICIOUS-EVIDENT
-    assert v["verdict"] != "MALICIOUS-EVIDENT"
+    # Static signals must be noted in summary and never generate findings with empty events
+    assert "Static signals noted: shady-links" in v["summary"]
+    assert not any(f["events"] == [] for f in v["findings"])
     assert "static_signal" not in v["independent_signals"]
+    assert v["verdict"] != "MALICIOUS-EVIDENT"
 
 
 def test_dependency_attribution_report(tmp_path):
@@ -466,7 +471,7 @@ def test_dependency_attribution_report(tmp_path):
 
 
 def test_claims_multilingual_readme_fallback(tmp_path):
-    # Case 1: Chinese README
+    # Case 1: Chinese README with no metadata
     p_zh = tmp_path / "pkg_zh"
     p_zh.mkdir()
     (p_zh / "README.md").write_text("这是一个用于高效处理字符串与文本清洗的工具包。提供全面的分词和过滤能力。")
@@ -476,7 +481,7 @@ def test_claims_multilingual_readme_fallback(tmp_path):
     assert c_zh["unknown_intent"] is True
     assert c_zh["claims"] == []
 
-    # Case 2: Russian README
+    # Case 2: Russian README with no metadata
     p_ru = tmp_path / "pkg_ru"
     p_ru.mkdir()
     (p_ru / "README.md").write_text("Библиотека для форматирования текста и структурирования строк данных.")
@@ -496,6 +501,16 @@ def test_claims_multilingual_readme_fallback(tmp_path):
     # Conservative fallback: non-English README must not license network capabilities via buried keywords
     assert c_adv["unknown_intent"] is True
     assert c_adv["claims"] == []
+
+    # Case 4 (Item 10): Chinese README + classifier retains metadata claims
+    p_cls = tmp_path / "pkg_cls"
+    p_cls.mkdir()
+    (p_cls / "README.md").write_text("这是一个用于高效处理网络通讯与数据传输的客户端库。")
+    (p_cls / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg_cls', version='1.0', classifiers=['Topic :: Internet :: WWW/HTTP'])\n")
+    c_cls = extract_claims(str(p_cls))
+    validate("claims", c_cls)
+    assert c_cls["unknown_intent"] is False
+    assert any(cl["capability"] == "network" for cl in c_cls["claims"])
 
 
 def test_engine_determinism():
@@ -570,4 +585,330 @@ def test_fuzz_event_streams_schema_validity(tmp_path):
         validate("verdict", v)
         assert v["verdict"] in ("BENIGN-CONSISTENT", "SUSPICIOUS", "MALICIOUS-EVIDENT", "INCONCLUSIVE")
         assert v["action"] in ("PASS", "REVIEW", "BLOCK")
-        assert isinstance(v["score"], (int, float))
+        assert isinstance(v["score"], int | float)
+
+
+def test_r4_dep_shim_followed_by_socket_fails(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"layer": "audit", "file": "jinja2/compiler.py", "line": 50}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "import socket; s = socket.socket()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 20}},
+        {"seq": 2, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "import socket; s = socket.socket()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 20}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    # The dep shim should not prevent the subsequent socket dynamic_exec from being flagged
+    assert "decoded_exec" in v["independent_signals"]
+    assert v["verdict"] in ("SUSPICIOUS", "MALICIOUS-EVIDENT")
+    assert v["action"] in ("REVIEW", "BLOCK")
+
+
+def test_canary_read_on_dev_and_ci_is_at_least_suspicious(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] in ("SUSPICIOUS", "MALICIOUS-EVIDENT")
+    assert v["action"] in ("REVIEW", "BLOCK")
+    f_canary = [f for f in v["findings"] if f["canary_hit"]]
+    assert f_canary
+    assert f_canary[0]["score"] >= 4.0
+
+    # Repeat with env secret AWS_SECRET_ACCESS_KEY
+    raw_env = tmp_path / "raw_env.jsonl"
+    events_env = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "env.read", "detail": {"name": "AWS_SECRET_ACCESS_KEY"},
+         "canary_match": ["aws_secret_env"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "env.read", "detail": {"name": "AWS_SECRET_ACCESS_KEY"},
+         "canary_match": ["aws_secret_env"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+    ]
+    raw_env.write_text("\n".join(json.dumps(e) for e in events_env) + "\n")
+    fp_env = build_fingerprint(str(raw_env), meta, claims["package"])
+    v_env = evaluate(fp_env, claims)
+    assert v_env["verdict"] in ("SUSPICIOUS", "MALICIOUS-EVIDENT")
+
+
+def test_claimed_ssh_tool_read_stays_quiet(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = {
+        "schema_version": "1.0",
+        "package": {"name": "ssh-helper", "version": "1.0", "ecosystem": "pypi"},
+        "intents": [{"intent": "ssh_tool", "confidence": 0.8, "quote": "ssh client", "source": "readme"}],
+        "claims": [{"capability": "fs_read_sensitive", "basis": "intent_prior", "quote": "ssh client", "source": "readme", "phases_allowed": ["call", "cli"]}],
+        "unknown_intent": False,
+        "declared_entry_points": []
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    # Claimed read stays quiet
+    assert not [f for f in v["findings"] if f["capability"] == "fs_read_sensitive"]
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+
+
+def test_gcloud_and_docker_config_are_fs_read_sensitive():
+    from trustlens.fingerprint.normalize import classify
+    e_gcloud = {"kind": "file.read", "detail": {"path": "/w/home/.config/gcloud/application_default_credentials.json"}}
+    cap_g, _ = classify(e_gcloud)
+    assert cap_g == "fs_read_sensitive"
+
+    e_docker = {"kind": "file.read", "detail": {"path": "/w/home/.docker/config.json"}}
+    cap_d, _ = classify(e_docker)
+    assert cap_d == "fs_read_sensitive"
+
+
+def test_toolchain_run_error_coverage_and_inconclusive(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "run.error", "detail": {"message": "Execution timeout after 30s"}, "outcome": "unknown",
+         "attributed_to": "toolchain", "evidence": {"layer": "audit", "file": "runner.py", "line": 100}}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    meta["coverage"]["install_completed"] = True
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert fp["coverage"]["run_error"] is True
+    assert fp["coverage"]["run_timeout"] is True
+    assert any("Error during call" in no for no in fp["coverage"]["not_observed"])
+
+    v = evaluate(fp, claims)
+    # A sole call-phase run.error with install_completed true is INCONCLUSIVE/REVIEW, never BENIGN
+    assert v["verdict"] == "INCONCLUSIVE"
+    assert v["action"] == "REVIEW"
+
+
+def test_run_error_with_canary_or_two_strong_classes_stays_block(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.connect", "detail": {"dest": "198.51.100.1:80", "canary_in_bytes": True},
+         "outcome": "blocked", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "run.error", "detail": {"message": "Timeout"}, "outcome": "unknown",
+         "attributed_to": "toolchain", "evidence": {"layer": "audit", "file": "runner.py", "line": 100}}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "MALICIOUS-EVIDENT"
+    assert v["action"] == "BLOCK"
+
+
+def test_env_differential_rules_ci_and_clock_only(tmp_path):
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+
+    # Case 1: Dev-only behavior -> NO env_differential
+    raw_dev = tmp_path / "raw_dev.jsonl"
+    events_dev = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.connect", "detail": {"dest": "198.51.100.5:80"}, "outcome": "blocked", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 1}}
+    ]
+    raw_dev.write_text("\n".join(json.dumps(e) for e in events_dev) + "\n")
+    fp_dev = build_fingerprint(str(raw_dev), meta, claims["package"])
+    v_dev = evaluate(fp_dev, claims)
+    assert not any(f["rule"] == "env_differential" for f in v_dev["findings"])
+
+    # Case 2: Present in CI and not dev -> YES env_differential
+    raw_ci = tmp_path / "raw_ci.jsonl"
+    events_ci = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "net.connect", "detail": {"dest": "198.51.100.5:80"}, "outcome": "blocked", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 1}}
+    ]
+    raw_ci.write_text("\n".join(json.dumps(e) for e in events_ci) + "\n")
+    fp_ci = build_fingerprint(str(raw_ci), meta, claims["package"])
+    v_ci = evaluate(fp_ci, claims)
+    assert any(f["rule"] == "env_differential" for f in v_ci["findings"])
+
+    # Case 3: Present in clock+30d and not default -> YES env_differential
+    raw_clock = tmp_path / "raw_clock.jsonl"
+    events_clock = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "clock+30d",
+         "kind": "net.connect", "detail": {"dest": "198.51.100.5:80"}, "outcome": "blocked", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 1}}
+    ]
+    raw_clock.write_text("\n".join(json.dumps(e) for e in events_clock) + "\n")
+    fp_clock = build_fingerprint(str(raw_clock), meta, claims["package"])
+    v_clock = evaluate(fp_clock, claims)
+    assert any(f["rule"] == "env_differential" for f in v_clock["findings"])
+
+
+def test_info_signal_class_score_zero_not_suspicious(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 1}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 1}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    f_info = [f for f in v["findings"] if f["signal_class"] == "info"]
+    assert f_info
+    assert f_info[0]["score"] == 0.0
+    assert f_info[0]["severity"] == "info"
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+    assert v["verdict"] != "SUSPICIOUS"
+
+
+def test_short_readme_under_20_chars_unknown_intent(tmp_path):
+    p = tmp_path / "pkg_short"
+    p.mkdir()
+    (p / "README.md").write_text("Short.")
+    (p / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg_short', version='1.0', classifiers=['Topic :: Internet :: WWW/HTTP'], entry_points={'console_scripts': ['tool=pkg:main']})\n")
+    c = extract_claims(str(p))
+    # Item 6: if cleaned README < 20 characters, unknown_intent is true and claims [] even with metadata
+    assert c["unknown_intent"] is True
+    assert c["claims"] == []
+
+
+def test_inconclusive_summary_no_safe_word(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    meta["coverage"]["install_completed"] = False
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "INCONCLUSIVE"
+    assert "safe" not in v["summary"].lower()
+
+
+def test_probe_env_hostname_processors_display():
+    from trustlens.fingerprint.normalize import classify
+    cap_h, _ = classify({"kind": "env.read", "detail": {"name": "HOSTNAME"}})
+    assert cap_h == "sandbox_probe"
+
+    cap_p, _ = classify({"kind": "env.read", "detail": {"name": "NUMBER_OF_PROCESSORS"}})
+    assert cap_p == "sandbox_probe"
+
+    cap_d, _ = classify({"kind": "env.read", "detail": {"name": "DISPLAY"}})
+    assert cap_d is None
+
+
+def test_download_exec_net_http_then_dyn_exec(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.http", "detail": {"url": "http://payload.invalid/stage.py", "method": "GET"},
+         "outcome": "blocked", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"co_filename": "<string>", "decoded_snippet": "print('stage2')"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 6}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    # Dynamic exec preceded by net.http in same profile+variant becomes download_exec
+    dyn_ev = [e for e in fp["events"] if e["seq"] == 1][0]
+    assert dyn_ev["capability"] == "download_exec"
+    v = evaluate(fp, claims)
+    assert any(f["signal_class"] == "dropper" for f in v["findings"])
+
+
+def test_dedupe_key_does_not_collapse_compile_and_exec(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.compile", "detail": {"decoded_snippet": "print(1)"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 1}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"co_filename": "<string>", "decoded_snippet": "print(2)"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 2}},
+        {"seq": 2, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"co_filename": "<string>", "decoded_snippet": "print(2)"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "app.py", "line": 2}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    # compile and exec must NOT collapse into each other
+    assert len(fp["events"]) == 2
+    # identical exec events collapse with count 2
+    exec_ev = fp["events"][1]
+    assert exec_ev["count"] == 2
+
+
+def test_no_verdict_finding_with_empty_events():
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(EXAMPLES / "clean_slug" / "raw_events.jsonl"), meta, claims["package"],
+                           static_signals=[{"source": "guarddog", "rule": "shady-links"}])
+    v = evaluate(fp, claims)
+    for f in v["findings"]:
+        assert len(f["events"]) > 0
+
+
+def test_recorded_sandbox_packages():
+    RECORDED = ROOT / "tests" / "sandbox" / "recorded"
+    DATA = ROOT / "tests" / "sandbox" / "data"
+    for name in ["hostname_gate", "clock_gate", "github_gate", "pth_toy"]:
+        raw_path = RECORDED / name / "raw_events.jsonl"
+        meta = json.loads((RECORDED / name / "run_meta.json").read_text())
+        pkg_dir = DATA / name
+        claims = extract_claims(str(pkg_dir))
+        fp = build_fingerprint(str(raw_path), meta, claims["package"])
+        v = evaluate(fp, claims)
+        assert v["verdict"] == "MALICIOUS-EVIDENT", f"{name} expected MALICIOUS-EVIDENT, got {v['verdict']}"
+        assert v["action"] == "BLOCK"
+
+    # cli_toy test:
+    cli_raw = RECORDED / "cli_toy" / "raw_events.jsonl"
+    cli_meta = json.loads((RECORDED / "cli_toy" / "run_meta.json").read_text())
+    cli_pkg = DATA / "cli_toy"
+    cli_claims = extract_claims(str(cli_pkg))
+    cli_fp = build_fingerprint(str(cli_raw), cli_meta, cli_claims["package"])
+    cli_v = evaluate(cli_fp, cli_claims)
+    assert cli_v["verdict"] == "MALICIOUS-EVIDENT"
+    assert cli_v["action"] == "BLOCK"
+    env_diff_findings = [f for f in cli_v["findings"] if f["rule"] == "env_differential"]
+    assert not any("install_hook" in f["title"] or "install_hook" in f["explanation"] for f in env_diff_findings)

@@ -308,10 +308,16 @@ def extract_claims(pkg_path: str) -> dict:
                             "phases_allowed": spec.get("phases_allowed", ["import", "call", "cli"]),
                         })
 
-    # Conservative rule: empty or short README with no valid intents => unknown_intent: true, license nothing
-    unknown_intent = not intents or (not readme_valid and not meta["summary"])
-    if unknown_intent:
+    # Item 6: if cleaned README < 20 characters, set unknown_intent true and claims [] even when description/classifiers/entry points matched.
+    if len(readme_text) < 20:
+        unknown_intent = True
         claims = []
+    else:
+        # Item 10: Non-English README (>= 20 chars) skipped README keywords, but keeps claims from
+        # classifiers, entry points, and English summary. unknown_intent only when no intent remains.
+        unknown_intent = not intents
+        if unknown_intent:
+            claims = []
 
     return {
         "schema_version": "1.0",
