@@ -1,5 +1,5 @@
 # PS1-Bench ground truth. OWNER: Dev C. Validated by schemas/bench_labels.schema.json (make audit).
-# Planted malicious toys (10) covering trigger x gate x obfuscation + clean controls.
+# Planted malicious toys (10) covering trigger x gate x obfuscation + clean controls and noisy-benign packages (16).
 # Every planted package is SYNTHETIC; network targets are RFC 5737 TEST-NET addresses or *.invalid.
 version: 1
 packages:
@@ -26,3 +26,23 @@ packages:
   - {id: clean_slug, path: bench/packages/clean/clean_slug, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that turns titles into URL slugs"}
   - {id: rest_wrapper, path: bench/packages/clean/rest_wrapper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "REST API client; optional API_TOKEN env var",
      notes: "legit network + env read: must PASS (claim-aware)"}
+  - {id: cli_runner, path: bench/packages/clean/cli_runner, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "command line wrapper around git and shell tools",
+     notes: "legitimate subprocess in call and cli phase: licensed by cli_tool intent"}
+  - {id: file_fetcher, path: bench/packages/clean/file_fetcher, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "downloader and api client that downloads files to local cache",
+     notes: "legitimate network + cache write: licensed by downloader intent"}
+  - {id: env_config, path: bench/packages/clean/env_config, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "config loader and environment variable configuration parser",
+     notes: "legitimate env read: licensed by config_loader intent"}
+  - {id: ssh_helper, path: bench/packages/clean/ssh_helper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "ssh client helper for ssh keys and server configuration",
+     notes: "legitimate ~/.ssh/config read: licensed by ssh_tool intent"}
+  - {id: sys_monitor, path: bench/packages/clean/sys_monitor, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "system information and hardware info inspection library",
+     notes: "legitimate platform and process inspection: licensed by system_info intent"}
+  - {id: native_shim, path: bench/packages/clean/native_shim, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "bindings for native libraries and c extension routines",
+     notes: "legitimate ctypes standard library call: licensed by native_ext intent"}
+  - {id: math_lib, path: bench/packages/clean/math_lib, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "pure Python math calculator and vector computation library"}
+  - {id: color_text, path: bench/packages/clean/color_text, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "ANSI color text formatter and terminal string styling"}
+  - {id: json_parser, path: bench/packages/clean/json_parser, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "lightweight JSON parser and text validator"}
+  - {id: case_converter, path: bench/packages/clean/case_converter, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that converts case between naming styles"}
+  - {id: date_calc, path: bench/packages/clean/date_calc, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "date calculator and calendar duration arithmetic library"}
+  - {id: uuid_helper, path: bench/packages/clean/uuid_helper, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "deterministic UUID text formatter and identifier helper"}
+  - {id: hash_util, path: bench/packages/clean/hash_util, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "cryptographic checksum calculator and string digest utility"}
+  - {id: markdown_strip, path: bench/packages/clean/markdown_strip, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "text formatter that strips markdown syntax into plaintext"}
