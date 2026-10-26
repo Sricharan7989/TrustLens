@@ -358,3 +358,77 @@ def test_high_confidence_benign_coverage():
     v = evaluate(fp, claims)
     assert v["verdict"] == "BENIGN-CONSISTENT"
     assert v["confidence"] == "high"
+
+
+def test_env_differential_gating_detected(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    # Action present only in 'ci' profile, absent in 'dev' profile
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "net.connect", "detail": {"dest": "203.0.113.5:80"}, "outcome": "blocked", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 42}}
+    ]
+    raw.write_text(json.dumps(events[0]) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert any(f["rule"] == "env_differential" and f["signal_class"] == "env_differential" for f in v["findings"])
+    assert "env_differential" in v["independent_signals"]
+
+
+def test_decoded_exec_with_obfuscation(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "import base64; import socket; s = socket.socket()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "lib.py", "line": 8}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "import base64; import socket; s = socket.socket()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "audit", "file": "lib.py", "line": 8}}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    f = [finding for finding in v["findings"] if finding["rule"] == "decoded_exec"][0]
+    assert f["signal_class"] == "decoded_exec"
+    assert "contains obfuscation decoding patterns" in f["explanation"]
+    assert "touches network/process APIs" in f["explanation"]
+
+
+def test_benign_dynamic_exec_shim_not_strong(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "import", "trigger": "import_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"layer": "audit", "file": "jinja2/compiler.py", "line": 50}},
+        {"seq": 1, "phase": "import", "trigger": "import_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"layer": "audit", "file": "jinja2/compiler.py", "line": 50}}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    # Benign shim should have signal_class info, not strong decoded_exec
+    assert "decoded_exec" not in v["independent_signals"]
+    assert v["verdict"] != "MALICIOUS-EVIDENT"
+
+
+def test_static_signals_ingested_as_weak_evidence(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    static_sigs = [
+        {"source": "guarddog", "rule": "shady-links", "message": "Hidden URL detected", "file": "setup.py", "line": 3}
+    ]
+    fp = build_fingerprint(str(raw), meta, claims["package"], static_signals=static_sigs)
+    v = evaluate(fp, claims)
+    assert any(f["rule"] == "static_shady-links" for f in v["findings"])
+    # Weak static signal cannot solely make the verdict MALICIOUS-EVIDENT
+    assert v["verdict"] != "MALICIOUS-EVIDENT"
+    assert "static_signal" not in v["independent_signals"]

@@ -100,17 +100,43 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         if un:
             add("network_unclaimed", f"Network access in {ph} phase not licensed by the package's claims", un, "network_unclaimed")
     # R4 decoded/dynamic exec
+    OBF_WORDS = ("base64", "b64decode", "zlib", "decompress", "xor", "chr(", "ord(", "marshal")
     for e in by_cap.get("dynamic_exec", []):
         snippet = str(e["detail"].get("decoded_snippet", "")).lower()
-        add("decoded_exec", "Runtime-built code was executed", [e], "decoded_exec", obf=True,
-            extra=f'Decoded code: "{snippet[:100]}".' + (" It touches network/process APIs." if any(w in snippet for w in NETWORK_WORDS) else ""))
+        has_network = any(w in snippet for w in NETWORK_WORDS)
+        has_obf = any(w in snippet for w in OBF_WORDS)
+        is_dep = str(e.get("attributed_to", "")).startswith("dep:")
+        claimed_shim = _claim_for(claims, "dynamic_exec", e["phase"])["status"] == "claimed" or any(i["intent"] in ("cli_tool", "native_ext") for i in claims.get("intents", []))
+        if (is_dep or claimed_shim) and not (has_network or has_obf):
+            add("decoded_exec", "Dynamic code execution (compatibility/templating shim)", [e], "info", obf=False,
+                extra=f'Code snippet: "{snippet[:90]}". Benign shim or template execution.')
+        else:
+            obf_reasons = []
+            if has_network:
+                obf_reasons.append("touches network/process APIs")
+            if has_obf:
+                obf_reasons.append("contains obfuscation decoding patterns (base64/zlib/xor/chr)")
+            reason_str = " and ".join(obf_reasons) if obf_reasons else "runtime-built execution"
+            add("decoded_exec", "Runtime-built code was executed", [e], "decoded_exec", obf=True,
+                extra=f'Decoded code: "{snippet[:100]}". Detected: {reason_str}.')
         break
+
     # R5 environment-differential behaviour
     for cap, s in fingerprint["capability_summary"].items():
         if s["conditional"] and cap not in ("sandbox_probe", "native_code") and sev[cap] >= 3:
             evs = by_cap[cap]
-            add("env_differential", f"{cap} only appears under some environment profiles ({', '.join(s['profiles'])})", evs, "env_differential", diff=True,
-                extra=f'Seen only in profile(s) {", ".join(s["profiles"])} of {", ".join(fingerprint["coverage"]["profiles_run"])}: behaviour gated on the environment.')
+            active_profiles = sorted({e["profile"] for e in evs})
+            active_variants = sorted({e["variant"] for e in evs})
+            all_profiles = fingerprint["coverage"].get("profiles_run", ["dev", "ci"])
+            all_variants = fingerprint["coverage"].get("variants_run", ["default"])
+            gating_factors = []
+            if len(active_profiles) < len(all_profiles):
+                gating_factors.append(f"profile(s) {', '.join(active_profiles)} (gated from {', '.join(all_profiles)})")
+            if len(active_variants) < len(all_variants):
+                gating_factors.append(f"variant(s) {', '.join(active_variants)}")
+            gating_str = "; ".join(gating_factors) or f"profile(s) {', '.join(active_profiles)}"
+            add("env_differential", f"{cap} only appears under some environment profiles ({', '.join(active_profiles)})", evs, "env_differential", diff=True,
+                extra=f'Seen conditionally under {gating_str}: execution behaviour is gated on the environment.')
 
     # R6 startup hook
     if by_cap.get("startup_hook"):
@@ -158,6 +184,25 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
             add("capability_not_claimed", f"{cap} observed but not claimed", evs, "mismatch_other")
     for e in by_cap.get("sandbox_probe", [])[:1]:
         add("sandbox_probe", "Package inspects whether it is being watched", [e], "sandbox_probe", force_claim=_claim_for(claims, "sandbox_probe", e["phase"]))
+
+    # Weak static signals (from GuardDog)
+    for sig in fingerprint.get("static_signals", []):
+        r_name = sig.get("rule", "static_hit")
+        msg = sig.get("message") or r_name
+        src_file = sig.get("file") or "?"
+        src_line = sig.get("line") or 1
+        extra = f"Static detector flagged '{r_name}' in {src_file}:{src_line}. {msg}"
+        findings.append({
+            "id": f"f{len(findings)}", "rule": f"static_{r_name}", "title": f"Static signal: {r_name}",
+            "severity": "low", "score": 1.5, "capability": "dynamic_exec",
+            "phases": ["install"], "profiles": fingerprint["coverage"].get("profiles_run", ["dev"]),
+            "env_differential": False, "canary_hit": False, "signal_class": "static_signal",
+            "claim": {"status": "not_claimed", "quote": None, "source": None},
+            "events": [],
+            "evidence": [{"event_id": "static", "file": src_file, "line": src_line, "phase": "install",
+                          "profile": "dev", "outcome": "attempted", "detail": {"rule": r_name, "message": msg}}],
+            "explanation": extra
+        })
 
     strong = [c for c in W["strong_signal_classes"]]
     classes = sorted({f["signal_class"] for f in findings if f["signal_class"] in strong})
