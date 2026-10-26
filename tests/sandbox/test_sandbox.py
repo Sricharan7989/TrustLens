@@ -13,7 +13,12 @@ bwrap_ok = check_env().get("bwrap_ok")
 
 def test_check_env_shape():
     env = check_env()
-    assert "bwrap_ok" in env and "notes" in env
+    for key in ("bwrap_ok", "notes", "network_blocked", "strace", "docker", "venv_ok", "live_safe", "strace_in_bwrap", "docker_ok"):
+        assert key in env
+    assert isinstance(env["notes"], list)
+    assert env["live_safe"] is env["bwrap_ok"]
+    if env["bwrap_ok"]:
+        assert env["network_blocked"] is True
 
 
 def test_fixture_runner_replays_and_marks_stub(tmp_path):
