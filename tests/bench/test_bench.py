@@ -104,3 +104,38 @@ def test_labels_datadog_conforms_to_schema():
             assert (ROOT / p["path"]).exists()
 
 
+def test_load_labels_multi_and_all():
+    from eval.run_eval import load_labels
+    name, pkgs = load_labels(None, runner="fixture")
+    assert name == "labels.yaml"
+    assert len(pkgs) >= 26
+
+    name_all, pkgs_all = load_labels("all", runner="fixture")
+    assert len(pkgs_all) >= len(pkgs)
+    assert "labels.yaml" in name_all
+
+
+def test_compute_category_metrics():
+    from eval.run_eval import compute_category_metrics
+    rows = [
+        {"category": "planted", "flagged": True},
+        {"category": "planted", "flagged": False},
+        {"category": "datadog", "flagged": True},
+        {"category": "datadog", "flagged": None},
+        {"category": "clean_control", "flagged": False},
+        {"category": "noisy_benign", "flagged": False},
+        {"category": "top_pypi", "flagged": False},
+    ]
+    cm = compute_category_metrics(rows, available=True)
+    assert cm["planted_toys"]["tp"] == 1
+    assert cm["planted_toys"]["total"] == 2
+    assert cm["planted_toys"]["recall"] == 0.5
+    assert cm["external_malware"]["tp"] == 1
+    assert cm["external_malware"]["inconclusive"] == 1
+    assert cm["external_malware"]["total"] == 2
+    assert cm["clean_controls"]["fp"] == 0
+    assert cm["noisy_benign"]["fp"] == 0
+    assert cm["top_pypi"]["fp"] == 0
+
+
+

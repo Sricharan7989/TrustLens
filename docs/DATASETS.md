@@ -14,3 +14,27 @@ Priority order. All data under gitignored `data/`. Datasets are for **testing & 
 
 Fixtures for external samples: after a live run, copy `raw_events.jsonl`+`run_meta.json` to `schemas/examples/<name>/` only through the lead (contract folder) — or keep external-sample results only in `reports/` (gitignored) and record aggregate numbers in `reports/eval/results.json`.
 Match clean and malicious size distributions (`bench/tools/size_report.py`) so "tiny package = malicious" is not learned by the rules.
+
+## Evaluation Harness (`eval/run_eval.py`)
+
+Run commands:
+- `make eval` (replay fixture stubs: fast, offline, deterministic)
+- `make eval-live` (dynamic rootless bwrap sandbox execution in parallel, $\le 4$ workers)
+
+Evaluation datasets evaluated during live evaluation:
+1. **PS1-Bench planted toys** (`bench/labels.yaml`): 10 synthetic planted packages covering trigger $\times$ gate $\times$ obfuscation.
+2. **PS1-Bench clean controls** (`bench/labels.yaml`): 16 clean controls (8 standard controls + 8 noisy-benign packages performing system inspection, network downloads, subprocess execution, SSH config reads).
+3. **Top-PyPI clean set** (`bench/labels_external.yaml`): 30 popular real-world packages downloaded via PyPI JSON API with SHA-256 verification.
+4. **Datadog PyPI malware sample** (`bench/labels_datadog.yaml`): 150 real-world malware packages sampled reproducibly (seed 1337).
+
+### Statistical and Methodological Integrity
+- **Recall Separation:** Synthetic planted toy recall is reported strictly separately from real-world external malware recall. We never combine them into a single misleading headline number.
+- **Wilson 95% Score Intervals:** False positive rates are reported as $k/n$ with two-sided Wilson 95% confidence intervals ($0/n$ is never claimed as "0% FP").
+- **Abstention Integrity:** Packages that fail installation, lack dynamic coverage, or return `INCONCLUSIVE` are recorded as abstentions, never disguised as clean PASS or false positives.
+- **AUDIT §6 Triage:** Every false positive and miss is triaged and classified into:
+  - *(a) true noise* -> whitelist candidate
+  - *(b) claim parser gap* -> intent keywords in `capabilities.yaml`
+  - *(c) coverage thin / dead sample* -> abstention (`INCONCLUSIVE`)
+  - *(d) engine gap* -> detection rule candidate
+  The triage log is written to `reports/eval/triage.md`.
+
