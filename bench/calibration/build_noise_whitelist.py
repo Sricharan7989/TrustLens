@@ -27,6 +27,14 @@ CAP_OF = {
     "sockets": ("network", "host_glob"),
     "dns": ("network", "host_glob"),
     "commands": ("subprocess", "path_glob"),
+    "import_files": ("fs_read_sensitive", "path_glob"),
+    "install_files": ("fs_read_sensitive", "path_glob"),
+    "import_sockets": ("network", "host_glob"),
+    "install_sockets": ("network", "host_glob"),
+    "import_commands": ("subprocess", "path_glob"),
+    "install_commands": ("subprocess", "path_glob"),
+    "import_dns": ("network", "host_glob"),
+    "install_dns": ("network", "host_glob"),
 }
 
 FORBIDDEN_PATTERNS = re.compile(
@@ -36,7 +44,17 @@ FORBIDDEN_PATTERNS = re.compile(
 
 
 def parse_cell(cell: str) -> set[str]:
-    """Split comma, semicolon, newline, or pipe-separated cell values."""
+    """Split comma, semicolon, newline, or pipe-separated cell values, or parse OSPTrack dicts."""
+    if not cell or cell in ("[]", "{}"):
+        return set()
+    if "'Path':" in cell or "'Hostname':" in cell or "'Address':" in cell or "'Command':" in cell:
+        tokens: set[str] = set()
+        for m in re.finditer(r"'(?:Path|Hostname|Address)':\s*'([^']+)'", cell):
+            tokens.add(m.group(1))
+        for m in re.finditer(r"'Command':\s*(?:array\(\[)?'([^']+)'", cell):
+            tokens.add(m.group(1))
+        if tokens:
+            return tokens
     return {t.strip() for t in re.split(r"[;\n|]|\s{2,}|,\s*", cell or "") if t.strip()}
 
 

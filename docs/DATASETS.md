@@ -114,7 +114,46 @@ To ensure methodological rigor and protect against rule overfitting, **10 packag
 ### Methodological Isolation
 - **Zero Tuning Exposure:** These 10 packages were completely isolated from the initial tuning set (`evil_slug`, `delayed_slug`, `clean_slug`, `rest_wrapper`, `_synthetic_pth_startup`).
 - **No Rule or Threshold Calibration:** No detection rule, claim parser intent keyword, or noise-whitelist token was created or calibrated against these packages.
-- **Separate Reporting:** The evaluation harness (`eval/run_eval.py`) computes and reports held-out split numbers separately in `summary.md` and `results.json` (`held_out` block), preventing contamination of generalization metrics.
 - **Execution:** Can be evaluated individually via `python -m eval.run_eval --labels bench/held_out.yaml` or as part of full benchmark runs.
+
+## OSPTrack Dataset & Empirical Toy Planning (C10)
+
+OSPTrack (Zenodo record 21853840, CC-BY-4.0) provides empirical metadata and execution traces across 20,269 open-source supply chain attacks.
+
+### 1. Dataset Components
+- **`data_metrics.csv` (2.7 MB):** Classification metadata for 20,269 malicious packages (6,683 PyPI, 13,565 npm) covering attack objectives, trigger mechanisms, and obfuscation methods.
+- **`label_data_v2.csv` (1.76 GB):** Dynamic trace execution records across 18 columns (`import_Files`, `import_Sockets`, `import_Commands`, `import_DNS`, `install_*`, `Label`). MD5 verified against `1d3aeaa9e1b338603c2f4ce8e6f5d68c`.
+- **Fetch script:** `bash scripts/fetch_osptrack.sh` (`--metrics-only`, `--check-only`, or full download).
+
+### 2. Empirical PyPI Attack Distributions (N = 6,683)
+Analysis performed by `python bench/tools/analyze_osptrack.py` (`reports/bench/osptrack_metrics.md`):
+- **Triggers:**
+  - *Automatic execution upon download/install:* 95.2% (5,460 download + 900 installation).
+  - *Runtime network connection:* 4.2% (283 packages).
+  - *Function call / usage:* 0.5% (31 packages).
+- **Hiding & Obfuscation:**
+  - *Base64 encoding:* 81.1% (5,423 packages).
+  - *General obfuscation (XOR, eval, hex):* 13.5% (900 packages).
+  - *Plain / un-obfuscated:* 4.7% (312 packages).
+  - *Steganography & split payloads:* 0.7% (48 packages).
+- **Attack Types:**
+  - *Droppers & second-stage loaders:* 81.1% (5,423 packages).
+  - *Typosquatting & credential harvesting:* 14.5% (968 packages).
+  - *C2 communication & persistent beacons:* 4.2% (283 packages).
+
+### 3. PS1-Bench Matrix Validation & Expansion Plan
+OSPTrack empirical findings validate the core architecture of PS1-Bench:
+- **Trigger alignment:** 4/10 planted toys focus on install-time execution (`evil_slug`, `staged_dropper`, `obfuscated_xor`, `pth_hook`), mirroring the 95.2% real-world concentration.
+- **Obfuscation alignment:** Base64 decoding (`delayed_slug`) and XOR dynamic evaluation (`obfuscated_xor`) cover the dominant real-world obfuscation vectors.
+- **Planned expansion toys:**
+  1. `clip_stealer`: Clipboard access and cryptocurrency address hijacking (OSPTrack `uurllib3` pattern).
+  2. `asset_stego`: Hiding payloads within package image assets (OSPTrack `steganography/obfuscation`).
+  3. `split_payload`: Distributing payload fragments across submodules (OSPTrack `split payloads`).
+  4. `atexit_beacon`: Registering interpreter termination hooks for C2 exfiltration (OSPTrack `C2 communication`).
+
+### 4. Benign-Trace Whitelist Cross-Check
+Verified via `python bench/tools/cross_check_whitelist.py`:
+- All 12 calibrated rules in `bench/calibration/noise_whitelist.yaml` were cross-checked against benign trace schemas.
+- **AUDIT §6 Invariant Verified:** Zero whitelist rules match canary tokens, SSH/AWS/npm credential files, RFC 5737 targets, or `.invalid` test domains.
 
 

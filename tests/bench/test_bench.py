@@ -347,3 +347,47 @@ def test_eval_runs_on_held_out_split(tmp_path):
     assert "Held-Out Package Detail" in summary
 
 
+def test_osptrack_cell_parsing_in_build_noise_whitelist():
+    from bench.calibration.build_noise_whitelist import parse_cell
+    osp_file_cell = "[{'Delete': False, 'Path': '/dev/tty', 'Read': True}, {'Delete': False, 'Path': '/etc/ld.so.cache', 'Read': True}]"
+    tokens = parse_cell(osp_file_cell)
+    assert "/dev/tty" in tokens
+    assert "/etc/ld.so.cache" in tokens
+
+    osp_cmd_cell = "[{'Command': array(['ruby', '/usr/local/bin/analyze.rb'])}]"
+    tokens_cmd = parse_cell(osp_cmd_cell)
+    assert "ruby" in tokens_cmd
+
+    empty_tokens = parse_cell("[]")
+    assert empty_tokens == set()
+
+
+def test_whitelist_cross_check_and_safety_invariant():
+    from bench.tools.cross_check_whitelist import cross_check
+    res = cross_check(ROOT / "bench/calibration/noise_whitelist.yaml")
+    assert res["is_safe"] is True
+    assert len(res["violations"]) == 0
+    assert res["total_rules"] >= 5
+
+
+def test_osptrack_metrics_analyzer_mock_and_real(tmp_path):
+    from bench.tools.analyze_osptrack import analyze_metrics, generate_report
+    mock_csv = tmp_path / "mock_metrics.csv"
+    mock_csv.write_text(
+        "pkg_type,name,version,location,function,attack_type,trigger_mechanism,hide\n"
+        "pypi,mal1,1.0,setup,steal,dropper/malware,execute automatically upon download,base64-encoded\n"
+        "pypi,mal2,1.0,setup,steal,typosquatting,installation,obfuscation\n"
+        "npm,mal3,1.0,index,c2,C2 communication,running network connection,N/A\n",
+        encoding="utf-8",
+    )
+    stats = analyze_metrics(mock_csv)
+    assert stats["total_rows"] == 3
+    assert stats["pypi_count"] == 2
+    assert stats["npm_count"] == 1
+    report = generate_report(stats)
+    assert "# OSPTrack Empirical Analysis" in report
+    assert "execute automatically upon download" in report
+    assert "Planned Planted Toys" in report
+
+
+
