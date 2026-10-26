@@ -34,10 +34,24 @@ def test_expected_verdicts(rel, expected):
 
 
 def test_evil_slug_has_canary_in_bytes_and_evidence_chain():
-    v = run("malicious/evil_slug")[2]
+    fp, _, v = run("malicious/evil_slug")
     rules = {f["rule"] for f in v["findings"]}
     assert {"canary_in_outgoing_bytes", "network_unclaimed"} <= rules
-    assert all(f["events"] and f["explanation"] for f in v["findings"])
+    ev_map = {e["id"]: e["seq"] for e in fp["events"]}
+    for f in v["findings"]:
+        assert f["events"] and f["explanation"]
+        assert f["evidence"]
+        # Verify events are ordered by time (seq)
+        seqs = [ev_map[eid] for eid in f["events"] if eid in ev_map]
+        assert seqs == sorted(seqs)
+        # Verify evidence contains layer/file/line
+        for ev in f["evidence"]:
+            assert "file" in ev and "line" in ev and "phase" in ev and "profile" in ev and "outcome" in ev
+        # Verify sentence explanation structure
+        exp = f["explanation"]
+        assert f"During {f['phases'][0]}" in exp
+        assert "The README says:" in exp or "claim" in exp
+        assert "Outcome:" in exp
 
 
 def test_delayed_slug_needs_ci_profile_to_show():
