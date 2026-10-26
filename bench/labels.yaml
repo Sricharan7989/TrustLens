@@ -1,5 +1,5 @@
 # PS1-Bench ground truth. OWNER: Dev C. Validated by schemas/bench_labels.schema.json (make audit).
-# Starter set (4). Dev C grows this to 8-10 planted malicious toys (trigger x gate x obfuscation) + 15-20 clean controls (see prompts/PROMPT_DEV_C.md).
+# Planted malicious toys (10) covering trigger x gate x obfuscation + clean controls.
 # Every planted package is SYNTHETIC; network targets are RFC 5737 TEST-NET addresses or *.invalid.
 version: 1
 packages:
@@ -7,6 +7,22 @@ packages:
      claim: "string utility that turns titles into URL slugs", expected_signals: [canary_access, canary_in_bytes, network_unclaimed], notes: "setup.py reads fake ssh key + AWS env, tries HTTP exfil"}
   - {id: delayed_slug, path: bench/packages/malicious/delayed_slug, label: malicious, category: planted, trigger: call, gate: ci, obfuscation: base64, expected_verdict: MALICIOUS-EVIDENT,
      claim: "string utility that turns titles into URL slugs", expected_signals: [decoded_exec, env_differential, network_unclaimed], notes: "fires only when CI is set, in slugify()"}
+  - {id: pth_hook, path: bench/packages/malicious/pth_hook, label: malicious, category: planted, trigger: pth, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "helper library providing logging and configuration bootstrap", expected_signals: [startup_hook, canary_access, network_unclaimed], notes: "ships a .pth startup file reading ~/.ssh/id_rsa and dialing 198.51.100.8 on fresh interpreter start"}
+  - {id: import_exfil, path: bench/packages/malicious/import_exfil, label: malicious, category: planted, trigger: import, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "fast text formatting and template substitution utilities", expected_signals: [canary_access, canary_in_bytes, network_unclaimed], notes: "reads ~/.aws/credentials during module import and exfiltrates to 198.51.100.9"}
+  - {id: time_gate, path: bench/packages/malicious/time_gate, label: malicious, category: planted, trigger: call, gate: time, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "date and timestamp formatting utilities", expected_signals: [env_differential, network_unclaimed], notes: "dormant until +15 days past build date; connects to 198.51.100.40 only under clock+30d variant"}
+  - {id: host_gate, path: bench/packages/malicious/host_gate, label: malicious, category: planted, trigger: call, gate: os, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "mathematical matrix and vector operations", expected_signals: [env_differential, network_unclaimed], notes: "checks socket.gethostname() against dev laptop camouflage; exfiltrates to 198.51.100.21 on CI/cloud"}
+  - {id: cli_payload, path: bench/packages/malicious/cli_payload, label: malicious, category: planted, trigger: cli, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "command-line file compression and archive helper", expected_signals: [canary_access, network_unclaimed], notes: "console_scripts entry point reads ~/.ssh/id_rsa and contacts 198.51.100.11 when executed"}
+  - {id: staged_dropper, path: bench/packages/malicious/staged_dropper, label: malicious, category: planted, trigger: call, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "lightweight HTTP asset fetcher and cache manager", expected_signals: [download_exec, network_unclaimed], notes: "fetches second-stage python script from http://payload.invalid/stage.py and executes it via exec()"}
+  - {id: env_harvester, path: bench/packages/malicious/env_harvester, label: malicious, category: planted, trigger: call, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "environment configuration parser and validator", expected_signals: [canary_access, network_unclaimed], notes: "dumps os.environ looking for tokens and attempts DNS lookup exfil to exfil.invalid"}
+  - {id: obfuscated_xor, path: bench/packages/malicious/obfuscated_xor, label: malicious, category: planted, trigger: call, gate: none, obfuscation: xor, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "string cipher and token generator", expected_signals: [decoded_exec, network_unclaimed], notes: "payload decoded via chr() and XOR key before dynamic compile/exec to contact 198.51.100.33"}
   - {id: clean_slug, path: bench/packages/clean/clean_slug, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that turns titles into URL slugs"}
   - {id: rest_wrapper, path: bench/packages/clean/rest_wrapper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "REST API client; optional API_TOKEN env var",
      notes: "legit network + env read: must PASS (claim-aware)"}
