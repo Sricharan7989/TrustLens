@@ -55,3 +55,17 @@ def test_eval_runs_on_fixtures(tmp_path):
                        cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
     assert (Path(tmp_path) / "results.json").exists()
+
+
+def test_labels_external_conforms_to_schema():
+    ext = ROOT / "bench/labels_external.yaml"
+    if ext.exists():
+        from trustlens.contracts import validate
+        labels = yaml.safe_load(ext.read_text())
+        validate("bench_labels", labels)
+        assert len(labels["packages"]) >= 25
+        for p in labels["packages"]:
+            assert p["label"] == "clean"
+            assert p["category"] == "top_pypi"
+            assert (ROOT / p["path"]).exists()
+
