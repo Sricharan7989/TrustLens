@@ -21,7 +21,7 @@ import yaml
 
 import trustlens
 from eval import heatmap, metrics
-from eval.baselines import guarddog, pipcanary
+from eval.baselines import guarddog, packj, pipcanary
 from trustlens.cli import scan
 from trustlens.contracts import ROOT, validate
 
@@ -52,6 +52,16 @@ def get_tool_version(tool: str) -> str:
             return "installed"
     if tool == "pipcanary":
         exe = shutil.which("pipcanary")
+        if not exe:
+            return "not installed"
+        try:
+            p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
+            out = (p.stdout or p.stderr).strip()
+            return out if out else "installed"
+        except Exception:
+            return "installed"
+    if tool == "packj":
+        exe = shutil.which("packj")
         if not exe:
             return "not installed"
         try:
@@ -145,8 +155,8 @@ def scan_single_package(
                     "verdict": "INCONCLUSIVE",
                     "error": str(e)[:200],
                 }
-        elif t in ("guarddog", "pipcanary"):
-            mod = {"guarddog": guarddog, "pipcanary": pipcanary}[t]
+        elif t in ("guarddog", "pipcanary", "packj"):
+            mod = {"guarddog": guarddog, "pipcanary": pipcanary, "packj": packj}[t]
             res = mod.run(path, timeout_s=timeout_s)
         else:
             raise ValueError(f"Unknown tool: {t}")

@@ -47,4 +47,50 @@ Calibration dataset: **QUT-DV25** (Harvard Dataverse 11542393, 14,271 trace reco
 - **Canary invariant (AUDIT §6):** No rule in `noise_whitelist.yaml` may ever match canary tokens, sensitive credential paths (`.ssh`, `.aws`, `.npmrc`), or RFC 5737 targets.
 - **Generated output:** `bench/calibration/noise_whitelist.yaml`, which is merged dynamically by the fingerprint normalizer (`trustlens/fingerprint/normalize.py`).
 
+## Baseline Adapters (GuardDog, PipCanary, Packj)
+
+Baseline adapters live under `eval/baselines/` and provide uniform comparison against established tools.
+
+### 1. GuardDog 3.2.0 (Static Baseline)
+- **License:** Apache-2.0.
+- **Invocation:** `guarddog pypi scan <pkg_dir> --output-format json -x typosquatting -x potentially_compromised_email_domain -x unclaimed_maintainer_email_domain`
+- **Network-dependent rule exclusions (Offline Integrity):**
+  1. `typosquatting`: queries PyPI API for similar popular package names.
+  2. `potentially_compromised_email_domain`: performs DNS WHOIS queries to inspect domain creation dates.
+  3. `unclaimed_maintainer_email_domain`: performs DNS MX record queries to check domain expiration.
+  Excluding these 3 network rules ensures reproducible, fully offline static evaluation on local package directories.
+- **Rules evaluated:** All offline AST, Semgrep, and YARA rules (e.g. code execution, obfuscation, shady URLs, exfiltration).
+
+### 2. PipCanary 0.1.1 (Dynamic Sandbox Baseline)
+- **License:** MIT.
+- **Prerequisites:** `pipcanary`, `bwrap`, and `strace` on PATH.
+- **Shared Host Network Caveat & Safety Invariant:**
+  PipCanary executes `pip install` with the **host network SHARED** (it is a baseline detector, not our isolated sandbox).
+  - **Permitted targets:** Run only on clean packages and synthetic planted toys on throwaway test machines.
+  - **Forbidden targets:** **NEVER run PipCanary on real or external malware samples** (`data/datadog/**`, `data/malregistry/**`) unless inside Docker with `--network none` isolation.
+  - **Adapter guardrail:** The adapter automatically detects external malware paths and refuses to execute on the host network, returning `flagged: None` with a safety explanation.
+
+### 3. Packj (AGPL-3.0 CLI-Only Baseline)
+- **License:** AGPL-3.0.
+- **Legal & Architectural Isolation:**
+  In strict accordance with project licensing constraints:
+  - **Zero code copied:** No Packj source code or modified code is present in this repository.
+  - **Zero code imported:** Python never imports any `packj` modules.
+  - **CLI subprocess only:** Optional adapter that invokes `packj audit <pkg_dir> --output-format json` via `subprocess.run` if installed on PATH; otherwise cleanly skipped.
+
+### 4. Adapter Contract & "Not Run" Protocol
+Every baseline adapter implements:
+```python
+run(pkg_dir: str | Path, timeout_s: int) -> dict
+```
+Returning a standardized dictionary conforming to:
+- `available`: `bool` (`False` if the tool or required binary is missing from PATH)
+- `flagged`: `bool | None` (`None` when unavailable, inconclusive, or on error)
+- `rules`: `list[str]` (names of triggered detection rules or alerts)
+- `runtime_s`: `float | None`
+- `error`: `str | None`
+
+**Rendering invariant:**
+If a tool reports `available: False`, the harness renders it as `"not run"` in both `summary.md` and `heatmap.html`. Unavailable tools are **never reported as 0 detections or 0% FP rate**.
+
 

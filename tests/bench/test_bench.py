@@ -52,7 +52,7 @@ def test_datadog_sampler_is_importable_and_seeded():
 
 
 def test_eval_runs_on_fixtures(tmp_path):
-    r = subprocess.run([sys.executable, "-m", "eval.run_eval", "--runner", "fixture", "--tools", "trustlens,guarddog,pipcanary", "--limit", "4", "--out", str(tmp_path)],
+    r = subprocess.run([sys.executable, "-m", "eval.run_eval", "--runner", "fixture", "--tools", "trustlens,guarddog,pipcanary,packj", "--limit", "4", "--out", str(tmp_path)],
                        cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
     res_file = Path(tmp_path) / "results.json"
@@ -163,3 +163,123 @@ def test_noise_whitelist_loaded_by_normalizer():
     rules = _load_whitelist()
     sources = {r.get("source") for r in rules}
     assert any("calibration" in s or "QUT" in s for s in sources if s)
+
+
+def test_guarddog_network_rules_excluded():
+    from eval.baselines.guarddog import EXCLUDE
+    assert "typosquatting" in EXCLUDE
+    assert "potentially_compromised_email_domain" in EXCLUDE
+    assert "unclaimed_maintainer_email_domain" in EXCLUDE
+    assert len(EXCLUDE) == 3
+
+
+def test_baseline_adapters_contract_when_uninstalled(monkeypatch, tmp_path):
+    from eval.baselines import guarddog, packj, pipcanary
+    monkeypatch.setattr("shutil.which", lambda _: None)
+
+    for mod, name in [(guarddog, "guarddog"), (pipcanary, "pipcanary"), (packj, "packj")]:
+        res = mod.run(tmp_path)
+        assert res["available"] is False
+        assert res["flagged"] is None
+        assert res["rules"] == []
+        assert res["runtime_s"] is None
+        assert name in res["error"] or "missing" in res["error"]
+
+
+def test_guarddog_mock_execution(monkeypatch, tmp_path):
+    from eval.baselines import guarddog
+
+    class DummyProc:
+        def __init__(self, stdout: str):
+            self.stdout = stdout
+
+    monkeypatch.setattr("shutil.which", lambda exe: f"/fake/{exe}")
+
+    # Malicious output
+    mock_hit = json.dumps({"results": {"shady_url": ["hit1"], "cmd_exec": ["hit2"]}})
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc(mock_hit))
+    r = guarddog.run(tmp_path)
+    assert r["available"] is True
+    assert r["flagged"] is True
+    assert r["rules"] == ["cmd_exec", "shady_url"]
+    assert r["error"] is None
+
+    # Benign output
+    mock_clean = json.dumps({"results": {}})
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc(mock_clean))
+    r_clean = guarddog.run(tmp_path)
+    assert r_clean["available"] is True
+    assert r_clean["flagged"] is False
+    assert r_clean["rules"] == []
+    assert r_clean["error"] is None
+
+
+def test_pipcanary_mock_and_safety_guard(monkeypatch, tmp_path):
+    from eval.baselines import pipcanary
+
+    class DummyProc:
+        def __init__(self, stdout: str, stderr: str = ""):
+            self.stdout = stdout
+            self.stderr = stderr
+
+    monkeypatch.setattr("shutil.which", lambda exe: f"/fake/{exe}")
+
+    # Safety guardrail: refuse on real malware unless Docker --network none
+    malware_pkg = tmp_path / "data" / "datadog" / "extracted" / "badpkg"
+    malware_pkg.mkdir(parents=True)
+    monkeypatch.delenv("DOCKER_NETWORK_NONE", raising=False)
+    monkeypatch.delenv("ALLOW_PIPCANARY_MALWARE", raising=False)
+    r_safe = pipcanary.run(malware_pkg)
+    assert r_safe["available"] is True
+    assert r_safe["flagged"] is None
+    assert "refused to run on real malware" in r_safe["error"]
+
+    # Clean package run with detection
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc("Scanning packages...\nFound suspicious access to /etc/shadow"))
+    clean_pkg = tmp_path / "bench" / "packages" / "clean" / "toy"
+    clean_pkg.mkdir(parents=True)
+    r_flagged = pipcanary.run(clean_pkg)
+    assert r_flagged["available"] is True
+    assert r_flagged["flagged"] is True
+    assert r_flagged["rules"] == ["credential_path_access"]
+    assert r_flagged["error"] is None
+
+    # Clean package run without detection
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc("Scanning packages...\nScan complete. 0 alerts."))
+    r_benign = pipcanary.run(clean_pkg)
+    assert r_benign["available"] is True
+    assert r_benign["flagged"] is False
+    assert r_benign["rules"] == []
+    assert r_benign["error"] is None
+
+
+def test_packj_mock_and_agpl_isolation(monkeypatch, tmp_path):
+    from eval.baselines import packj
+
+    # AGPL isolation: packj should not be imported
+    assert "packj" not in sys.modules or sys.modules["packj"].__file__.endswith("eval\\baselines\\packj.py") or sys.modules["packj"].__file__.endswith("eval/baselines/packj.py")
+
+    class DummyProc:
+        def __init__(self, stdout: str):
+            self.stdout = stdout
+
+    monkeypatch.setattr("shutil.which", lambda exe: f"/fake/{exe}")
+
+    # Malicious output
+    mock_alerts = json.dumps({"alerts": [{"name": "network_call"}, {"name": "eval_exec"}]})
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc(mock_alerts))
+    r = packj.run(tmp_path)
+    assert r["available"] is True
+    assert r["flagged"] is True
+    assert r["rules"] == ["eval_exec", "network_call"]
+    assert r["error"] is None
+
+    # Benign output
+    mock_clean = json.dumps({"alerts": []})
+    monkeypatch.setattr("subprocess.run", lambda *a, **kw: DummyProc(mock_clean))
+    r_clean = packj.run(tmp_path)
+    assert r_clean["available"] is True
+    assert r_clean["flagged"] is False
+    assert r_clean["rules"] == []
+    assert r_clean["error"] is None
+
