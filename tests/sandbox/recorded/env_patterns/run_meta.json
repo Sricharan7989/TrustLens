@@ -1,0 +1,105 @@
+{
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "call"
+  ],
+  "profiles": [
+   "dev"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-25T22:27:12.851178+00:00",
+  "duration_s": 0.43,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "coverage": {
+  "phases_run": [
+   "call"
+  ],
+  "profiles_run": [
+   "dev"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all"
+  ],
+  "install_completed": false,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 6,
+  "callables_exercised": 6,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "fresh-interpreter startup not tested",
+   "CLI entry points not run"
+  ]
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYab5366af9046"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSe46d4716ffef"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCa6f672db3770"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS72c83eb45eac"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG5a3edacdda82"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV73253e85be0b"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV42c4dc2a8250"
+  }
+ ],
+ "files_added": []
+}
