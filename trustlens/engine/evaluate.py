@@ -124,10 +124,15 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     # R4 decoded/dynamic exec
     OBF_WORDS = ("base64", "b64decode", "zlib", "decompress", "xor", "chr(", "ord(", "marshal")
     EXEC_WORDS = ("exec", "eval", "compile", "subprocess", "os.system")
+    SECRET_WORDS = (
+        ".ssh/", "id_rsa", ".aws/", ".npmrc", ".pypirc",
+        ".git-credentials", ".netrc", ".kube/", "/etc/shadow", ".gnupg/",
+    )
     for e in by_cap.get("dynamic_exec", []):
         snippet = str(e["detail"].get("decoded_snippet", "")).lower()
         has_network_or_exec = any(w in snippet for w in NETWORK_WORDS) or any(w in snippet for w in EXEC_WORDS)
         has_obf = any(w in snippet for w in OBF_WORDS)
+        has_secret = any(w in snippet for w in SECRET_WORDS)
         is_dep = str(e.get("attributed_to", "")).startswith("dep:")
         claimed_shim = (
             False
@@ -136,7 +141,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
                   or any(i["intent"] in ("cli_tool", "native_ext") for i in claims.get("intents", [])))
         )
         is_template_shim = "templateshim" in snippet
-        is_shim = (is_dep or claimed_shim or is_template_shim) and not (has_network_or_exec or has_obf)
+        is_shim = (is_dep or claimed_shim or is_template_shim) and not has_secret and not (has_network_or_exec or has_obf)
         if is_shim:
             add("decoded_exec", "Dynamic code execution (compatibility/templating shim)", [e], "info", obf=False,
                 extra=f'Code snippet: "{snippet[:90]}". Benign shim or template execution.')
@@ -234,7 +239,6 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     run_err = (
         bool(cov.get("run_error"))
         or bool(cov.get("run_timeout"))
-        or any(e.get("kind") == "run.error" or "timeout" in str(e.get("detail", {})).lower() for e in events)
         or "timeout" in install_note
     )
     callable_thin = bool(callables_total and (callables_exercised / callables_total < W.get("min_callable_ratio_for_benign", 0.5)))

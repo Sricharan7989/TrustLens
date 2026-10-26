@@ -972,3 +972,231 @@ def test_recorded_sandbox_packages():
     assert cli_v["action"] == "BLOCK"
     env_diff_findings = [f for f in cli_v["findings"] if f["rule"] == "env_differential"]
     assert not any("install_hook" in f["title"] or "install_hook" in f["explanation"] for f in env_diff_findings)
+
+
+def test_r4_shim_secret_access_not_benign(tmp_path):
+    # Regression test for Bug 1:
+    # 1. long README (>= 20 chars) + [project.scripts] console script + dyn.exec decoded_snippet "data = open('/root/.ssh/id_rsa').read()"
+    p1 = tmp_path / "pkg_cli_secret"
+    p1.mkdir()
+    (p1 / "README.md").write_text("This is a command line utility package with long description.")
+    (p1 / "pyproject.toml").write_text("""[project]
+name = "pkg_cli_secret"
+version = "0.1.0"
+description = "A CLI tool"
+
+[project.scripts]
+mytool = "pkg_cli_secret:main"
+""")
+    claims1 = extract_claims(str(p1))
+    assert claims1["unknown_intent"] is False
+    assert any(i["intent"] == "cli_tool" for i in claims1["intents"])
+
+    raw1 = tmp_path / "raw1.jsonl"
+    events1 = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+    ]
+    raw1.write_text("\n".join(json.dumps(e) for e in events1) + "\n")
+    meta1 = {
+        "schema_version": "1.0",
+        "package": claims1["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp1 = build_fingerprint(str(raw1), meta1, claims1["package"])
+    v1 = evaluate(fp1, claims1)
+    assert "decoded_exec" in v1["independent_signals"]
+    assert v1["verdict"] != "BENIGN-CONSISTENT"
+
+    # 2. README "Hi" (unknown_intent true, claims [], intents []) + dyn.exec snippet "class TemplateShim:\n    data = open('/root/.ssh/id_rsa').read()"
+    p2 = tmp_path / "pkg_template_secret"
+    p2.mkdir()
+    (p2 / "README.md").write_text("Hi")
+    (p2 / "pyproject.toml").write_text("""[project]
+name = "pkg_template_secret"
+version = "0.1.0"
+description = "A utility"
+""")
+    claims2 = extract_claims(str(p2))
+    assert claims2["unknown_intent"] is True
+    assert claims2["claims"] == []
+    assert claims2["intents"] == []
+
+    raw2 = tmp_path / "raw2.jsonl"
+    events2 = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+    ]
+    raw2.write_text("\n".join(json.dumps(e) for e in events2) + "\n")
+    meta2 = {
+        "schema_version": "1.0",
+        "package": claims2["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp2 = build_fingerprint(str(raw2), meta2, claims2["package"])
+    v2 = evaluate(fp2, claims2)
+    assert "decoded_exec" in v2["independent_signals"]
+    assert v2["verdict"] != "BENIGN-CONSISTENT"
+
+    # 3. same ssh snippet attributed_to "dep:jinja2" with no TemplateShim text
+    raw3 = tmp_path / "raw3.jsonl"
+    events3 = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+    ]
+    raw3.write_text("\n".join(json.dumps(e) for e in events3) + "\n")
+    fp3 = build_fingerprint(str(raw3), meta1, claims1["package"])
+    v3 = evaluate(fp3, claims1)
+    assert "decoded_exec" in v3["independent_signals"]
+    assert v3["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_r4_benign_cases_stay_benign_consistent(tmp_path):
+    p = tmp_path / "pkg_cli_benign"
+    p.mkdir()
+    (p / "README.md").write_text("This is a command line utility package with long description.")
+    (p / "pyproject.toml").write_text("""[project]
+name = "pkg_cli_benign"
+version = "0.1.0"
+description = "A CLI tool"
+
+[project.scripts]
+mytool = "pkg_cli_benign:main"
+""")
+    claims = extract_claims(str(p))
+
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "print('hello from the tool')"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "print('hello from the tool')"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert "decoded_exec" not in v["independent_signals"]
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+    assert v["score"] == 0
+    assert any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" and f["score"] == 0 for f in v["findings"])
+
+
+@pytest.mark.parametrize("secret_keyword", [
+    ".ssh/", "id_rsa", ".aws/", ".npmrc", ".pypirc",
+    ".git-credentials", ".netrc", ".kube/", "/etc/shadow", ".gnupg/",
+    ".SSH/", "ID_RSA", ".AWS/",
+])
+def test_r4_all_secret_patterns_detected(tmp_path, secret_keyword):
+    p = tmp_path / "pkg_sec"
+    p.mkdir(exist_ok=True)
+    (p / "README.md").write_text("This is a command line utility package with long description.")
+    (p / "pyproject.toml").write_text("""[project]
+name = "pkg_sec"
+version = "0.1.0"
+description = "A CLI tool"
+
+[project.scripts]
+mytool = "pkg_sec:main"
+""")
+    claims = extract_claims(str(p))
+    raw = tmp_path / f"raw_{abs(hash(secret_keyword))}.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": f"open('/path/{secret_keyword}/target').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": f"open('/path/{secret_keyword}/target').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert "decoded_exec" in v["independent_signals"]
+    assert v["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_timeout_in_event_detail_not_inconclusive(tmp_path):
+    # Regression test for Bug 2:
+    # A rest_wrapper-style package (network and env_secrets claimed) whose only events are
+    # net.http url "https://example.invalid/v1/timeout" on dev and ci, full coverage,
+    # must return BENIGN-CONSISTENT (not INCONCLUSIVE).
+    claims = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.http", "detail": {"url": "https://example.invalid/v1/timeout"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "rest_wrapper/__init__.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "net.http", "detail": {"url": "https://example.invalid/v1/timeout"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "rest_wrapper/__init__.py", "line": 10}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert not fp["coverage"].get("run_error")
+    assert not fp["coverage"].get("run_timeout")
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+    assert v["action"] == "PASS"
+
+
+def test_install_note_real_timeout_is_inconclusive(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("")
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install"], "install_completed": False,
+                     "install_note": "Build timeout reached during wheel compilation",
+                     "callables_total": 0, "callables_exercised": 0, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "INCONCLUSIVE"
+    assert v["action"] == "REVIEW"
