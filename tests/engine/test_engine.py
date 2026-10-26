@@ -200,3 +200,79 @@ def test_claim_extractor_table_driven_samples(tmp_path):
     assert any(i["intent"] == "string_util" for i in c8["intents"])
     assert not any(i["intent"] == "http_client" for i in c8["intents"])
     assert c8["claims"] == []
+
+
+def test_canary_matched_event_survives_any_whitelist(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    event = {
+        "seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+        "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
+        "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+        "evidence": {"layer": "audit", "file": "setup.py", "line": 10}
+    }
+    raw.write_text(json.dumps(event) + "\n")
+    aggressive_whitelist = [
+        {"capability": "fs_read_sensitive", "path_glob": "~/.ssh/*", "reason": "test suppress", "source": "test"}
+    ]
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"], whitelist=aggressive_whitelist)
+    assert len(fp["events"]) == 1
+    assert fp["events"][0]["canary_hit"] is True
+    assert fp["events"][0]["canary_ids"] == ["ssh_key"]
+    assert fp["coverage"]["whitelisted_or_dropped_events"] == 0
+
+
+def test_toolchain_events_dropped(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "proc.spawn", "detail": {"argv": ["pip", "wheel"]}, "outcome": "succeeded", "attributed_to": "toolchain"},
+        {"seq": 1, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "proc.spawn", "detail": {"argv": ["echo", "pkg"]}, "outcome": "succeeded", "attributed_to": "pkg"}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert len(fp["events"]) == 1
+    assert fp["events"][0]["attributed_to"] == "pkg"
+    assert fp["coverage"]["whitelisted_or_dropped_events"] >= 1
+
+
+def test_event_level_deduplication_aggregates_with_count(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": i, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/etc/shadow"}, "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"layer": "audit", "file": "app.py", "line": 20}}
+        for i in range(50)
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert len(fp["events"]) == 1
+    assert fp["events"][0]["detail"]["count"] == 50
+    assert fp["events"][0]["count"] == 50
+    assert fp["coverage"]["whitelisted_or_dropped_events"] == 49
+
+
+def test_dep_attribution_discount(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "proc.spawn", "detail": {"argv": ["git", "status"]}, "outcome": "succeeded",
+         "attributed_to": "dep:dulwich", "evidence": {"layer": "audit", "file": "dulwich/repo.py", "line": 15}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "proc.spawn", "detail": {"argv": ["git", "status"]}, "outcome": "succeeded",
+         "attributed_to": "dep:dulwich", "evidence": {"layer": "audit", "file": "dulwich/repo.py", "line": 15}}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    f = [finding for finding in v["findings"] if finding["rule"] == "capability_not_claimed"][0]
+    assert "[Attributed to dependency: dep:dulwich]" in f["explanation"]
+    assert f["score"] == 1.26

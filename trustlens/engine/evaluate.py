@@ -62,9 +62,14 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         claim = force_claim or _claim_for(claims, cap, first["phase"])
         startup_escalated = any(e["phase"] == "startup" and e["capability"] in ("network", "fs_read_sensitive", "env_secrets") for e in ev_list)
         escalation_mult = W.get("startup_escalation_multiplier", 1.5) if startup_escalated else 1.0
-        score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1) * escalation_mult
+        is_dep = all(str(e.get("attributed_to", "")).startswith("dep:") for e in ev_list)
+        dep_mult = W.get("dep_multiplier", 0.7) if (is_dep and not canary) else 1.0
+        score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1) * escalation_mult * dep_mult
         if startup_escalated and "[Escalated:" not in extra:
             extra = (extra + " [Escalated: executed during interpreter startup before user code].").strip()
+        if is_dep and not canary and "[Attributed to dependency" not in extra:
+            dep_name = first.get("attributed_to")
+            extra = (extra + f" [Attributed to dependency: {dep_name}].").strip()
         findings.append({"id": f"f{len(findings)}", "rule": rule, "title": title, "severity": _sev_label(score), "score": round(score, 2), "capability": cap,
                          "phases": sorted({e["phase"] for e in ev_list}), "profiles": sorted({e["profile"] for e in ev_list}), "env_differential": diff,
                          "canary_hit": canary, "signal_class": signal_class, "claim": claim, "events": [e["id"] for e in ev_list],

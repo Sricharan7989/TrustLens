@@ -40,7 +40,9 @@ def _load_whitelist() -> list[dict]:
     return rules
 
 
-def _whitelisted(cap: str, detail: dict, rules: list[dict]) -> bool:
+def _whitelisted(cap: str, detail: dict, rules: list[dict], has_canary: bool = False) -> bool:
+    if has_canary:
+        return False
     for r in rules:
         if r.get("capability") != cap:
             continue
@@ -120,6 +122,8 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
     rules = _load_whitelist() if whitelist is None else whitelist
     events, dropped = [], 0
     written_paths: set[str] = set()
+    seen_events: dict[tuple, int] = {}
+
     for e in iter_jsonl(raw_events_path):
         if e.get("attributed_to") == "toolchain":
             dropped += 1
@@ -129,13 +133,38 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
             if wp:
                 written_paths.add(wp)
         cap, detail = classify(e, written_paths)
-        if cap is None or _whitelisted(cap, detail, rules):
+        cm = list(e.get("canary_match") or [])
+        has_canary = bool(cm) or bool(detail.get("canary_in_bytes"))
+
+        if cap is None or _whitelisted(cap, detail, rules, has_canary=has_canary):
             dropped += 1
             continue
-        cm = list(e.get("canary_match") or [])
-        events.append({"id": f"ev{len(events)}", "seq": e["seq"], "phase": e["phase"], "trigger": e["trigger"], "profile": e["profile"],
-                       "variant": e["variant"], "capability": cap, "detail": detail, "canary_hit": bool(cm), "canary_ids": cm,
-                       "outcome": e["outcome"], "attributed_to": e.get("attributed_to", "unknown"), "evidence": e.get("evidence") or {}})
+
+        detail_target = str(detail.get("path") or detail.get("name") or detail.get("dest") or detail.get("host") or detail.get("url") or detail.get("argv") or detail.get("file") or "")
+        dedupe_key = (
+            e["phase"], e["trigger"], e["profile"], e["variant"],
+            cap, e["outcome"], e.get("attributed_to", "unknown"),
+            detail_target, bool(cm)
+        )
+        if dedupe_key in seen_events:
+            idx = seen_events[dedupe_key]
+            existing_ev = events[idx]
+            existing_ev["detail"]["count"] = existing_ev["detail"].get("count", 1) + 1
+            existing_ev["count"] = existing_ev.get("count", 1) + 1
+            for cid in cm:
+                if cid not in existing_ev["canary_ids"]:
+                    existing_ev["canary_ids"].append(cid)
+            dropped += 1
+            continue
+
+        ev_idx = len(events)
+        seen_events[dedupe_key] = ev_idx
+        events.append({
+            "id": f"ev{ev_idx}", "seq": e["seq"], "phase": e["phase"], "trigger": e["trigger"],
+            "profile": e["profile"], "variant": e["variant"], "capability": cap, "detail": detail,
+            "canary_hit": bool(cm), "canary_ids": cm, "outcome": e["outcome"],
+            "attributed_to": e.get("attributed_to", "unknown"), "evidence": e.get("evidence") or {}
+        })
     combos = {(p, v) for p in run_meta["coverage"]["profiles_run"] for v in (run_meta["coverage"].get("variants_run") or ["default"])}
     summary: dict[str, dict] = {}
     for cap in sorted({ev["capability"] for ev in events}):
