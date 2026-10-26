@@ -131,3 +131,72 @@ def test_no_run_means_inconclusive_never_benign(tmp_path):
 def test_claim_extraction_http_client():
     c = extract_claims(str(BENCH / "clean/rest_wrapper"))
     assert any(i["intent"] == "http_client" for i in c["intents"])
+
+
+def test_claim_extractor_table_driven_samples(tmp_path):
+    # Sample 1: rest_wrapper (golden)
+    c1 = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    assert any(cl["capability"] == "network" for cl in c1["claims"])
+    assert any(cl["capability"] == "env_secrets" for cl in c1["claims"])
+    assert not c1["unknown_intent"]
+
+    # Sample 2: clean_slug (golden string_util)
+    c2 = extract_claims(str(BENCH / "clean/clean_slug"))
+    assert any(i["intent"] == "string_util" for i in c2["intents"])
+    assert c2["claims"] == []
+
+    # Sample 3: Empty README
+    p3 = tmp_path / "pkg3"
+    p3.mkdir()
+    (p3 / "README.md").write_text("")
+    (p3 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg3', version='1.0')\n")
+    c3 = extract_claims(str(p3))
+    assert c3["unknown_intent"] is True
+    assert c3["claims"] == []
+
+    # Sample 4: Short README (< 20 chars)
+    p4 = tmp_path / "pkg4"
+    p4.mkdir()
+    (p4 / "README.md").write_text("Hello world")
+    (p4 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg4', version='1.0')\n")
+    c4 = extract_claims(str(p4))
+    assert c4["unknown_intent"] is True
+    assert c4["claims"] == []
+
+    # Sample 5: README "string utility" with 'requests' dependency -> network NOT licensed
+    p5 = tmp_path / "pkg5"
+    p5.mkdir()
+    (p5 / "README.md").write_text("A simple string formatting utility and slugifier.")
+    (p5 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg5', version='1.0', install_requires=['requests'])\n")
+    c5 = extract_claims(str(p5))
+    assert any(i["intent"] == "string_util" for i in c5["intents"])
+    assert not any(cl["capability"] == "network" for cl in c5["claims"])
+
+    # Sample 6: Package with console_scripts -> cli_tool with entry_points source
+    p6 = tmp_path / "pkg6"
+    p6.mkdir()
+    (p6 / "README.md").write_text("Tool to manage files and run tasks from your terminal.")
+    (p6 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg6', version='1.0', entry_points={'console_scripts': ['my-cli = pkg6.cli:main']})\n")
+    c6 = extract_claims(str(p6))
+    assert "my-cli = pkg6.cli:main" in c6["declared_entry_points"]
+    assert any(i["intent"] == "cli_tool" and i["source"] == "entry_points" for i in c6["intents"])
+    assert any(cl["capability"] == "subprocess" for cl in c6["claims"])
+
+    # Sample 7: Package with classifier -> http_client
+    p7 = tmp_path / "pkg7"
+    p7.mkdir()
+    (p7 / "README.md").write_text("Custom service connector library.")
+    (p7 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg7', version='1.0', classifiers=['Topic :: Internet :: WWW/HTTP'])\n")
+    c7 = extract_claims(str(p7))
+    assert any(i["intent"] == "http_client" and i["source"] == "classifier" for i in c7["intents"])
+    assert any(cl["capability"] == "network" for cl in c7["claims"])
+
+    # Sample 8: Code fences containing 'requests' stripped; does not license network for pure text util
+    p8 = tmp_path / "pkg8"
+    p8.mkdir()
+    (p8 / "README.md").write_text("A fast text parser and string tokenizer.\n```python\nimport requests\nresp = requests.get('https://example.com')\n```\n")
+    (p8 / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg8', version='1.0')\n")
+    c8 = extract_claims(str(p8))
+    assert any(i["intent"] == "string_util" for i in c8["intents"])
+    assert not any(i["intent"] == "http_client" for i in c8["intents"])
+    assert c8["claims"] == []
