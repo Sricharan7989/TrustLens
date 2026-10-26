@@ -283,3 +283,67 @@ def test_packj_mock_and_agpl_isolation(monkeypatch, tmp_path):
     assert r_clean["rules"] == []
     assert r_clean["error"] is None
 
+
+def test_held_out_yaml_conforms_to_schema():
+    ho_file = ROOT / "bench/held_out.yaml"
+    assert ho_file.exists(), "bench/held_out.yaml must exist"
+    data = yaml.safe_load(ho_file.read_text(encoding="utf-8"))
+    validate("bench_labels", data)
+    pkgs = data["packages"]
+    assert len(pkgs) == 10
+    mal = [p for p in pkgs if p["label"] == "malicious"]
+    clean = [p for p in pkgs if p["label"] == "clean"]
+    assert len(mal) == 5
+    assert len(clean) == 5
+    for p in pkgs:
+        assert (ROOT / p["path"]).exists(), f"Path does not exist: {p['path']}"
+        assert p.get("claim"), f"Missing claim for package: {p['id']}"
+
+
+def test_load_labels_held_out():
+    from eval.run_eval import load_labels
+    name, pkgs = load_labels("held_out", runner="fixture")
+    assert "held_out.yaml" in name
+    assert len(pkgs) == 10
+    assert sum(p["label"] == "malicious" for p in pkgs) == 5
+    assert sum(p["label"] == "clean" for p in pkgs) == 5
+
+
+def test_eval_runs_on_held_out_split(tmp_path):
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "eval.run_eval",
+            "--runner",
+            "fixture",
+            "--labels",
+            "bench/held_out.yaml",
+            "--tools",
+            "trustlens,guarddog,pipcanary,packj",
+            "--out",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr
+    res_file = Path(tmp_path) / "results.json"
+    sum_file = Path(tmp_path) / "summary.md"
+    assert res_file.exists()
+    assert sum_file.exists()
+
+    data = json.loads(res_file.read_text(encoding="utf-8"))
+    validate("eval_results", data)
+    assert "held_out" in data
+    assert data["held_out"]["n_clean"] == 5
+    assert data["held_out"]["n_malicious"] == 5
+
+    summary = sum_file.read_text(encoding="utf-8")
+    assert "Held-Out Split Evaluation" in summary
+    assert "5 Clean + 5 Malicious" in summary
+    assert "Held-Out Package Detail" in summary
+
+

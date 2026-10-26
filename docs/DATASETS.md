@@ -93,4 +93,28 @@ Returning a standardized dictionary conforming to:
 **Rendering invariant:**
 If a tool reports `available: False`, the harness renders it as `"not run"` in both `summary.md` and `heatmap.html`. Unavailable tools are **never reported as 0 detections or 0% FP rate**.
 
+## Held-Out Evaluation Split (C9)
+
+To ensure methodological rigor and protect against rule overfitting, **10 packages (5 clean + 5 malicious)** are designated as the held-out split (`bench/held_out.yaml`).
+
+### Composition of the Held-Out Split
+- **Clean Controls (5):**
+  1. `math_lib`: Pure numerical vector math and arithmetic routines.
+  2. `color_text`: ANSI terminal color text styling.
+  3. `json_parser`: Lightweight JSON parser and text validator.
+  4. `case_converter`: String case formatting (camelCase, snake_case, kebab-case).
+  5. `date_calc`: Datetime delta arithmetic and calendar calculations.
+- **Malicious Toys (5):**
+  1. `cli_payload`: CLI entry point trigger reading `~/.ssh/id_rsa` and contacting RFC 5737 testnet.
+  2. `staged_dropper`: Staged downloader fetching second-stage payload from `payload.invalid`.
+  3. `env_harvester`: Gathers credentials from `os.environ` and resolves DNS to `exfil.invalid`.
+  4. `obfuscated_xor`: XOR/`chr()`-obfuscated payload executed dynamically.
+  5. `time_gate`: Dormant bomb gated by calendar date (> now + 15 days).
+
+### Methodological Isolation
+- **Zero Tuning Exposure:** These 10 packages were completely isolated from the initial tuning set (`evil_slug`, `delayed_slug`, `clean_slug`, `rest_wrapper`, `_synthetic_pth_startup`).
+- **No Rule or Threshold Calibration:** No detection rule, claim parser intent keyword, or noise-whitelist token was created or calibrated against these packages.
+- **Separate Reporting:** The evaluation harness (`eval/run_eval.py`) computes and reports held-out split numbers separately in `summary.md` and `results.json` (`held_out` block), preventing contamination of generalization metrics.
+- **Execution:** Can be evaluated individually via `python -m eval.run_eval --labels bench/held_out.yaml` or as part of full benchmark runs.
+
 

@@ -1,0 +1,133 @@
+version: 1
+packages:
+  # 5 Malicious packages held-out from rule/heuristic tuning
+  - id: cli_payload
+    path: bench/packages/malicious/cli_payload
+    label: malicious
+    category: planted
+    trigger: cli
+    gate: none
+    obfuscation: none
+    claim: "command-line file compression and archive helper"
+    expected_verdict: MALICIOUS-EVIDENT
+    expected_signals:
+      - canary_access
+      - network_unclaimed
+    notes: "Held-out malicious package: console_scripts entry point reads ~/.ssh/id_rsa and contacts 198.51.100.11 when executed"
+
+  - id: staged_dropper
+    path: bench/packages/malicious/staged_dropper
+    label: malicious
+    category: planted
+    trigger: call
+    gate: none
+    obfuscation: none
+    claim: "lightweight HTTP asset fetcher and cache manager"
+    expected_verdict: MALICIOUS-EVIDENT
+    expected_signals:
+      - download_exec
+      - network_unclaimed
+    notes: "Held-out malicious package: fetches second-stage python script from http://payload.invalid/stage.py and executes it via exec()"
+
+  - id: env_harvester
+    path: bench/packages/malicious/env_harvester
+    label: malicious
+    category: planted
+    trigger: call
+    gate: none
+    obfuscation: none
+    claim: "environment configuration parser and validator"
+    expected_verdict: MALICIOUS-EVIDENT
+    expected_signals:
+      - canary_access
+      - network_unclaimed
+    notes: "Held-out malicious package: dumps os.environ looking for tokens and attempts DNS lookup exfil to exfil.invalid"
+
+  - id: obfuscated_xor
+    path: bench/packages/malicious/obfuscated_xor
+    label: malicious
+    category: planted
+    trigger: call
+    gate: none
+    obfuscation: xor
+    claim: "string cipher and token generator"
+    expected_verdict: MALICIOUS-EVIDENT
+    expected_signals:
+      - decoded_exec
+      - network_unclaimed
+    notes: "Held-out malicious package: payload decoded via chr() and XOR key before dynamic compile/exec to contact 198.51.100.33"
+
+  - id: time_gate
+    path: bench/packages/malicious/time_gate
+    label: malicious
+    category: planted
+    trigger: call
+    gate: time
+    obfuscation: none
+    claim: "date and timestamp formatting utilities"
+    expected_verdict: MALICIOUS-EVIDENT
+    expected_signals:
+      - env_differential
+      - network_unclaimed
+    notes: "Held-out malicious package: dormant until +15 days past build date; connects to 198.51.100.40 only under clock+30d variant"
+
+  # 5 Clean packages held-out from rule/heuristic tuning
+  - id: math_lib
+    path: bench/packages/clean/math_lib
+    label: clean
+    category: clean_control
+    trigger: null
+    gate: null
+    obfuscation: null
+    claim: "pure Python math calculator and vector computation library"
+    expected_verdict: BENIGN-CONSISTENT
+    expected_signals: []
+    notes: "Held-out clean control: purely numerical calculations with standard math functions"
+
+  - id: color_text
+    path: bench/packages/clean/color_text
+    label: clean
+    category: clean_control
+    trigger: null
+    gate: null
+    obfuscation: null
+    claim: "ANSI color text formatter and terminal string styling"
+    expected_verdict: BENIGN-CONSISTENT
+    expected_signals: []
+    notes: "Held-out clean control: standard string ANSI formatting routines"
+
+  - id: json_parser
+    path: bench/packages/clean/json_parser
+    label: clean
+    category: clean_control
+    trigger: null
+    gate: null
+    obfuscation: null
+    claim: "lightweight JSON parser and text validator"
+    expected_verdict: BENIGN-CONSISTENT
+    expected_signals: []
+    notes: "Held-out clean control: JSON parsing and validation using standard json library"
+
+  - id: case_converter
+    path: bench/packages/clean/case_converter
+    label: clean
+    category: clean_control
+    trigger: null
+    gate: null
+    obfuscation: null
+    claim: "string utility that converts case between naming styles"
+    expected_verdict: BENIGN-CONSISTENT
+    expected_signals: []
+    notes: "Held-out clean control: camelCase, snake_case, and kebab-case transformations"
+
+  - id: date_calc
+    path: bench/packages/clean/date_calc
+    label: clean
+    category: clean_control
+    trigger: null
+    gate: null
+    obfuscation: null
+    claim: "date calculator and calendar duration arithmetic library"
+    expected_verdict: BENIGN-CONSISTENT
+    expected_signals: []
+    notes: "Held-out clean control: standard datetime delta calculations and calendar math"

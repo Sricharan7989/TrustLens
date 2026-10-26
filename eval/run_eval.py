@@ -80,10 +80,30 @@ def tl_flagged(verdict: dict, policy: str):
     return v == "MALICIOUS-EVIDENT" if policy == "block" else v in ("MALICIOUS-EVIDENT", "SUSPICIOUS")
 
 
+# Held-out split (C9): 5 clean and 5 malicious packages not used while tuning
+HELD_OUT_MALICIOUS_IDS = {
+    "cli_payload",
+    "staged_dropper",
+    "env_harvester",
+    "obfuscated_xor",
+    "time_gate",
+}
+HELD_OUT_CLEAN_IDS = {
+    "math_lib",
+    "color_text",
+    "json_parser",
+    "case_converter",
+    "date_calc",
+}
+HELD_OUT_IDS = HELD_OUT_MALICIOUS_IDS | HELD_OUT_CLEAN_IDS
+
+
 def load_labels(label_arg: str | None, runner: str) -> tuple[str, list[dict]]:
     """Discover and load label files, validating each against bench_labels schema."""
-    default_files = [ROOT / "bench" / "labels.yaml"]
-    if label_arg == "all" or (label_arg is None and runner == "live"):
+    if label_arg in ("held_out", "held-out"):
+        label_paths = [ROOT / "bench" / "held_out.yaml"]
+    elif label_arg == "all" or (label_arg is None and runner == "live"):
+        default_files = [ROOT / "bench" / "labels.yaml"]
         if (ROOT / "bench" / "labels_external.yaml").exists():
             default_files.append(ROOT / "bench" / "labels_external.yaml")
         if (ROOT / "bench" / "labels_datadog.yaml").exists():
@@ -343,11 +363,14 @@ def main(argv=None) -> int:
         is_avail = (t not in unavailable)
         metrics_data = metrics.confusion(rows[t], available=is_avail)
         cat_metrics = compute_category_metrics(rows[t], available=is_avail)
+        ho_rows = [r for r in rows[t] if r.get("id") in HELD_OUT_IDS]
+        ho_metrics = metrics.confusion(ho_rows, available=is_avail) if ho_rows else None
         tool_results[t] = {
             **metrics_data,
             "available": is_avail,
             "version": tool_versions[t],
             "category_metrics": cat_metrics,
+            "held_out_metrics": ho_metrics,
             "per_package": per[t],
         }
 
@@ -359,6 +382,13 @@ def main(argv=None) -> int:
         "n_clean": sum(p["label"] == "clean" for p in pk),
         "versions": versions,
         "tools": tool_results,
+        "held_out": {
+            "n_clean": len(HELD_OUT_CLEAN_IDS),
+            "n_malicious": len(HELD_OUT_MALICIOUS_IDS),
+            "clean_ids": sorted(list(HELD_OUT_CLEAN_IDS)),
+            "malicious_ids": sorted(list(HELD_OUT_MALICIOUS_IDS)),
+            "tools": {t: tool_results[t].get("held_out_metrics") for t in tools},
+        },
     }
     validate("eval_results", results)
 
@@ -434,6 +464,62 @@ def main(argv=None) -> int:
         tp_ci = f" {tp['fp_rate_wilson95']}" if tp.get("fp_rate_wilson95") else ""
         tp_str = f"{tp.get('fp', 0)}/{tp.get('total', 0)}{tp_ci}" if tp.get("total") else "-"
         summary_lines.append(f"| {t} | {pl_str} | {dd_str} | {cc_str} | {nb_str} | {tp_str} |")
+
+    # Held-out split evaluation (C9: 5 clean + 5 malicious packages not used while tuning)
+    ho_pkgs = [p for p in pk if p["id"] in HELD_OUT_IDS]
+    if ho_pkgs:
+        n_ho_mal = sum(p["label"] == "malicious" for p in ho_pkgs)
+        n_ho_clean = sum(p["label"] == "clean" for p in ho_pkgs)
+        clean_names = ", ".join(f"`{p['id']}`" for p in ho_pkgs if p["label"] == "clean")
+        mal_names = ", ".join(f"`{p['id']}`" for p in ho_pkgs if p["label"] == "malicious")
+        summary_lines.extend([
+            "",
+            f"### Held-Out Split Evaluation ({n_ho_clean} Clean + {n_ho_mal} Malicious)",
+            "",
+            "*These 10 packages were strictly isolated and never used during rule development, capability keyword mapping, or noise-whitelist calibration.*",
+            f"- **Clean Packages ({n_ho_clean}):** {clean_names}",
+            f"- **Malicious Packages ({n_ho_mal}):** {mal_names}",
+            "",
+            "| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive | Precision | Recall | F1 | Median (s) |",
+            "|---|---|---|---|---|---|---|---|---|---|",
+        ])
+        for t, m in results["tools"].items():
+            if t in unavailable:
+                summary_lines.append(f"| {t} | not run | not run | not run | not run | not run | not run | not run | not run | baseline unavailable |")
+                continue
+            hom = m.get("held_out_metrics")
+            if not hom:
+                summary_lines.append(f"| {t} | - | - | - | - | - | - | - | - | - |")
+                continue
+            ci = hom["fp_rate_wilson95"]
+            ci_str = f"[{ci[0]}, {ci[1]}]" if ci else "None"
+            summary_lines.append(
+                f"| {t} | {hom['tp']} | {hom['fn']} | {hom['fp']}/{hom['fp'] + hom['tn']} {ci_str} | {hom['tn']} | {hom['inconclusive']} | {hom['precision']} | {hom['recall']} | {hom['f1']} | {hom['median_runtime_s']} |"
+            )
+
+        summary_lines.extend([
+            "",
+            "#### Held-Out Package Detail (TrustLens)",
+            "| Package ID | Label | Category | Expected Verdict | TrustLens Verdict | Flagged | Match Status |",
+            "|---|---|---|---|---|---|---|",
+        ])
+        tl_res = results["tools"].get("trustlens", {}).get("per_package", {})
+        for p in sorted(ho_pkgs, key=lambda x: (x["label"], x["id"])):
+            pkg_id = p["id"]
+            lbl = p["label"]
+            cat = p.get("category", "-")
+            exp = p.get("expected_verdict", "-")
+            tl_pkg = tl_res.get(pkg_id, {})
+            v = tl_pkg.get("verdict", "UNKNOWN")
+            flg = tl_pkg.get("flagged")
+            flg_str = str(flg) if flg is not None else "None"
+            if v == "INCONCLUSIVE":
+                status = "INCONCLUSIVE (abstain)"
+            elif lbl == "clean":
+                status = "TRUE NEGATIVE" if flg is False else "FALSE POSITIVE"
+            else:
+                status = "TRUE POSITIVE" if flg is True else "FALSE NEGATIVE"
+            summary_lines.append(f"| `{pkg_id}` | {lbl} | {cat} | {exp} | {v} | {flg_str} | **{status}** |")
 
     summary_lines.extend([
         "",
