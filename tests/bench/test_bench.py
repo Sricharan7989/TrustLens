@@ -69,3 +69,17 @@ def test_labels_external_conforms_to_schema():
             assert p["category"] == "top_pypi"
             assert (ROOT / p["path"]).exists()
 
+
+def test_labels_datadog_conforms_to_schema():
+    dd = ROOT / "bench/labels_datadog.yaml"
+    if dd.exists():
+        from trustlens.contracts import validate
+        labels = yaml.safe_load(dd.read_text())
+        validate("bench_labels", labels)
+        assert 100 <= len(labels["packages"]) <= 200
+        for p in labels["packages"]:
+            assert p["label"] == "malicious"
+            assert p["category"] == "datadog"
+            assert (ROOT / p["path"]).exists()
+
+
