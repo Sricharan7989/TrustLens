@@ -138,4 +138,28 @@ def test_compute_category_metrics():
     assert cm["top_pypi"]["fp"] == 0
 
 
+def test_noise_whitelist_yaml_valid_and_safe():
+    wl_file = ROOT / "bench/calibration/noise_whitelist.yaml"
+    assert wl_file.exists(), "bench/calibration/noise_whitelist.yaml must exist"
+    data = yaml.safe_load(wl_file.read_text(encoding="utf-8"))
+    assert "rules" in data
+    rules = data["rules"]
+    assert len(rules) >= 5
+    for r in rules:
+        assert "capability" in r
+        assert any(k in r for k in ("path_glob", "host_glob", "env_glob"))
+        assert "reason" in r
+        assert "source" in r
+        assert "benign_prevalence" in r
+        assert 0.0 <= r["benign_prevalence"] <= 1.0
+        val = str(r.get("path_glob") or r.get("host_glob") or r.get("env_glob") or "")
+        # Safety invariant: no rule may match canary tokens, sensitive credential files, or RFC 5737 targets
+        for forbidden in ("id_rsa", ".ssh", ".aws", ".npmrc", "canary", "198.51.100", "203.0.113", "192.0.2"):
+            assert forbidden not in val.lower()
 
+
+def test_noise_whitelist_loaded_by_normalizer():
+    from trustlens.fingerprint.normalize import _load_whitelist
+    rules = _load_whitelist()
+    sources = {r.get("source") for r in rules}
+    assert any("calibration" in s or "QUT" in s for s in sources if s)

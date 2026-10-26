@@ -38,3 +38,13 @@ Evaluation datasets evaluated during live evaluation:
   - *(d) engine gap* -> detection rule candidate
   The triage log is written to `reports/eval/triage.md`.
 
+## Noise-Whitelist Calibration (`bench/calibration/build_noise_whitelist.py`)
+
+Calibration dataset: **QUT-DV25** (Harvard Dataverse 11542393, 14,271 trace records: 7,144 benign and 7,127 malicious packages).
+
+- **Calibration, not training:** QUT-DV25 trace records are used solely to calibrate benign build/runtime noise thresholds (frequency filtering for common toolchain sub-processes and local loopback/test signals). No machine learning model is trained on these datasets.
+- **Rule criterion:** A token is whitelisted only if it occurs in $\ge 2\%$ of benign trace records AND in $< \frac{1}{4}$ of that prevalence in malicious trace records (rare-in-malware noise only).
+- **Canary invariant (AUDIT §6):** No rule in `noise_whitelist.yaml` may ever match canary tokens, sensitive credential paths (`.ssh`, `.aws`, `.npmrc`), or RFC 5737 targets.
+- **Generated output:** `bench/calibration/noise_whitelist.yaml`, which is merged dynamically by the fingerprint normalizer (`trustlens/fingerprint/normalize.py`).
+
+
