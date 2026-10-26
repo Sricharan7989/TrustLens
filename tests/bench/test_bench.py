@@ -390,4 +390,53 @@ def test_osptrack_metrics_analyzer_mock_and_real(tmp_path):
     assert "Planned Planted Toys" in report
 
 
+def test_malregistry_sampler_is_importable_and_seeded():
+    import random
+
+    from bench.tools.sample_malregistry import main as mr_main
+    # Test dry-run execution
+    code = mr_main(["--dry-run", "--n", "3", "--seed", "42"])
+    assert code == 0
+
+    pkgs = [f"mal_{i}" for i in range(100)]
+    assert sorted(random.Random(42).sample(pkgs, 5)) == sorted(random.Random(42).sample(pkgs, 5))
+
+
+def test_labels_malregistry_conforms_to_schema():
+    mr = ROOT / "bench/labels_malregistry.yaml"
+    if mr.exists():
+        labels = yaml.safe_load(mr.read_text(encoding="utf-8"))
+        validate("bench_labels", labels)
+        assert len(labels["packages"]) >= 1
+        for p in labels["packages"]:
+            assert p["label"] == "malicious"
+            assert p["category"] == "malregistry"
+            assert p["expected_verdict"] == "MALICIOUS-EVIDENT"
+            assert (ROOT / p["path"]).exists()
+            assert (ROOT / p["path"] / "README.md").exists() or any((ROOT / p["path"]).rglob("README.md"))
+
+
+def test_load_labels_malregistry():
+    from eval.run_eval import load_labels
+    name, pkgs = load_labels("malregistry", runner="fixture")
+    assert "labels_malregistry.yaml" in name
+    assert len(pkgs) >= 1
+    assert all(p["category"] == "malregistry" for p in pkgs)
+    assert all(p["label"] == "malicious" for p in pkgs)
+
+
+def test_data_malregistry_strictly_untracked_by_git():
+    # pypi_malregistry has NO LICENSE: must never be committed
+    proc = subprocess.run(
+        ["git", "ls-files", "data/malregistry"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    tracked = proc.stdout.strip()
+    assert tracked == "", f"Forbidden: malregistry samples tracked in git: {tracked}"
+
+
+
 

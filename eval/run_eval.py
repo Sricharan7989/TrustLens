@@ -102,12 +102,16 @@ def load_labels(label_arg: str | None, runner: str) -> tuple[str, list[dict]]:
     """Discover and load label files, validating each against bench_labels schema."""
     if label_arg in ("held_out", "held-out"):
         label_paths = [ROOT / "bench" / "held_out.yaml"]
+    elif label_arg in ("malregistry", "labels_malregistry.yaml"):
+        label_paths = [ROOT / "bench" / "labels_malregistry.yaml"]
     elif label_arg == "all" or (label_arg is None and runner == "live"):
         default_files = [ROOT / "bench" / "labels.yaml"]
         if (ROOT / "bench" / "labels_external.yaml").exists():
             default_files.append(ROOT / "bench" / "labels_external.yaml")
         if (ROOT / "bench" / "labels_datadog.yaml").exists():
             default_files.append(ROOT / "bench" / "labels_datadog.yaml")
+        if (ROOT / "bench" / "labels_malregistry.yaml").exists():
+            default_files.append(ROOT / "bench" / "labels_malregistry.yaml")
         label_paths = default_files
     elif label_arg is None:
         label_paths = [ROOT / "bench" / "labels.yaml"]
@@ -203,8 +207,8 @@ def compute_category_metrics(rows: list[dict], available: bool) -> dict:
     pl_total = len(pl_rows)
     pl_rec = metrics._div(pl_tp, pl_total)
 
-    # Datadog external malware
-    dd_rows = [r for r in rows if r.get("category") == "datadog"]
+    # External malware (Datadog and malregistry backup pool)
+    dd_rows = [r for r in rows if r.get("category") in ("datadog", "malregistry")]
     dd_tp = sum(1 for r in dd_rows if r["flagged"] is True)
     dd_fn = sum(1 for r in dd_rows if r["flagged"] is not True)
     dd_inc = sum(1 for r in dd_rows if r["flagged"] is None)
@@ -441,7 +445,7 @@ def main(argv=None) -> int:
     summary_lines.extend([
         "",
         "### Recall & False Positive Breakdown by Category",
-        "| Tool | Planted Toys Recall | External Malware Recall (Datadog) | Clean Controls FP | Noisy-Benign FP | Top-PyPI Clean FP |",
+        "| Tool | Planted Toys Recall | External Malware Recall (Datadog / Malregistry) | Clean Controls FP | Noisy-Benign FP | Top-PyPI Clean FP |",
         "|---|---|---|---|---|---|",
     ])
 
@@ -525,7 +529,7 @@ def main(argv=None) -> int:
         "",
         "## Methodological Notes",
         "- **Wilson 95% Score Intervals:** Calculated using two-sided Wilson score intervals for binomial proportions to ensure scientific honesty on zero-FP observations.",
-        "- **Planted Toys vs External Malware:** Recall on synthetic planted toys is reported separately from real-world Datadog malware samples to avoid mixing synthetic coverage with noisy external datasets.",
+        "- **Planted Toys vs External Malware:** Recall on synthetic planted toys is reported separately from real-world external malware samples (Datadog and Malregistry backup) to avoid mixing synthetic coverage with noisy external datasets.",
         "- **Abstention Integrity:** Packages resulting in `INCONCLUSIVE` (e.g., dead/unexercised packages or thin dynamic coverage) are tracked separately and not disguised as true negatives.",
         "- **Baselines:** Unavailable baseline tools are reported as 'not run' rather than 0 detections to avoid dishonest comparative claims.",
         "- **Triage:** Detailed FP and miss triage per AUDIT §6 is written to `reports/eval/triage.md`.",

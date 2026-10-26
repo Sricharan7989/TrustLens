@@ -156,4 +156,42 @@ Verified via `python bench/tools/cross_check_whitelist.py`:
 - All 12 calibrated rules in `bench/calibration/noise_whitelist.yaml` were cross-checked against benign trace schemas.
 - **AUDIT §6 Invariant Verified:** Zero whitelist rules match canary tokens, SSH/AWS/npm credential files, RFC 5737 targets, or `.invalid` test domains.
 
+## Malregistry Backup Dataset (C11)
+
+Backup malicious pool sourced from `lxyeternal/pypi_malregistry`. Used as a supplementary / contingency malware pool to test real-world malware topologies (e.g., typosquatting, credential harvesting, discord token stealers) alongside the primary Datadog dataset.
+
+### 1. Strict Licensing & Distribution Invariants
+- **NO LICENSE:** The `pypi_malregistry` repository has **no license**.
+- **Local-only Invariant:** All repository clones, archives, and extracted packages MUST remain strictly local under `data/malregistry/` (which is gitignored).
+- **NEVER Commit or Redistribute:** Sample source code, binaries, or artifacts from `pypi_malregistry` must NEVER be committed to version control, pushed to public remotes, or redistributed in slides/reports.
+- **Testing Only:** Samples are used exclusively for offline detection testing and calibration, never for model training or active execution.
+
+### 2. Host Safety & Sandbox Isolation
+- **No Host Execution:** Malware samples must never be executed directly on the host machine (`python setup.py`, `pip install`, etc. on the host are strictly forbidden).
+- **Safe Sandbox Extraction:** Package archives (`.tar.gz`, `.zip`, `.whl`) are extracted using `scripts/extract_in_sandbox.sh` (rootless `bwrap` container without network access or host file-system write permissions).
+- **Path-Traversal Protection:** The fallback Python extractor validates all member paths, rejecting any archive entries containing absolute paths or directory traversal segments (`..`).
+
+### 3. Blobless Sparse Checkout Protocol
+- **Bandwidth & Storage Optimization:** The full repository contains thousands of malware archives (~1.4 GB). We **never download the entire repository or repo zip**.
+- **Blobless Shallow Clone:**
+  ```bash
+  git clone --filter=blob:none --no-checkout --depth 1 https://github.com/lxyeternal/pypi_malregistry.git data/malregistry/mr
+  ```
+- **Sparse Checkout Commands:**
+  - `bash scripts/fetch_malregistry.sh --list [filter]`: Search and inspect available malware package names without fetching blobs.
+  - `bash scripts/fetch_malregistry.sh <pkg1> <pkg2> ...`: Cone-mode sparse checkout of specific package directories.
+  - `bash scripts/fetch_malregistry.sh --sample 5 --seed 1337`: Reproducible pseudo-random sampling.
+- **Windows NTFS Compatibility:** The upstream repository contains a folder name with a trailing space (`user-agents-parser /`). On Windows, `git -C data/malregistry/mr config core.protectNTFS false` is applied to avoid checkout aborts.
+
+### 4. Label Integration & Evaluation Harness
+- **Reproducible Sampler (`bench/tools/sample_malregistry.py`):**
+  - Generates `bench/labels_malregistry.yaml` conforming strictly to `schemas/bench_labels.schema.json`.
+  - Sets `category: malregistry`, `label: malicious`, and `expected_verdict: MALICIOUS-EVIDENT`.
+  - Ensures each extracted package directory contains a descriptive `README.md` for claim inspection.
+- **Harness Integration (`eval/run_eval.py`):**
+  - Evaluated via `python -m eval.run_eval --labels malregistry --runner fixture|live`.
+  - Automatically discovered when running `--labels all`.
+  - Aggregated under `external_malware` metrics alongside Datadog samples, ensuring synthetic planted toy recall remains strictly isolated.
+
+
 
