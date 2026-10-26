@@ -179,6 +179,16 @@ def _extract_metadata(root: Path) -> dict:
     }
 
 
+def _is_non_english(text: str) -> bool:
+    """Detect if text is predominantly in a non-English script (e.g., CJK, Cyrillic, Arabic)."""
+    alpha_chars = [c for c in text if c.isalpha()]
+    if not alpha_chars:
+        return False
+    # Characters outside Basic Latin and Latin Extended (e.g. CJK, Cyrillic, Arabic, Devanagari)
+    non_latin = [c for c in alpha_chars if ord(c) > 0x024F]
+    return (len(non_latin) / len(alpha_chars)) > 0.20
+
+
 def _quote(text: str, start: int) -> str:
     a = max(text.rfind("\n", 0, start), text.rfind(". ", 0, start) + 1, 0)
     b_candidates = [i for i in (text.find("\n", start), text.find(". ", start)) if i != -1]
@@ -204,8 +214,9 @@ def extract_claims(pkg_path: str) -> dict:
             readme_text = _clean_readme(p.read_text(errors="replace")[:4000])
             break
 
-    # If README exists and is meaningful (>= 20 chars), extract intents
-    readme_valid = len(readme_text) >= 20
+    # If README exists, is meaningful (>= 20 chars), and not non-English script, extract intents
+    is_non_eng = _is_non_english(readme_text)
+    readme_valid = len(readme_text) >= 20 and not is_non_eng
     if readme_valid:
         for intent, spec in voc.items():
             for kw in spec["keywords"]:
@@ -224,8 +235,8 @@ def extract_claims(pkg_path: str) -> dict:
                         })
                     break
 
-    # 2. Inspect metadata summary / description
-    if meta["summary"]:
+    # 2. Inspect metadata summary / description (ignoring non-English summaries)
+    if meta["summary"] and not _is_non_english(meta["summary"]):
         for intent, spec in voc.items():
             if intent in seen_intents:
                 continue

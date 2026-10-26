@@ -43,4 +43,29 @@ When Dev C flags a clean package during benchmark evaluations:
 3. **Regression Safety**:
    - Run `make test` and `make demo` after any whitelist or scoring adjustment to ensure 0% regression in malicious package detection.
 
+## Dependency Attribution Report (Task B11)
+
+All events attributed to third-party dependencies (`attributed_to: dep:<name>`) are tracked separately from package-owned code (`pkg`):
+1. **Severity Discount**: Dependency-attributed findings receive a 0.7x multiplier (`dep_multiplier`) unless a canary is touched (canaries always retain critical severity).
+2. **Finding Annotation**: Findings clearly cite `[Attributed to dependency: <name>]`.
+3. **Structured Summary (`dependency_attribution`)**: Top-level verdict includes a dependency breakdown mapping each dependency name to:
+   - `event_count`: Total operations performed.
+   - `capabilities`: Unique capabilities exercised (e.g., `network`, `fs_read_sensitive`).
+   - `phases`: Execution phases in which the dependency ran (`import`, `call`, `cli`).
+   - `canary_hit`: Boolean indicating if fake secret canaries were touched.
+   - `findings`: Finding IDs tied to events from this dependency.
+
+## Multi-Language README Fallback (Task B12)
+
+README files written predominantly in non-English scripts (CJK, Cyrillic, Arabic, Devanagari, Hebrew, etc.) are detected via non-Latin character density (`_is_non_english` threshold > 20%):
+- **Conservative Fallback**: If intent cannot be reliably verified in English and no explicit standard packaging metadata (such as `classifiers` or `entry_points`) is declared, the engine marks `unknown_intent: True` and licenses **nothing** (`claims: []`).
+- **Adversarial Keyword Immunity**: Buried English keywords inside non-English text (e.g. an attacker embedding "requests" or "network" in a foreign-language README) are ignored, preventing capability licensing bypasses.
+- **Safety**: Pure offline heuristics with zero external translation network calls or LLM dependency.
+
+## Determinism & Property Fuzz Testing (Task B13)
+
+The engine enforces strict determinism and input robustness:
+1. **Byte-Identical Determinism**: Evaluating the same input produces 100% byte-identical JSON strings across runs (`test_engine_determinism`). Finding lists use secondary sort keys `(-score, id)`, and evidence chains preserve monotonic sequence numbers (`seq`).
+2. **Schema Validity on Fuzzed Event Streams**: `test_fuzz_event_streams_schema_validity` generates randomized event streams across diverse capabilities, phases, profiles, variants, outcomes, and detail payloads. In every iteration, the resulting `fingerprint` and `verdict` validate against their respective schemas (`schemas/fingerprint.schema.json` and `schemas/verdict.schema.json`) without unhandled crashes.
+
 

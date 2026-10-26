@@ -432,3 +432,142 @@ def test_static_signals_ingested_as_weak_evidence(tmp_path):
     # Weak static signal cannot solely make the verdict MALICIOUS-EVIDENT
     assert v["verdict"] != "MALICIOUS-EVIDENT"
     assert "static_signal" not in v["independent_signals"]
+
+
+def test_dependency_attribution_report(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.connect", "detail": {"dest": "93.184.216.34:443"}, "outcome": "blocked",
+         "attributed_to": "dep:requests", "evidence": {"layer": "audit", "file": "requests/adapters.py", "line": 400}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "env.read", "detail": {"name": "AWS_ACCESS_KEY_ID"}, "outcome": "succeeded",
+         "attributed_to": "dep:urllib3", "evidence": {"layer": "audit", "file": "urllib3/util/ssl_.py", "line": 150}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    validate("verdict", v)
+
+    dep_attr = v["dependency_attribution"]
+    assert "requests" in dep_attr
+    assert dep_attr["requests"]["name"] == "requests"
+    assert dep_attr["requests"]["event_count"] >= 1
+    assert "network" in dep_attr["requests"]["capabilities"]
+    assert "call" in dep_attr["requests"]["phases"]
+    assert dep_attr["requests"]["canary_hit"] is False
+
+    assert "urllib3" in dep_attr
+    assert dep_attr["urllib3"]["name"] == "urllib3"
+    assert dep_attr["urllib3"]["event_count"] >= 1
+    assert "call" in dep_attr["urllib3"]["phases"]
+
+
+def test_claims_multilingual_readme_fallback(tmp_path):
+    # Case 1: Chinese README
+    p_zh = tmp_path / "pkg_zh"
+    p_zh.mkdir()
+    (p_zh / "README.md").write_text("这是一个用于高效处理字符串与文本清洗的工具包。提供全面的分词和过滤能力。")
+    (p_zh / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg_zh', version='1.0')\n")
+    c_zh = extract_claims(str(p_zh))
+    validate("claims", c_zh)
+    assert c_zh["unknown_intent"] is True
+    assert c_zh["claims"] == []
+
+    # Case 2: Russian README
+    p_ru = tmp_path / "pkg_ru"
+    p_ru.mkdir()
+    (p_ru / "README.md").write_text("Библиотека для форматирования текста и структурирования строк данных.")
+    (p_ru / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg_ru', version='1.0')\n")
+    c_ru = extract_claims(str(p_ru))
+    validate("claims", c_ru)
+    assert c_ru["unknown_intent"] is True
+    assert c_ru["claims"] == []
+
+    # Case 3: Adversarial multi-language README with buried English keywords
+    p_adv = tmp_path / "pkg_adv"
+    p_adv.mkdir()
+    (p_adv / "README.md").write_text("这是一个功能强大的工具，包含 requests 网络调用和 socket 客户端支持。")
+    (p_adv / "setup.py").write_text("from setuptools import setup\nsetup(name='pkg_adv', version='1.0')\n")
+    c_adv = extract_claims(str(p_adv))
+    validate("claims", c_adv)
+    # Conservative fallback: non-English README must not license network capabilities via buried keywords
+    assert c_adv["unknown_intent"] is True
+    assert c_adv["claims"] == []
+
+
+def test_engine_determinism():
+    for rel in CASES:
+        d = EXAMPLES / rel.split("/")[1]
+        meta = json.loads((d / "run_meta.json").read_text())
+        claims = extract_claims(str(BENCH / rel))
+        fp = build_fingerprint(str(d / "raw_events.jsonl"), meta, claims["package"])
+
+        v_base = evaluate(fp, claims)
+        base_dump = json.dumps(v_base, sort_keys=True, indent=2)
+
+        for _ in range(5):
+            v_repeat = evaluate(fp, claims)
+            repeat_dump = json.dumps(v_repeat, sort_keys=True, indent=2)
+            assert base_dump == repeat_dump, f"Engine output non-deterministic for {rel}"
+
+
+def test_fuzz_event_streams_schema_validity(tmp_path):
+    import random
+    rng = random.Random(1337)
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+
+    kinds = ["file.read", "file.write", "net.connect", "net.send", "proc.spawn", "dyn.exec", "env.read", "run.error", "unknown.custom"]
+    phases = ["install", "startup", "import", "call", "cli"]
+    profiles = ["dev", "ci"]
+    variants = ["default", "clock+30d"]
+    outcomes = ["succeeded", "attempted", "blocked", "unknown"]
+    attributions = ["pkg", "toolchain", "dep:fuzzlib"]
+
+    for iteration in range(25):
+        num_events = rng.randint(1, 15)
+        raw_events = []
+        for seq in range(num_events):
+            kind = rng.choice(kinds)
+            detail = {}
+            if "file" in kind:
+                detail["path"] = f"/tmp/fuzz_{rng.randint(0, 100)}.dat"
+            elif "net" in kind:
+                detail["dest"] = f"198.51.100.{rng.randint(1, 250)}:8080"
+                if rng.random() < 0.2:
+                    detail["canary_in_bytes"] = True
+            elif "dyn" in kind:
+                detail["decoded_snippet"] = "print('fuzz')" if rng.random() < 0.5 else "import base64; b64decode()"
+            elif "proc" in kind:
+                detail["argv"] = ["/bin/echo", "hello"]
+
+            event = {
+                "seq": seq,
+                "phase": rng.choice(phases),
+                "trigger": "fuzz_trigger",
+                "profile": rng.choice(profiles),
+                "variant": rng.choice(variants),
+                "kind": kind,
+                "detail": detail,
+                "outcome": rng.choice(outcomes),
+                "attributed_to": rng.choice(attributions),
+                "evidence": {"layer": "audit", "file": "fuzz.py", "line": seq + 1}
+            }
+            if rng.random() < 0.2:
+                event["canary_match"] = ["ssh_key"]
+            raw_events.append(event)
+
+        raw_file = tmp_path / f"fuzz_{iteration}.jsonl"
+        raw_file.write_text("\n".join(json.dumps(e) for e in raw_events) + "\n")
+
+        fp = build_fingerprint(str(raw_file), meta, claims["package"])
+        validate("fingerprint", fp)
+
+        v = evaluate(fp, claims)
+        validate("verdict", v)
+        assert v["verdict"] in ("BENIGN-CONSISTENT", "SUSPICIOUS", "MALICIOUS-EVIDENT", "INCONCLUSIVE")
+        assert v["action"] in ("PASS", "REVIEW", "BLOCK")
+        assert isinstance(v["score"], (int, float))

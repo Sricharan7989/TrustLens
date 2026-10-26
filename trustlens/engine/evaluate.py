@@ -260,7 +260,49 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         summary = f"{name}: nothing malicious seen, but coverage is too thin to call it safe (see coverage.not_observed)."
     else:
         summary = f"{name}: all observed behaviour is consistent with its stated purpose, within the coverage listed below."
+    dep_summary: dict[str, dict] = {}
+    for e in events:
+        attr = str(e.get("attributed_to") or "")
+        if attr.startswith("dep:"):
+            dep_name = attr[4:]
+            entry = dep_summary.setdefault(dep_name, {
+                "name": dep_name,
+                "event_count": 0,
+                "capabilities": set(),
+                "phases": set(),
+                "canary_hit": False,
+                "findings": [],
+            })
+            entry["event_count"] += e.get("count", 1)
+            entry["capabilities"].add(e["capability"])
+            entry["phases"].add(e["phase"])
+            if e.get("canary_hit"):
+                entry["canary_hit"] = True
+
+    for f in findings:
+        for ev_id in f.get("events", []):
+            matching_ev = next((e for e in events if e["id"] == ev_id), None)
+            if matching_ev:
+                attr = str(matching_ev.get("attributed_to") or "")
+                if attr.startswith("dep:"):
+                    dep_name = attr[4:]
+                    if dep_name in dep_summary and f["id"] not in dep_summary[dep_name]["findings"]:
+                        dep_summary[dep_name]["findings"].append(f["id"])
+
+    dep_report = {
+        dep_name: {
+            "name": dep_name,
+            "event_count": entry["event_count"],
+            "capabilities": sorted(entry["capabilities"]),
+            "phases": sorted(entry["phases"]),
+            "canary_hit": entry["canary_hit"],
+            "findings": sorted(entry["findings"]),
+        }
+        for dep_name, entry in sorted(dep_summary.items())
+    }
+
     return {"schema_version": "1.0", "package": fingerprint["package"], "verdict": verdict, "action": action, "score": round(total, 2), "confidence": confidence,
-            "summary": summary, "findings": sorted(findings, key=lambda f: -f["score"]), "independent_signals": classes, "coverage": cov,
+            "summary": summary, "findings": sorted(findings, key=lambda f: (-f["score"], f["id"])), "independent_signals": classes, "coverage": cov,
             "claims_summary": {"intents": [i["intent"] for i in claims["intents"]], "claimed_capabilities": sorted({c["capability"] for c in claims["claims"]}),
-                               "unknown_intent": claims["unknown_intent"]}}
+                               "unknown_intent": claims["unknown_intent"]},
+            "dependency_attribution": dep_report}
