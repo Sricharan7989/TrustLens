@@ -129,7 +129,12 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         has_network_or_exec = any(w in snippet for w in NETWORK_WORDS) or any(w in snippet for w in EXEC_WORDS)
         has_obf = any(w in snippet for w in OBF_WORDS)
         is_dep = str(e.get("attributed_to", "")).startswith("dep:")
-        claimed_shim = _claim_for(claims, "dynamic_exec", e["phase"])["status"] == "claimed" or any(i["intent"] in ("cli_tool", "native_ext") for i in claims.get("intents", []))
+        claimed_shim = (
+            False
+            if claims.get("unknown_intent")
+            else (_claim_for(claims, "dynamic_exec", e["phase"])["status"] == "claimed"
+                  or any(i["intent"] in ("cli_tool", "native_ext") for i in claims.get("intents", [])))
+        )
         is_template_shim = "templateshim" in snippet
         is_shim = (is_dep or claimed_shim or is_template_shim) and not (has_network_or_exec or has_obf)
         if is_shim:
@@ -277,6 +282,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     static_rules = sorted({s.get("rule") for s in fingerprint.get("static_signals", []) if s.get("rule")})
     if static_rules:
         summary += f" Static signals noted: {', '.join(static_rules)}."
+        total += len(static_rules) * float(W.get("static_signal_weight", 0.0))
     dep_summary: dict[str, dict] = {}
     for e in events:
         attr = str(e.get("attributed_to") or "")

@@ -437,6 +437,7 @@ def test_static_signals_ingested_as_weak_evidence(tmp_path):
     assert not any(f["events"] == [] for f in v["findings"])
     assert "static_signal" not in v["independent_signals"]
     assert v["verdict"] != "MALICIOUS-EVIDENT"
+    assert v["score"] == 0.5
 
 
 def test_dependency_attribution_report(tmp_path):
@@ -807,6 +808,65 @@ def test_short_readme_under_20_chars_unknown_intent(tmp_path):
     # Item 6: if cleaned README < 20 characters, unknown_intent is true and claims [] even with metadata
     assert c["unknown_intent"] is True
     assert c["claims"] == []
+    assert c["intents"] == []
+
+
+def test_short_readme_false_pass_regression(tmp_path):
+    p = tmp_path / "pkg_false_pass"
+    p.mkdir()
+    (p / "README.md").write_text("Hi")
+    (p / "pyproject.toml").write_text("""[project]
+name = "pkg_false_pass"
+version = "0.1.0"
+description = "An HTTP client for widgets"
+
+[project.scripts]
+mytool = "pkg_false_pass:main"
+""")
+    claims = extract_claims(str(p))
+    assert claims["unknown_intent"] is True
+    assert claims["claims"] == []
+    assert claims["intents"] == []
+
+    # call-phase dyn.exec of data = open('/root/.ssh/id_rsa').read() on dev and ci
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5},
+         "canary_match": []},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "data = open('/root/.ssh/id_rsa').read()"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5},
+         "canary_match": []},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events))
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert "decoded_exec" in v["independent_signals"]
+    assert v["verdict"] != "BENIGN-CONSISTENT"
+
+    # Also verify network attempt is unlicensed when README is short
+    net_events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.http", "detail": {"url": "http://198.51.100.1/api"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 6},
+         "canary_match": []},
+    ]
+    raw_net = tmp_path / "raw_net.jsonl"
+    raw_net.write_text("\n".join(json.dumps(e) for e in net_events))
+    fp_net = build_fingerprint(str(raw_net), meta, claims["package"])
+    v_net = evaluate(fp_net, claims)
+    assert any(f["rule"] == "network_unclaimed" or f["id"] == "network_unclaimed" for f in v_net["findings"])
+    assert "network_unclaimed" in v_net["independent_signals"]
 
 
 def test_inconclusive_summary_no_safe_word(tmp_path):
