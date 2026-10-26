@@ -164,17 +164,48 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     total = sum(f["score"] for f in findings)
     top = max([f["score"] for f in findings], default=0)
     cov = fingerprint["coverage"]
-    thin = (not cov["install_completed"] or "import" not in cov["phases_run"] or len(cov["profiles_run"]) < 2
-            or (cov["callables_total"] and cov["callables_exercised"] / cov["callables_total"] < W["min_callable_ratio_for_benign"]))
-    if "canary_in_bytes" in classes or len(classes) >= W["block_min_independent_signals"]:
+    phases_run = cov.get("phases_run", [])
+    profiles_run = cov.get("profiles_run", [])
+    variants_run = cov.get("variants_run", ["default"])
+    triggers_run = cov.get("triggers_run", [])
+    install_completed = cov.get("install_completed", False)
+    callables_total = cov.get("callables_total", 0)
+    callables_exercised = cov.get("callables_exercised", 0)
+    install_note = str(cov.get("install_note", "")).lower()
+
+    run_err = any(e.get("kind") == "run.error" or "timeout" in str(e.get("detail", {})).lower() for e in events) or "timeout" in install_note
+    callable_thin = bool(callables_total and (callables_exercised / callables_total < W.get("min_callable_ratio_for_benign", 0.5)))
+    thin = (
+        not install_completed
+        or not phases_run
+        or len(profiles_run) < 2
+        or callable_thin
+        or (run_err and not classes and top < W.get("suspicious_threshold", 4.0))
+    )
+
+    if "canary_in_bytes" in classes or len(classes) >= W.get("block_min_independent_signals", 2):
         verdict, action = "MALICIOUS-EVIDENT", "BLOCK"
-    elif classes or top >= W["suspicious_threshold"]:
+    elif classes or top >= W.get("suspicious_threshold", 4.0):
         verdict, action = "SUSPICIOUS", "REVIEW"
     elif thin:
         verdict, action = "INCONCLUSIVE", "REVIEW"
     else:
         verdict, action = "BENIGN-CONSISTENT", "PASS"
-    confidence = "high" if "canary_in_bytes" in classes or len(classes) >= 3 else "medium" if verdict in ("MALICIOUS-EVIDENT", "SUSPICIOUS") or not thin else "low"
+
+    if "canary_in_bytes" in classes or len(classes) >= 3:
+        confidence = "high"
+    elif verdict in ("MALICIOUS-EVIDENT", "SUSPICIOUS"):
+        confidence = "medium"
+    elif verdict == "INCONCLUSIVE":
+        confidence = "low"
+    else:
+        deep_coverage = (
+            len(profiles_run) >= 2
+            and ("startup" in phases_run or "fresh_startup" in triggers_run)
+            and ("clock+30d" in variants_run)
+            and cov.get("strace_layer") is True
+        )
+        confidence = "high" if deep_coverage else "medium"
     name = fingerprint["package"]["name"]
     if verdict == "MALICIOUS-EVIDENT":
         summary = f"{name}: behaviour contradicts its claims. Independent signals: {', '.join(classes)}."

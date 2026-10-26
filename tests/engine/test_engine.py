@@ -276,3 +276,71 @@ def test_dep_attribution_discount(tmp_path):
     f = [finding for finding in v["findings"] if finding["rule"] == "capability_not_claimed"][0]
     assert "[Attributed to dependency: dep:dulwich]" in f["explanation"]
     assert f["score"] == 1.26
+
+
+@pytest.mark.parametrize("mutation_key,mutation_val", [
+    ("install_completed", False),
+    ("profiles_run", ["dev"]),
+    ("phases_run", []),
+    ("callables_exercised", 0),  # callables_total is 1 in clean_slug -> 0/1 < 0.5
+])
+def test_coverage_mutations_lead_to_inconclusive(tmp_path, mutation_key, mutation_val):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    meta["coverage"][mutation_key] = mutation_val
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "INCONCLUSIVE"
+    assert v["action"] == "REVIEW"
+    assert v["confidence"] == "low"
+
+
+def test_timeout_error_dominates_leads_to_inconclusive(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "run.error", "detail": {"where": "install", "message": "Command timed out after 120s"},
+         "outcome": "blocked", "attributed_to": "toolchain"}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    meta["coverage"]["install_note"] = "timeout"
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "INCONCLUSIVE"
+    assert v["confidence"] == "low"
+
+
+def test_single_strong_signal_is_suspicious_not_block(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    # Single strong class: persistence symmetrically in dev and ci without canary
+    events = [
+        {"seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.bashrc"}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 1, "phase": "install", "trigger": "install", "profile": "ci", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.bashrc"}, "outcome": "succeeded", "attributed_to": "pkg"}
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "SUSPICIOUS"
+    assert v["action"] == "REVIEW"
+    assert v["independent_signals"] == ["persistence"]
+
+
+def test_high_confidence_benign_coverage():
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    meta["coverage"]["phases_run"] = ["install", "startup", "import", "call", "cli"]
+    meta["coverage"]["triggers_run"] = ["install", "fresh_startup", "import_all", "call_all", "cli"]
+    meta["coverage"]["variants_run"] = ["default", "clock+30d"]
+    meta["coverage"]["strace_layer"] = True
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(EXAMPLES / "clean_slug" / "raw_events.jsonl"), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+    assert v["confidence"] == "high"
