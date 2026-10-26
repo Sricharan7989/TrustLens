@@ -1,5 +1,6 @@
 """Dev C. Labels, metrics, dataset tooling (offline parts only)."""
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -7,7 +8,7 @@ from pathlib import Path
 import yaml
 
 from eval.metrics import confusion, wilson
-from trustlens.contracts import ROOT
+from trustlens.contracts import ROOT, validate
 
 
 def test_wilson_known_values():
@@ -51,16 +52,37 @@ def test_datadog_sampler_is_importable_and_seeded():
 
 
 def test_eval_runs_on_fixtures(tmp_path):
-    r = subprocess.run([sys.executable, "-m", "eval.run_eval", "--runner", "fixture", "--tools", "trustlens", "--out", str(tmp_path)],
+    r = subprocess.run([sys.executable, "-m", "eval.run_eval", "--runner", "fixture", "--tools", "trustlens,guarddog,pipcanary", "--limit", "4", "--out", str(tmp_path)],
                        cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
-    assert (Path(tmp_path) / "results.json").exists()
+    res_file = Path(tmp_path) / "results.json"
+    sum_file = Path(tmp_path) / "summary.md"
+    hm_file = Path(tmp_path) / "heatmap.html"
+    assert res_file.exists()
+    assert sum_file.exists()
+    assert hm_file.exists()
+
+    data = json.loads(res_file.read_text(encoding="utf-8"))
+    validate("eval_results", data)
+    assert "tools" in data
+    assert "trustlens" in data["tools"]
+
+    summary = sum_file.read_text(encoding="utf-8")
+    assert "PS1-Bench Evaluation Summary" in summary
+    assert "Date (UTC):" in summary
+    assert "runner" in summary.lower()
+    assert "wilson 95%" in summary.lower()
+    assert "not run" in summary
+
+    heatmap_content = hm_file.read_text(encoding="utf-8")
+    assert "<table" in heatmap_content
+    assert "not run" in heatmap_content
+    assert "legend" in heatmap_content
 
 
 def test_labels_external_conforms_to_schema():
     ext = ROOT / "bench/labels_external.yaml"
     if ext.exists():
-        from trustlens.contracts import validate
         labels = yaml.safe_load(ext.read_text())
         validate("bench_labels", labels)
         assert len(labels["packages"]) >= 25
@@ -73,7 +95,6 @@ def test_labels_external_conforms_to_schema():
 def test_labels_datadog_conforms_to_schema():
     dd = ROOT / "bench/labels_datadog.yaml"
     if dd.exists():
-        from trustlens.contracts import validate
         labels = yaml.safe_load(dd.read_text())
         validate("bench_labels", labels)
         assert 100 <= len(labels["packages"]) <= 200
