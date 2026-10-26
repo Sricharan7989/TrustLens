@@ -1,0 +1,108 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "eval_results",
+ "title": "eval/results.json (Dev C output)",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "dataset",
+  "tools"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "1.0"
+  },
+  "dataset": {
+   "type": "string"
+  },
+  "seed": {
+   "type": [
+    "integer",
+    "null"
+   ]
+  },
+  "n_malicious": {
+   "type": "integer"
+  },
+  "n_clean": {
+   "type": "integer"
+  },
+  "tools": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "tp",
+     "fp",
+     "fn",
+     "tn",
+     "precision",
+     "recall",
+     "f1"
+    ],
+    "properties": {
+     "tp": {
+      "type": "integer"
+     },
+     "fp": {
+      "type": "integer"
+     },
+     "fn": {
+      "type": "integer"
+     },
+     "tn": {
+      "type": "integer"
+     },
+     "inconclusive": {
+      "type": "integer"
+     },
+     "precision": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "recall": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "f1": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "fp_rate": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "fp_rate_wilson95": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "items": {
+       "type": "number"
+      }
+     },
+     "median_runtime_s": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "recall_by_trigger_gate": {
+      "type": "object"
+     },
+     "per_package": {
+      "type": "object"
+     }
+    }
+   }
+  }
+ }
+}

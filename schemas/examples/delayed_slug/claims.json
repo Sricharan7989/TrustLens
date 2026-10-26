@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "delayed-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6dbab3043990eda87d1b9a1c799dde0bbb5298f76a19010dc67fab79415da874",
+  "path": "bench/packages/malicious/delayed_slug"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.6,
+   "quote": "A tiny string utility that turns titles into URL slugs",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

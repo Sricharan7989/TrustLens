@@ -1,0 +1,6 @@
+TrustLens AI - third-party attribution
+- Package Analysis (OpenSSF, Apache-2.0): design ideas for sandboxed install/import tracing. Any copied snippet must carry a "# Adapted from ossf/package-analysis (Apache-2.0)" comment.
+- GuardDog (DataDog, Apache-2.0) and PipCanary (MIT): used only as optional baselines via their CLIs.
+- Packj (AGPL-3.0): NOT used, NOT copied. Comparison only by calling its CLI as a separate process.
+- OSCAR (paper): no code published; ideas reimplemented from the paper.
+- Datasets (calibration/testing only, never redistributed): Datadog malicious-software-packages-dataset (Apache-2.0), QUT-DV25 (see its Dataverse record), OSPtrack (CC-BY-4.0), pypi_malregistry (no license; local only).

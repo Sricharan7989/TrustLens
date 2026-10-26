@@ -1,0 +1,14 @@
+# Replace the placeholders with real GitHub handles on day 0.
+/trustlens/sandbox/        @dev-a-handle
+/scripts/check_env.sh      @dev-a-handle
+/trustlens/fingerprint/    @dev-b-handle
+/trustlens/claims/         @dev-b-handle
+/trustlens/engine/         @dev-b-handle
+/bench/                    @dev-c-handle
+/eval/                     @dev-c-handle
+/trustlens/cli.py          @dev-d-handle
+/trustlens/report/         @dev-d-handle
+/Makefile                  @dev-d-handle
+/schemas/                  @lead-handle
+/docs/CONTRACTS.md         @lead-handle
+/AGENTS.md                 @lead-handle

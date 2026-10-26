@@ -1,0 +1,1 @@
+SYNTHETIC hand-written fixture (not a live recording): a wheel whose .pth line `import _zz_helper` reads the fake SSH key at EVERY interpreter start (fresh_startup), the LiteLLM-1.107.0-style mechanism. Dev B: use for startup_hook rule tests. Dev A: this is the target behaviour for the real-install + fresh-startup trigger.

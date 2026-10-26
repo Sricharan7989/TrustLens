@@ -1,0 +1,34 @@
+# Shared vocabulary. OWNER: Lead (change only via contract PR, see docs/CONTRACTS.md).
+# severity = default weight (0-10) used by the engine unless trustlens/engine/weights.yaml overrides it.
+version: 1
+phases: [install, startup, import, call, cli]
+phase_weight: {install: 1.0, startup: 1.0, import: 0.8, call: 0.6, cli: 0.6}   # default multipliers
+profiles: [dev, ci]          # environment profiles (dev = developer laptop camouflage, ci = CI variables)
+variants: [default, clock+30d]
+outcomes: [attempted, succeeded, blocked, unknown]
+capabilities:
+  network:              {severity: 4, description: "DNS lookup, connect, send or HTTP request to any host"}
+  fs_read_sensitive:    {severity: 6, description: "read of ~/.ssh, ~/.aws, ~/.npmrc, .git-credentials, browser profiles, kube/docker/gcloud creds, /etc/shadow"}
+  fs_write_outside_pkg: {severity: 5, description: "write outside the package dir, build dir, venv and temp dirs"}
+  env_secrets:          {severity: 5, description: "read of env vars whose names look like secrets (KEY, TOKEN, SECRET, PASSWORD, AWS_*, GITHUB_*, NPM_*)"}
+  subprocess:           {severity: 3, description: "spawn of a child process or shell"}
+  dynamic_exec:         {severity: 6, description: "exec/eval/compile of runtime-built code (base64, marshal, zlib, XOR decoded)"}
+  persistence:          {severity: 8, description: "write to shell rc, cron, systemd, autostart, git hooks, startup dirs"}
+  install_hook:         {severity: 3, description: "custom install/build step that runs code at install time (cmdclass, setup.py body doing I/O)"}
+  startup_hook:         {severity: 8, description: ".pth with import/exec line, sitecustomize/usercustomize: runs on every interpreter start"}
+  native_code:          {severity: 2, description: "ctypes/cffi load, .so/.pyd/.pyc-only files in a 'pure python' package; behaviour not traceable by hooks"}
+  sandbox_probe:        {severity: 3, description: "reads CI vars, /.dockerenv, /proc/1/cgroup, /proc/uptime, hostname, cpu count: checking whether it is watched"}
+  download_exec:        {severity: 9, description: "file written then executed or imported (dropper lineage)"}
+# Intent vocabulary: README/metadata keywords -> intent -> which capabilities the claim licenses.
+# allow = capability expected for this intent (discounts findings); never allowed unless explicit: fs_read_sensitive, persistence, startup_hook, download_exec.
+# phases_allowed: phases in which the allowed capability is normal. install is NOT in any default list.
+# unknown intent = no discount (a missing claim never lowers a score).
+intents:
+  string_util:   {keywords: [slug, slugify, string, text, formatter, formatting, parser, parse, math, calculator, color, colour, unicode, case, convert], allow: [], note: "pure computation; any network/subprocess/env is a mismatch"}
+  http_client:   {keywords: [http client, rest api, api client, api wrapper, requests-like, sdk for, web client, fetches data from, http library], allow: [network], phases_allowed: [import, call, cli]}
+  cli_tool:      {keywords: [command line, command-line, cli tool, cli wrapper, console script, runs git, wrapper around], allow: [subprocess], phases_allowed: [call, cli]}
+  downloader:    {keywords: [downloader, downloads files, download files, fetches files, installer, bootstrap], allow: [network, fs_write_outside_pkg], phases_allowed: [call, cli]}
+  config_loader: {keywords: [environment variable, env var, dotenv, config loader, settings, configuration], allow: [env_secrets], phases_allowed: [import, call], note: "reading env names is licensed; sending them anywhere is not"}
+  ssh_tool:      {keywords: [ssh client, paramiko, sftp, ssh keys, key management], allow: [fs_read_sensitive, network], phases_allowed: [call, cli]}
+  system_info:   {keywords: [system information, process list, cpu usage, psutil, hardware info, platform info], allow: [subprocess, sandbox_probe], phases_allowed: [call, cli]}
+  native_ext:    {keywords: [c extension, cython, native extension, bindings for, ffi wrapper], allow: [native_code], phases_allowed: [import, call]}

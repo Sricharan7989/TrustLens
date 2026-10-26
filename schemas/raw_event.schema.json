@@ -1,0 +1,142 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "raw_event",
+ "title": "Raw event (Dev A -> Dev B), one JSON object per line of raw_events.jsonl",
+ "type": "object",
+ "required": [
+  "seq",
+  "phase",
+  "trigger",
+  "profile",
+  "variant",
+  "kind",
+  "detail",
+  "outcome",
+  "attributed_to"
+ ],
+ "properties": {
+  "seq": {
+   "type": "integer",
+   "minimum": 0,
+   "description": "monotonic per run, defines order"
+  },
+  "t": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "description": "unix time inside the sandbox (may be shifted)"
+  },
+  "phase": {
+   "enum": [
+    "install",
+    "startup",
+    "import",
+    "call",
+    "cli"
+   ]
+  },
+  "trigger": {
+   "type": "string",
+   "description": "install | fresh_startup | import_all | call_all | cli:<entrypoint>"
+  },
+  "profile": {
+   "enum": [
+    "dev",
+    "ci"
+   ]
+  },
+  "variant": {
+   "enum": [
+    "default",
+    "clock+30d"
+   ]
+  },
+  "kind": {
+   "enum": [
+    "file.read",
+    "file.write",
+    "file.new",
+    "net.dns",
+    "net.connect",
+    "net.send",
+    "net.http",
+    "proc.spawn",
+    "env.read",
+    "dyn.exec",
+    "dyn.compile",
+    "install.hook",
+    "startup.pth",
+    "startup.sitecustomize",
+    "native.load",
+    "run.error"
+   ]
+  },
+  "detail": {
+   "type": "object",
+   "description": "kind-specific, see docs/CONTRACTS.md raw kinds table"
+  },
+  "outcome": {
+   "enum": [
+    "attempted",
+    "succeeded",
+    "blocked",
+    "unknown"
+   ]
+  },
+  "attributed_to": {
+   "type": "string",
+   "description": "pkg | dep:<name> | toolchain | unknown"
+  },
+  "canary_match": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "canary ids whose token appears in this event's data (path, env name, outgoing bytes, URL, argv, decoded code)"
+  },
+  "evidence": {
+   "type": "object",
+   "properties": {
+    "file": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "line": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    },
+    "syscall": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "layer": {
+     "type": "string",
+     "enum": [
+      "audit",
+      "env",
+      "exec",
+      "strace",
+      "fs_diff",
+      "startup",
+      "static"
+     ]
+    },
+    "snippet": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": true
+  }
+ },
+ "additionalProperties": true
+}

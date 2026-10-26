@@ -1,0 +1,270 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "delayed-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6dbab3043990eda87d1b9a1c799dde0bbb5298f76a19010dc67fab79415da874",
+  "path": "bench/packages/malicious/delayed_slug"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "blocked",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default"
+  ],
+  "started_at": "2026-10-25T21:07:58.099934+00:00",
+  "duration_s": 0.78,
+  "stub": false
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 0,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "CI"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/delayed_slug/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 1,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "CI"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/delayed_slug/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 2,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "12d6539eff4f23b1ccd0944f88e85c955147b446eb3a88cceb8a8e603c145ff4",
+    "decoded_snippet": "import socket;socket.create_connection(('198.51.100.7',80),1)",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/delayed_slug/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 3,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/site/delayed_slug/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 4,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.7"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 5,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.7:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "call_all",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "real `pip install` (wheel/.pth/sitecustomize) not exercised (v0 uses setup.py egg_info)",
+   "fresh-interpreter startup not tested",
+   "clock+30d variant not run",
+   "CLI entry points not run",
+   "strace layer not active (native code is invisible)"
+  ],
+  "whitelisted_or_dropped_events": 0
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY358d4fc1a1fd"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS95635176d8c4"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCdfe64e148c0d"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV568b73da8241"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV134928c081fa"
+  }
+ ],
+ "capability_summary": {
+  "dynamic_exec": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "network": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "sandbox_probe": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 2,
+   "canary_hit": false
+  }
+ }
+}

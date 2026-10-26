@@ -1,0 +1,90 @@
+{
+ "run": {
+  "sandbox": "fixture",
+  "network": "blocked",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev"
+  ],
+  "variants": [
+   "default"
+  ],
+  "started_at": "2026-10-25T21:07:45.913285+00:00",
+  "duration_s": 0.76,
+  "stub": true
+ },
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "install",
+   "fresh_startup",
+   "import_all",
+   "call_all"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "SYNTHETIC hand-written fixture: .pth startup-hook case (gap #2), not a recorded run"
+  ]
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY2b4f159b5878"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS54e6fbf341e6"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCe27390fcbad4"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV966016ca1935"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV22f731b09083"
+  }
+ ]
+}

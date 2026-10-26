@@ -1,0 +1,9 @@
+# Dev B owns this file: scoring knobs. Capability severities default to schemas/capabilities.yaml; override here.
+severity_override: {}
+canary_multiplier: 2.0
+env_differential_multiplier: 1.5
+obfuscation_multiplier: 1.5
+suspicious_threshold: 4.0       # any finding score >= this -> at least SUSPICIOUS
+strong_signal_classes: [canary_access, canary_in_bytes, network_unclaimed, decoded_exec, env_differential, startup_hook, persistence, dropper]
+block_min_independent_signals: 2
+min_callable_ratio_for_benign: 0.5

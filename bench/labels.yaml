@@ -1,0 +1,12 @@
+# PS1-Bench ground truth. OWNER: Dev C. Validated by schemas/bench_labels.schema.json (make audit).
+# Starter set (4). Dev C grows this to 8-10 planted malicious toys (trigger x gate x obfuscation) + 15-20 clean controls (see prompts/PROMPT_DEV_C.md).
+# Every planted package is SYNTHETIC; network targets are RFC 5737 TEST-NET addresses or *.invalid.
+version: 1
+packages:
+  - {id: evil_slug, path: bench/packages/malicious/evil_slug, label: malicious, category: planted, trigger: install, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "string utility that turns titles into URL slugs", expected_signals: [canary_access, canary_in_bytes, network_unclaimed], notes: "setup.py reads fake ssh key + AWS env, tries HTTP exfil"}
+  - {id: delayed_slug, path: bench/packages/malicious/delayed_slug, label: malicious, category: planted, trigger: call, gate: ci, obfuscation: base64, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "string utility that turns titles into URL slugs", expected_signals: [decoded_exec, env_differential, network_unclaimed], notes: "fires only when CI is set, in slugify()"}
+  - {id: clean_slug, path: bench/packages/clean/clean_slug, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that turns titles into URL slugs"}
+  - {id: rest_wrapper, path: bench/packages/clean/rest_wrapper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "REST API client; optional API_TOKEN env var",
+     notes: "legit network + env read: must PASS (claim-aware)"}

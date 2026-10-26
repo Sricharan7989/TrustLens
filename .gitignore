@@ -1,0 +1,23 @@
+# data & malware: NEVER commit
+data/
+samples/
+*.zip
+*.tar.gz
+*.whl
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+# outputs
+reports/
+.trustlens_work/
+# local
+.env
+*.log
+.DS_Store

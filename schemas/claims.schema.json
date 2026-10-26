@@ -1,0 +1,150 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "claims",
+ "title": "Extracted claims (Dev B)",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "package",
+  "intents",
+  "claims",
+  "unknown_intent"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "1.0"
+  },
+  "package": {
+   "type": "object",
+   "required": [
+    "name",
+    "version",
+    "ecosystem"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "ecosystem": {
+     "enum": [
+      "pypi",
+      "npm"
+     ]
+    },
+    "sha256": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "path": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": true
+  },
+  "intents": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "intent",
+     "quote",
+     "source"
+    ],
+    "properties": {
+     "intent": {
+      "type": "string"
+     },
+     "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+     },
+     "quote": {
+      "type": "string"
+     },
+     "source": {
+      "enum": [
+       "readme",
+       "summary",
+       "classifier",
+       "keywords",
+       "entry_points"
+      ]
+     }
+    }
+   }
+  },
+  "claims": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "capability",
+     "basis",
+     "quote",
+     "source"
+    ],
+    "properties": {
+     "capability": {
+      "enum": [
+       "network",
+       "fs_read_sensitive",
+       "fs_write_outside_pkg",
+       "env_secrets",
+       "subprocess",
+       "dynamic_exec",
+       "persistence",
+       "install_hook",
+       "startup_hook",
+       "native_code",
+       "sandbox_probe",
+       "download_exec"
+      ]
+     },
+     "basis": {
+      "enum": [
+       "explicit",
+       "intent_prior"
+      ]
+     },
+     "quote": {
+      "type": "string"
+     },
+     "source": {
+      "type": "string"
+     },
+     "phases_allowed": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "install",
+        "startup",
+        "import",
+        "call",
+        "cli"
+       ]
+      }
+     }
+    }
+   }
+  },
+  "unknown_intent": {
+   "type": "boolean",
+   "description": "true => no discount is applied to any finding"
+  },
+  "declared_entry_points": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ }
+}

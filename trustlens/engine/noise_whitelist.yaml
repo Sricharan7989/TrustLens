@@ -1,0 +1,4 @@
+# Dev B owns this file. Rules drop benign build/runtime noise BEFORE scoring. C's bench/calibration/noise_whitelist.yaml is merged in.
+# rule: {capability, path_glob | host_glob | env_glob, reason, source}
+rules:
+  - {capability: fs_read_sensitive, path_glob: "~/.gitconfig", reason: "git config is read by many build tools; not a credential", source: "seed"}

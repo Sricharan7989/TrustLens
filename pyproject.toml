@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trustlens"
+version = "0.1.0"
+description = "TrustLens AI: environment-differential, claims-vs-behavior provenance checks for dependencies (PS1)."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6", "jsonschema>=4", "setuptools", "wheel", "packaging"]
+
+[project.scripts]
+trustlens = "trustlens.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["trustlens*", "eval*"]
+
+[tool.setuptools.package-data]
+trustlens = ["engine/*.yaml", "sandbox/agent/*.py"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+extend-exclude = ["bench/packages", "data", "schemas/examples", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "B008"]

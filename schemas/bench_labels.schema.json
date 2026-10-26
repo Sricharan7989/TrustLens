@@ -1,0 +1,102 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "bench_labels",
+ "title": "bench/labels.yaml (Dev C) - validated after yaml load",
+ "type": "object",
+ "required": [
+  "version",
+  "packages"
+ ],
+ "properties": {
+  "version": {
+   "const": 1
+  },
+  "packages": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "path",
+     "label",
+     "claim"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "path": {
+      "type": "string"
+     },
+     "label": {
+      "enum": [
+       "malicious",
+       "clean"
+      ]
+     },
+     "claim": {
+      "type": "string"
+     },
+     "category": {
+      "enum": [
+       "planted",
+       "noisy_benign",
+       "clean_control",
+       "datadog",
+       "top_pypi",
+       "malregistry"
+      ]
+     },
+     "trigger": {
+      "enum": [
+       "install",
+       "import",
+       "call",
+       "pth",
+       "cli",
+       null
+      ]
+     },
+     "gate": {
+      "enum": [
+       "none",
+       "ci",
+       "time",
+       "os",
+       "score",
+       null
+      ]
+     },
+     "obfuscation": {
+      "enum": [
+       "none",
+       "base64",
+       "xor",
+       "zlib",
+       "marshal",
+       null
+      ]
+     },
+     "expected_verdict": {
+      "enum": [
+       "BENIGN-CONSISTENT",
+       "SUSPICIOUS",
+       "MALICIOUS-EVIDENT",
+       "INCONCLUSIVE",
+       null
+      ]
+     },
+     "expected_signals": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "notes": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,299 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "delayed-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6dbab3043990eda87d1b9a1c799dde0bbb5298f76a19010dc67fab79415da874",
+  "path": "bench/packages/malicious/delayed_slug"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 18.6,
+ "confidence": "high",
+ "summary": "delayed-slug: behaviour contradicts its claims. Independent signals: decoded_exec, env_differential, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f1",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/site/delayed_slug/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "12d6539eff4f23b1ccd0944f88e85c955147b446eb3a88cceb8a8e603c145ff4",
+      "decoded_snippet": "import socket;socket.create_connection(('198.51.100.7',80),1)",
+      "source_kind": "compile"
+     }
+    }
+   ],
+   "explanation": "During call (call_all, profile ci), __init__.py:8 executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1). The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Decoded code: \"import socket;socket.create_connection(('198.51.100.7',80),1)\". It touches network/process APIs."
+  },
+  {
+   "id": "f2",
+   "rule": "env_differential",
+   "title": "dynamic_exec only appears under some environment profiles (ci)",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": true,
+   "canary_hit": false,
+   "signal_class": "env_differential",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev2",
+    "ev3"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/site/delayed_slug/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "12d6539eff4f23b1ccd0944f88e85c955147b446eb3a88cceb8a8e603c145ff4",
+      "decoded_snippet": "import socket;socket.create_connection(('198.51.100.7',80),1)",
+      "source_kind": "compile"
+     }
+    },
+    {
+     "event_id": "ev3",
+     "file": "/w/site/delayed_slug/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>"
+     }
+    }
+   ],
+   "explanation": "During call (call_all, profile ci), __init__.py:8 executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1). The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Seen only in profile(s) ci of dev, ci: behaviour gated on the environment."
+  },
+  {
+   "id": "f3",
+   "rule": "env_differential",
+   "title": "network only appears under some environment profiles (ci)",
+   "severity": "low",
+   "score": 3.6,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": true,
+   "canary_hit": false,
+   "signal_class": "env_differential",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev4",
+    "ev5"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev4",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.7"
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.7:80"
+     }
+    }
+   ],
+   "explanation": "During call (call_all, profile ci), <string>:1 attempted network access to 198.51.100.7. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked. Seen only in profile(s) ci of dev, ci: behaviour gated on the environment."
+  },
+  {
+   "id": "f0",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev4",
+    "ev5"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev4",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.7"
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.7:80"
+     }
+    }
+   ],
+   "explanation": "During call (call_all, profile ci), <string>:1 attempted network access to 198.51.100.7. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked."
+  },
+  {
+   "id": "f4",
+   "rule": "sandbox_probe",
+   "title": "Package inspects whether it is being watched",
+   "severity": "low",
+   "score": 1.8,
+   "capability": "sandbox_probe",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "sandbox_probe",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev0"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/site/delayed_slug/__init__.py",
+     "line": 7,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "attempted",
+     "detail": {
+      "name": "CI"
+     }
+    }
+   ],
+   "explanation": "During call (call_all, profile dev), __init__.py:7 probed its environment via CI. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: attempted."
+  }
+ ],
+ "independent_signals": [
+  "decoded_exec",
+  "env_differential",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "call_all",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "real `pip install` (wheel/.pth/sitecustomize) not exercised (v0 uses setup.py egg_info)",
+   "fresh-interpreter startup not tested",
+   "clock+30d variant not run",
+   "CLI entry points not run",
+   "strace layer not active (native code is invisible)"
+  ],
+  "whitelisted_or_dropped_events": 0
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "evil-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6b66f86976883ab14fb903a238ded4ec22a295d01fd3d02e03be641d4bec8bd9",
+  "path": "bench/packages/malicious/evil_slug"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.6,
+   "quote": "A tiny string utility that turns titles into URL slugs",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

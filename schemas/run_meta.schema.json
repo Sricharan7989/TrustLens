@@ -1,0 +1,228 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "run_meta",
+ "title": "run_meta.json (Dev A -> Dev B/D)",
+ "type": "object",
+ "required": [
+  "run",
+  "coverage",
+  "canaries"
+ ],
+ "properties": {
+  "run": {
+   "type": "object",
+   "required": [
+    "sandbox",
+    "network",
+    "canaries",
+    "phases",
+    "profiles",
+    "variants",
+    "stub"
+   ],
+   "properties": {
+    "sandbox": {
+     "enum": [
+      "bwrap",
+      "docker",
+      "none",
+      "fixture"
+     ]
+    },
+    "network": {
+     "enum": [
+      "blocked",
+      "blocked+logged",
+      "sinkhole",
+      "open"
+     ]
+    },
+    "canaries": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "phases": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     }
+    },
+    "profiles": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     }
+    },
+    "variants": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     }
+    },
+    "started_at": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "duration_s": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "stub": {
+     "type": "boolean",
+     "description": "true when events come from fixtures, not a live sandbox"
+    },
+    "tool_versions": {
+     "type": "object"
+    }
+   },
+   "additionalProperties": true
+  },
+  "coverage": {
+   "type": "object",
+   "required": [
+    "phases_run",
+    "profiles_run",
+    "triggers_run",
+    "install_completed",
+    "network",
+    "callables_total",
+    "callables_exercised",
+    "not_observed"
+   ],
+   "properties": {
+    "phases_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     }
+    },
+    "profiles_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     }
+    },
+    "variants_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     }
+    },
+    "triggers_run": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "install_completed": {
+     "type": "boolean"
+    },
+    "install_note": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "network": {
+     "enum": [
+      "blocked",
+      "blocked+logged",
+      "sinkhole",
+      "open"
+     ]
+    },
+    "callables_total": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "callables_exercised": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "native_skipped": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "strace_layer": {
+     "type": "boolean"
+    },
+    "not_observed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "plain-English list of what was NOT tested"
+    }
+   },
+   "additionalProperties": true
+  },
+  "canaries": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "where"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "file",
+       "env"
+      ]
+     },
+     "where": {
+      "type": "string",
+      "description": "path (relative to fake HOME) or env var name"
+     },
+     "token": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "files_added": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "paths added to site-packages by the real install (relative)"
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "clean-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c66e93f5a8a43907d65573b7e7efa0d4433a37472f5ada099b9bde8f5f67f4d5",
+  "path": "bench/packages/clean/clean_slug"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.6,
+   "quote": "A tiny string utility that turns titles into URL slugs",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

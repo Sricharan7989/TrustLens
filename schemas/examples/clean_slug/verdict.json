@@ -1,0 +1,58 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "clean-slug",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c66e93f5a8a43907d65573b7e7efa0d4433a37472f5ada099b9bde8f5f67f4d5",
+  "path": "bench/packages/clean/clean_slug"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "medium",
+ "summary": "clean-slug: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "call_all",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "blocked",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": false,
+  "not_observed": [
+   "real `pip install` (wheel/.pth/sitecustomize) not exercised (v0 uses setup.py egg_info)",
+   "fresh-interpreter startup not tested",
+   "clock+30d variant not run",
+   "CLI entry points not run",
+   "strace layer not active (native code is invisible)"
+  ],
+  "whitelisted_or_dropped_events": 0
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ }
+}

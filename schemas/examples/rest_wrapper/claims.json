@@ -1,0 +1,49 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "rest-wrapper",
+  "version": "0.2",
+  "ecosystem": "pypi",
+  "sha256": "10a95e5c39e0510e475e431bc4df32fc950b8237952c1bc790f23e0c8f80924c",
+  "path": "bench/packages/clean/rest_wrapper"
+ },
+ "intents": [
+  {
+   "intent": "http_client",
+   "confidence": 0.6,
+   "quote": "A small REST API client for the JSONPlaceholder demo service",
+   "source": "readme"
+  },
+  {
+   "intent": "config_loader",
+   "confidence": 0.6,
+   "quote": "Optionally set the `API_TOKEN` environment variable to send an authorization header.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "A small REST API client for the JSONPlaceholder demo service",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "env_secrets",
+   "basis": "intent_prior",
+   "quote": "Optionally set the `API_TOKEN` environment variable to send an authorization header.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

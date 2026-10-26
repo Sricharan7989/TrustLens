@@ -1,0 +1,476 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "fingerprint",
+ "title": "Normalized ordered behavioural fingerprint (Dev B output)",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "package",
+  "run",
+  "events",
+  "static_signals",
+  "coverage",
+  "capability_summary"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "1.0"
+  },
+  "package": {
+   "type": "object",
+   "required": [
+    "name",
+    "version",
+    "ecosystem"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "ecosystem": {
+     "enum": [
+      "pypi",
+      "npm"
+     ]
+    },
+    "sha256": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "path": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": true
+  },
+  "run": {
+   "type": "object",
+   "required": [
+    "sandbox",
+    "network",
+    "canaries",
+    "phases",
+    "profiles",
+    "variants",
+    "stub"
+   ],
+   "properties": {
+    "sandbox": {
+     "enum": [
+      "bwrap",
+      "docker",
+      "none",
+      "fixture"
+     ]
+    },
+    "network": {
+     "enum": [
+      "blocked",
+      "blocked+logged",
+      "sinkhole",
+      "open"
+     ]
+    },
+    "canaries": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "phases": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     }
+    },
+    "profiles": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     }
+    },
+    "variants": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     }
+    },
+    "started_at": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "duration_s": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "stub": {
+     "type": "boolean",
+     "description": "true when events come from fixtures, not a live sandbox"
+    },
+    "tool_versions": {
+     "type": "object"
+    }
+   },
+   "additionalProperties": true
+  },
+  "events": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "seq",
+     "phase",
+     "trigger",
+     "profile",
+     "variant",
+     "capability",
+     "detail",
+     "outcome",
+     "evidence"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^ev[0-9]+$"
+     },
+     "seq": {
+      "type": "integer"
+     },
+     "phase": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     },
+     "trigger": {
+      "type": "string"
+     },
+     "profile": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     },
+     "variant": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     },
+     "capability": {
+      "enum": [
+       "network",
+       "fs_read_sensitive",
+       "fs_write_outside_pkg",
+       "env_secrets",
+       "subprocess",
+       "dynamic_exec",
+       "persistence",
+       "install_hook",
+       "startup_hook",
+       "native_code",
+       "sandbox_probe",
+       "download_exec"
+      ]
+     },
+     "detail": {
+      "type": "object"
+     },
+     "canary_hit": {
+      "type": "boolean"
+     },
+     "canary_ids": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "outcome": {
+      "enum": [
+       "attempted",
+       "succeeded",
+       "blocked",
+       "unknown"
+      ]
+     },
+     "attributed_to": {
+      "type": "string"
+     },
+     "evidence": {
+      "type": "object",
+      "properties": {
+       "file": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "line": {
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "syscall": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "layer": {
+        "type": "string",
+        "enum": [
+         "audit",
+         "env",
+         "exec",
+         "strace",
+         "fs_diff",
+         "startup",
+         "static"
+        ]
+       },
+       "snippet": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "additionalProperties": true
+     }
+    },
+    "additionalProperties": true
+   }
+  },
+  "static_signals": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "source",
+     "rule"
+    ],
+    "properties": {
+     "source": {
+      "type": "string"
+     },
+     "rule": {
+      "type": "string"
+     },
+     "message": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "file": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "line": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     }
+    }
+   }
+  },
+  "coverage": {
+   "type": "object",
+   "required": [
+    "phases_run",
+    "profiles_run",
+    "triggers_run",
+    "install_completed",
+    "network",
+    "callables_total",
+    "callables_exercised",
+    "not_observed"
+   ],
+   "properties": {
+    "phases_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     }
+    },
+    "profiles_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     }
+    },
+    "variants_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     }
+    },
+    "triggers_run": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "install_completed": {
+     "type": "boolean"
+    },
+    "install_note": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "network": {
+     "enum": [
+      "blocked",
+      "blocked+logged",
+      "sinkhole",
+      "open"
+     ]
+    },
+    "callables_total": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "callables_exercised": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "native_skipped": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "strace_layer": {
+     "type": "boolean"
+    },
+    "not_observed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "plain-English list of what was NOT tested"
+    }
+   },
+   "additionalProperties": true
+  },
+  "canaries": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "where"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "file",
+       "env"
+      ]
+     },
+     "where": {
+      "type": "string",
+      "description": "path (relative to fake HOME) or env var name"
+     },
+     "token": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "capability_summary": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "required": [
+     "phases",
+     "profiles",
+     "conditional"
+    ],
+    "properties": {
+     "phases": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "install",
+        "startup",
+        "import",
+        "call",
+        "cli"
+       ]
+      }
+     },
+     "profiles": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "dev",
+        "ci"
+       ]
+      }
+     },
+     "conditional": {
+      "type": "boolean",
+      "description": "true if seen in some profile/variant but not all"
+     },
+     "count": {
+      "type": "integer"
+     },
+     "canary_hit": {
+      "type": "boolean"
+     }
+    }
+   }
+  }
+ }
+}

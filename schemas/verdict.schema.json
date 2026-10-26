@@ -1,0 +1,399 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "verdict",
+ "title": "Verdict (Dev B output, Dev D consumes)",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "package",
+  "verdict",
+  "action",
+  "score",
+  "confidence",
+  "summary",
+  "findings",
+  "independent_signals",
+  "coverage",
+  "claims_summary"
+ ],
+ "properties": {
+  "schema_version": {
+   "const": "1.0"
+  },
+  "package": {
+   "type": "object",
+   "required": [
+    "name",
+    "version",
+    "ecosystem"
+   ],
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "version": {
+     "type": "string"
+    },
+    "ecosystem": {
+     "enum": [
+      "pypi",
+      "npm"
+     ]
+    },
+    "sha256": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "path": {
+     "type": [
+      "string",
+      "null"
+     ]
+    }
+   },
+   "additionalProperties": true
+  },
+  "verdict": {
+   "enum": [
+    "BENIGN-CONSISTENT",
+    "SUSPICIOUS",
+    "MALICIOUS-EVIDENT",
+    "INCONCLUSIVE"
+   ]
+  },
+  "action": {
+   "enum": [
+    "PASS",
+    "REVIEW",
+    "BLOCK"
+   ],
+   "description": "BENIGN-CONSISTENT=PASS, SUSPICIOUS/INCONCLUSIVE=REVIEW, MALICIOUS-EVIDENT=BLOCK"
+  },
+  "score": {
+   "type": "number",
+   "minimum": 0
+  },
+  "confidence": {
+   "enum": [
+    "low",
+    "medium",
+    "high"
+   ]
+  },
+  "summary": {
+   "type": "string"
+  },
+  "findings": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "rule",
+     "title",
+     "severity",
+     "score",
+     "capability",
+     "phases",
+     "profiles",
+     "env_differential",
+     "canary_hit",
+     "signal_class",
+     "claim",
+     "events",
+     "evidence",
+     "explanation"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^f[0-9]+$"
+     },
+     "rule": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "severity": {
+      "enum": [
+       "info",
+       "low",
+       "medium",
+       "high",
+       "critical"
+      ]
+     },
+     "score": {
+      "type": "number"
+     },
+     "capability": {
+      "enum": [
+       "network",
+       "fs_read_sensitive",
+       "fs_write_outside_pkg",
+       "env_secrets",
+       "subprocess",
+       "dynamic_exec",
+       "persistence",
+       "install_hook",
+       "startup_hook",
+       "native_code",
+       "sandbox_probe",
+       "download_exec"
+      ]
+     },
+     "phases": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "install",
+        "startup",
+        "import",
+        "call",
+        "cli"
+       ]
+      }
+     },
+     "profiles": {
+      "type": "array",
+      "items": {
+       "enum": [
+        "dev",
+        "ci"
+       ]
+      }
+     },
+     "env_differential": {
+      "type": "boolean"
+     },
+     "canary_hit": {
+      "type": "boolean"
+     },
+     "signal_class": {
+      "type": "string",
+      "description": "independence class: canary_access | network_unclaimed | decoded_exec | env_differential | startup_hook | persistence | dropper | mismatch_other"
+     },
+     "claim": {
+      "type": "object",
+      "required": [
+       "status",
+       "quote"
+      ],
+      "properties": {
+       "status": {
+        "enum": [
+         "claimed",
+         "not_claimed",
+         "unknown_intent"
+        ]
+       },
+       "quote": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "source": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      }
+     },
+     "events": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "evidence": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "event_id",
+        "phase",
+        "outcome"
+       ],
+       "properties": {
+        "event_id": {
+         "type": "string"
+        },
+        "file": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "line": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        },
+        "phase": {
+         "enum": [
+          "install",
+          "startup",
+          "import",
+          "call",
+          "cli"
+         ]
+        },
+        "profile": {
+         "enum": [
+          "dev",
+          "ci"
+         ]
+        },
+        "outcome": {
+         "enum": [
+          "attempted",
+          "succeeded",
+          "blocked",
+          "unknown"
+         ]
+        },
+        "detail": {
+         "type": "object"
+        }
+       }
+      }
+     },
+     "explanation": {
+      "type": "string",
+      "description": "plain English evidence chain: claim -> event -> file:line -> phase -> outcome"
+     }
+    }
+   }
+  },
+  "independent_signals": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   },
+   "description": "distinct signal_class values among findings"
+  },
+  "coverage": {
+   "type": "object",
+   "required": [
+    "phases_run",
+    "profiles_run",
+    "triggers_run",
+    "install_completed",
+    "network",
+    "callables_total",
+    "callables_exercised",
+    "not_observed"
+   ],
+   "properties": {
+    "phases_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "install",
+       "startup",
+       "import",
+       "call",
+       "cli"
+      ]
+     }
+    },
+    "profiles_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "dev",
+       "ci"
+      ]
+     }
+    },
+    "variants_run": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "default",
+       "clock+30d"
+      ]
+     }
+    },
+    "triggers_run": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "install_completed": {
+     "type": "boolean"
+    },
+    "install_note": {
+     "type": [
+      "string",
+      "null"
+     ]
+    },
+    "network": {
+     "enum": [
+      "blocked",
+      "blocked+logged",
+      "sinkhole",
+      "open"
+     ]
+    },
+    "callables_total": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "callables_exercised": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "native_skipped": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "strace_layer": {
+     "type": "boolean"
+    },
+    "not_observed": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "plain-English list of what was NOT tested"
+    }
+   },
+   "additionalProperties": true
+  },
+  "claims_summary": {
+   "type": "object",
+   "properties": {
+    "intents": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "claimed_capabilities": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "unknown_intent": {
+     "type": "boolean"
+    }
+   }
+  },
+  "baselines": {
+   "type": "object",
+   "description": "optional: {guarddog:{flagged:bool,rules:[]}, pipcanary:{...}} filled by eval only"
+  }
+ }
+}

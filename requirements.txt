@@ -1,0 +1,7 @@
+# Runtime, pinned. Verified in a fresh venv on Python 3.13 (works on 3.11+). Lead-owned: change via PR to the lead.
+PyYAML==6.0.3
+jsonschema==4.26.0
+# the sandboxed `setup.py egg_info` step copies these into the sandbox (system python often lacks setuptools)
+setuptools==84.2.1
+wheel==0.48.0
+packaging==26.3
