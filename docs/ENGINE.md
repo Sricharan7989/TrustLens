@@ -42,7 +42,7 @@ When Dev C flags a clean package during benchmark evaluations:
    - **Claim Gap**: If legitimate behaviour was described in the README using unexpected vocabulary, propose a contract update for intent keywords in `schemas/capabilities.yaml` via Lead PR.
    - **Engine Classification Bug**: Add a regression test in `tests/engine/test_engine.py` recreating the exact event chain, then refine normalization or attribution logic.
 2. **Guaranteed Canary Protection**:
-   - The whitelist loader enforces that no rule can ever whitelist or drop an event carrying a canary hit (`canary_match` or `canary_in_bytes`).
+   - The whitelist loader enforces that no rule can ever whitelist or drop an event carrying a canary hit (`canary_match` or `canary_in_bytes`). The shim denylist matches SENSITIVE_PATH/SECRET_ENV, and canary events are never info and never dropped.
 3. **Regression Safety**:
    - Run `make test` and `make demo` after any whitelist or scoring adjustment to ensure 0% regression in malicious package detection.
 

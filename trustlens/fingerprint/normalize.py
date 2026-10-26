@@ -1,6 +1,7 @@
 """Dev B: raw events -> fingerprint (capability-tagged, ordered, attributed, noise-filtered)."""
 from __future__ import annotations
 
+import copy
 import fnmatch
 import re
 from pathlib import Path
@@ -9,8 +10,11 @@ import yaml
 
 from trustlens.contracts import ROOT, iter_jsonl
 
-SENSITIVE_PATH = re.compile(r"(\.ssh/|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
-                            r"\.mozilla/|\.config/google-chrome|Library/Application Support|/etc/shadow|\.gnupg/|\.bash_history)")
+SENSITIVE_PATH = re.compile(
+    r"(\.ssh/|id_rsa|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
+    r"\.mozilla/|\.config/google-chrome|Library/Application Support|/etc/shadow|/etc/passwd|\.gnupg/|\.bash_history)",
+    re.I,
+)
 PERSIST_PATH = re.compile(
     r"(\.bashrc|\.bash_profile|\.profile|\.zshrc|\.bash_login|\.zprofile|"
     r"crontab|/cron\b|/cron\.|/var/spool/cron|"
@@ -54,7 +58,18 @@ def _whitelisted(cap: str, detail: dict, rules: list[dict], has_canary: bool = F
 
 def classify(e: dict, written_paths: set[str] | None = None, net_seen: set[tuple[str, str]] | None = None) -> tuple[str | None, dict]:
     """raw event -> (capability or None to drop, normalized detail)."""
-    k, d = e["kind"], dict(e.get("detail", {}))
+    k = e.get("kind")
+    d = dict(e.get("detail") or {})
+    if not k:
+        return None, d
+    cm = list(e.get("canary_match") or [])
+    if cm:
+        if str(k).startswith("file."):
+            p = _home(d.get("path", ""))
+            d["path"] = p
+            return "fs_read_sensitive", d
+        if str(k).startswith("env."):
+            return "env_secrets", d
     if k == "file.read":
         p = _home(d.get("path", ""))
         d["path"] = p
@@ -127,9 +142,13 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
     written_paths: set[str] = set()
     net_seen: set[tuple[str, str]] = set()
     seen_events: dict[tuple, int] = {}
-    cov_coverage = run_meta.setdefault("coverage", {})
+    cov_coverage = copy.deepcopy(run_meta.get("coverage") or {})
 
     for e in iter_jsonl(raw_events_path):
+        if not isinstance(e, dict):
+            continue
+        if e.get("detail") is None:
+            e["detail"] = {}
         is_toolchain = e.get("attributed_to") == "toolchain"
         if e.get("kind") == "run.error":
             cov_coverage["run_error"] = True
@@ -156,7 +175,13 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
         cm = list(e.get("canary_match") or [])
         has_canary = bool(cm) or bool(detail.get("canary_in_bytes"))
 
-        if cap is None or _whitelisted(cap, detail, rules, has_canary=has_canary):
+        if has_canary and cap is None:
+            if str(e.get("kind", "")).startswith("env."):
+                cap = "env_secrets"
+            else:
+                cap = "fs_read_sensitive"
+
+        if not has_canary and (cap is None or _whitelisted(cap, detail, rules, has_canary=has_canary)):
             dropped += 1
             continue
 
@@ -199,5 +224,5 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
         summary[cap] = {"phases": sorted({ev["phase"] for ev in evs}), "profiles": sorted({ev["profile"] for ev in evs}),
                         "conditional": bool(combos) and seen != combos, "count": len(evs), "canary_hit": any(ev["canary_hit"] for ev in evs)}
     cov = dict(cov_coverage, whitelisted_or_dropped_events=dropped)
-    return {"schema_version": "1.0", "package": package, "run": run_meta["run"], "events": events, "static_signals": static_signals or [],
+    return {"schema_version": "1.0", "package": package, "run": run_meta.get("run", {}), "events": events, "static_signals": list(static_signals or []),
             "coverage": cov, "canaries": run_meta.get("canaries", []), "capability_summary": summary}
