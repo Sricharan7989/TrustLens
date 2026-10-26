@@ -57,7 +57,66 @@ def test_synthetic_pth_startup_is_flagged():
               "claims": [], "unknown_intent": False, "declared_entry_points": []}
     fp = build_fingerprint(str(d / "raw_events.jsonl"), json.loads((d / "run_meta.json").read_text()), claims["package"])
     v = evaluate(fp, claims)
-    assert v["verdict"] == "MALICIOUS-EVIDENT" and any(f["rule"] == "startup_hook" for f in v["findings"])
+    assert v["verdict"] == "MALICIOUS-EVIDENT"
+    signals = set(v["independent_signals"])
+    assert {"startup_hook", "canary_access", "network_unclaimed"} <= signals
+    pth_findings = [f for f in v["findings"] if f["rule"] == "startup_hook"]
+    assert pth_findings
+    assert "zz_helper.pth:1" in pth_findings[0]["explanation"] or "site-packages/zz_helper.pth:1" in pth_findings[0]["explanation"]
+
+
+def test_plain_path_pth_is_info_not_strong(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text(json.dumps({
+        "seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+        "kind": "startup.pth", "detail": {"file": "site-packages/plain.pth", "line_text": "/opt/custom/path"},
+        "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"layer": "fs_diff", "file": "plain.pth", "line": 1}
+    }) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    # Plain path should not be classified as strong startup_hook
+    assert "startup_hook" not in v["independent_signals"]
+    assert v["verdict"] != "MALICIOUS-EVIDENT"
+
+
+def test_persistence_detection(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.bashrc"}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 1, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.config/autostart/bad.desktop"}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 2, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.config/systemd/user/bad.service"}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 3, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/w/home/.ssh/authorized_keys"}, "outcome": "succeeded", "attributed_to": "pkg"},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert any(f["rule"] == "persistence" and f["signal_class"] == "persistence" for f in v["findings"])
+    assert "persistence" in v["independent_signals"]
+
+
+def test_download_exec_detection(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    events = [
+        {"seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "file.write", "detail": {"path": "/tmp/stage2.sh"}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 1, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "proc.spawn", "detail": {"argv": ["/bin/bash", "/tmp/stage2.sh"]}, "outcome": "succeeded", "attributed_to": "pkg"},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = json.loads((EXAMPLES / "clean_slug" / "run_meta.json").read_text())
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert any(f["rule"] == "download_exec" and f["signal_class"] == "dropper" for f in v["findings"])
+    assert "dropper" in v["independent_signals"]
 
 
 def test_no_run_means_inconclusive_never_benign(tmp_path):

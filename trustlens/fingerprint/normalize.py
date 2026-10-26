@@ -15,7 +15,12 @@ from trustlens.contracts import ROOT, iter_jsonl
 
 SENSITIVE_PATH = re.compile(r"(\.ssh/|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
                             r"\.mozilla/|\.config/google-chrome|Library/Application Support|/etc/shadow|\.gnupg/|\.bash_history)")
-PERSIST_PATH = re.compile(r"(\.bashrc|\.bash_profile|\.profile|\.zshrc|crontab|/cron\.|\.config/autostart|\.config/systemd|\.git/hooks|authorized_keys|/etc/init|rc\.local)")
+PERSIST_PATH = re.compile(
+    r"(\.bashrc|\.bash_profile|\.profile|\.zshrc|\.bash_login|\.zprofile|"
+    r"crontab|/cron\b|/cron\.|/var/spool/cron|"
+    r"\.config/autostart|\.config/systemd|systemd/user|"
+    r"authorized_keys|\.ssh/authorized_keys|/etc/init\.d|rc\.local|\.git/hooks)"
+)
 SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)", re.I)
 PROBE_ENV = {"CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "JENKINS_URL", "BUILDKITE", "CIRCLECI", "CONTAINER", "KUBERNETES_SERVICE_HOST"}
 PROBE_PATH = ("/.dockerenv", "/proc/1/cgroup", "/proc/uptime", "/proc/self/cgroup", "/proc/cpuinfo")
@@ -45,7 +50,7 @@ def _whitelisted(cap: str, detail: dict, rules: list[dict]) -> bool:
     return False
 
 
-def classify(e: dict) -> tuple[str | None, dict]:
+def classify(e: dict, written_paths: set[str] | None = None) -> tuple[str | None, dict]:
     """raw event -> (capability or None to drop, normalized detail)."""
     k, d = e["kind"], dict(e.get("detail", {}))
     if k == "file.read":
@@ -65,6 +70,14 @@ def classify(e: dict) -> tuple[str | None, dict]:
             d["canary_in_bytes"] = True
         return "network", d
     if k == "proc.spawn":
+        argv = d.get("argv") or []
+        argv_str = " ".join(argv) if isinstance(argv, list) else str(argv)
+        via = str(d.get("via", ""))
+        if written_paths and any(wp for wp in written_paths if wp and (wp in argv_str or wp in via or any(wp == arg or arg.endswith("/" + Path(wp).name) for arg in (argv if isinstance(argv, list) else [])))):
+            d["lineage"] = "download_exec"
+            return "download_exec", d
+        if d.get("lineage") == "download_exec":
+            return "download_exec", d
         return "subprocess", d
     if k == "env.read":
         n = d.get("name", "")
@@ -72,13 +85,31 @@ def classify(e: dict) -> tuple[str | None, dict]:
             return "sandbox_probe", d
         return ("env_secrets", d) if SECRET_ENV.search(n) else (None, d)
     if k in ("dyn.exec", "dyn.compile"):
+        co_fn = str(d.get("co_filename", ""))
+        if written_paths and any(wp for wp in written_paths if wp and (wp == co_fn or co_fn.endswith(wp))):
+            d["lineage"] = "download_exec"
+            return "download_exec", d
         return "dynamic_exec", d
     if k == "install.hook":
         return "install_hook", d
     if k == "startup.sitecustomize":
+        d["executes_code"] = True
         return "startup_hook", d
     if k == "startup.pth":
-        return ("startup_hook", d) if str(d.get("line_text", "")).lstrip().startswith(("import ", "import\t")) else (None, d)
+        line = str(d.get("line_text", "")).strip()
+        if not line:
+            return None, d
+        is_exec = (
+            line.startswith(("import ", "import\t"))
+            or any(kw in line for kw in ("exec(", "eval(", "base64", "__import__"))
+            or (";" in line and "import" in line)
+        )
+        if is_exec:
+            d["executes_code"] = True
+            return "startup_hook", d
+        d["executes_code"] = False
+        d["path_only"] = True
+        return "startup_hook", d
     if k == "native.load":
         return "native_code", d
     return None, d
@@ -88,11 +119,16 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
                       whitelist: list[dict] | None = None) -> dict:
     rules = _load_whitelist() if whitelist is None else whitelist
     events, dropped = [], 0
+    written_paths: set[str] = set()
     for e in iter_jsonl(raw_events_path):
         if e.get("attributed_to") == "toolchain":
             dropped += 1
             continue
-        cap, detail = classify(e)
+        if e.get("kind") in ("file.write", "file.new"):
+            wp = _home(e.get("detail", {}).get("path", ""))
+            if wp:
+                written_paths.add(wp)
+        cap, detail = classify(e, written_paths)
         if cap is None or _whitelisted(cap, detail, rules):
             dropped += 1
             continue

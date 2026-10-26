@@ -60,7 +60,11 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         first = ev_list[0]
         cap = first["capability"]
         claim = force_claim or _claim_for(claims, cap, first["phase"])
-        score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1)
+        startup_escalated = any(e["phase"] == "startup" and e["capability"] in ("network", "fs_read_sensitive", "env_secrets") for e in ev_list)
+        escalation_mult = W.get("startup_escalation_multiplier", 1.5) if startup_escalated else 1.0
+        score = sev[cap] * pw.get(first["phase"], 0.6) * (W["canary_multiplier"] if canary else 1) * (W["env_differential_multiplier"] if diff else 1) * (W["obfuscation_multiplier"] if obf else 1) * escalation_mult
+        if startup_escalated and "[Escalated:" not in extra:
+            extra = (extra + " [Escalated: executed during interpreter startup before user code].").strip()
         findings.append({"id": f"f{len(findings)}", "rule": rule, "title": title, "severity": _sev_label(score), "score": round(score, 2), "capability": cap,
                          "phases": sorted({e["phase"] for e in ev_list}), "profiles": sorted({e["profile"] for e in ev_list}), "env_differential": diff,
                          "canary_hit": canary, "signal_class": signal_class, "claim": claim, "events": [e["id"] for e in ev_list],
@@ -102,11 +106,46 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
             evs = by_cap[cap]
             add("env_differential", f"{cap} only appears under some environment profiles ({', '.join(s['profiles'])})", evs, "env_differential", diff=True,
                 extra=f'Seen only in profile(s) {", ".join(s["profiles"])} of {", ".join(fingerprint["coverage"]["profiles_run"])}: behaviour gated on the environment.')
-    # R6/R7 startup hook, persistence, dropper
-    for cap, cls in (("startup_hook", "startup_hook"), ("persistence", "persistence"), ("download_exec", "dropper")):
-        if by_cap.get(cap):
-            add(cap, f"{cap} detected", by_cap[cap], cls)
-    # R8 other unclaimed capabilities (weak)
+
+    # R6 startup hook
+    if by_cap.get("startup_hook"):
+        evs = by_cap["startup_hook"]
+        code_exec_evs = [e for e in evs if e["detail"].get("executes_code", True)]
+        path_only_evs = [e for e in evs if not e["detail"].get("executes_code", True)]
+        if code_exec_evs:
+            first = code_exec_evs[0]
+            d = first["detail"]
+            f_name = d.get("file") or first["evidence"].get("file") or "startup hook"
+            l_no = first["evidence"].get("line") or 1
+            l_txt = d.get("line_text") or ""
+            extra = f"File: {f_name}:{l_no}. Executes code on startup: '{l_txt}'."
+            startup_sensitive = [e for e in events if e["phase"] == "startup" and e["capability"] in ("network", "fs_read_sensitive", "env_secrets")]
+            if startup_sensitive:
+                caps_seen = sorted({e["capability"] for e in startup_sensitive})
+                extra += f" Hook actively triggered during startup with sensitive capability: {', '.join(caps_seen)}."
+            add("startup_hook", "Interpreter startup hook with executable code detected", code_exec_evs, "startup_hook", extra=extra)
+        if path_only_evs:
+            first = path_only_evs[0]
+            d = first["detail"]
+            f_name = d.get("file") or first["evidence"].get("file") or "startup.pth"
+            extra = f"Path-only entry in {f_name}: '{d.get('line_text', '')}'. Plain directory entry without code execution."
+            add("startup_hook", "Plain path entry in .pth file (info)", path_only_evs, "info", extra=extra)
+
+    # R7 persistence
+    if by_cap.get("persistence"):
+        evs = by_cap["persistence"]
+        paths = sorted({e["detail"].get("path") for e in evs if e["detail"].get("path")})
+        extra = f"Persistence path(s) written: {', '.join(paths)}. Ensures execution outside package lifecycle."
+        add("persistence", "Persistence mechanism installed outside package lifecycle", evs, "persistence", extra=extra)
+
+    # R8 download_exec (dropper lineage)
+    if by_cap.get("download_exec"):
+        evs = by_cap["download_exec"]
+        targets = sorted({str(e["detail"].get("dropped_file") or e["detail"].get("argv") or e["detail"].get("path")) for e in evs if e["detail"].get("dropped_file") or e["detail"].get("argv") or e["detail"].get("path")})
+        extra = f"Dropper lineage: written file subsequently executed: {', '.join(targets)}."
+        add("download_exec", "Downloaded or written file executed (dropper lineage)", evs, "dropper", extra=extra)
+
+    # R9 other unclaimed capabilities (weak)
     done = {f["capability"] for f in findings}
     for cap in ("fs_read_sensitive", "env_secrets", "subprocess", "fs_write_outside_pkg"):
         evs = [e for e in by_cap.get(cap, []) if _claim_for(claims, cap, e["phase"])["status"] != "claimed"]
