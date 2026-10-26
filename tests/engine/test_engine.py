@@ -1200,3 +1200,215 @@ def test_install_note_real_timeout_is_inconclusive(tmp_path):
     v = evaluate(fp, claims)
     assert v["verdict"] == "INCONCLUSIVE"
     assert v["action"] == "REVIEW"
+
+
+@pytest.mark.parametrize("secret_snippet", [
+    "open('/etc/passwd').read()",
+    "open('/root/.docker/config.json').read()",
+    "open('/root/.config/gcloud/application_default_credentials.json').read()",
+    "x = os.environ['AWS_SECRET_ACCESS_KEY']",
+    "x = os.environ.get('GITHUB_TOKEN')",
+])
+def test_regression_shim_denylist_reuses_normalizer_patterns(tmp_path, secret_snippet):
+    # Hole 1: cli_tool shim or dep TemplateShim accessing secrets must be decoded_exec (strong)
+    p = tmp_path / f"pkg_cli_{abs(hash(secret_snippet))}"
+    p.mkdir()
+    (p / "README.md").write_text("This is a command line tool with long descriptive text.")
+    (p / "pyproject.toml").write_text("""[project]
+name = "cli_tool_pkg"
+version = "0.1.0"
+description = "A CLI tool"
+
+[project.scripts]
+mytool = "cli_tool_pkg:main"
+""")
+    claims = extract_claims(str(p))
+    raw = tmp_path / f"raw_{abs(hash(secret_snippet))}.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": secret_snippet},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": secret_snippet},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "pkg/__init__.py", "line": 5}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert "decoded_exec" in v["independent_signals"]
+    assert v["verdict"] != "BENIGN-CONSISTENT"
+
+    # Also test dep:jinja2 TemplateShim reading GITHUB_TOKEN
+    raw_dep = tmp_path / f"raw_dep_{abs(hash(secret_snippet))}.jsonl"
+    events_dep = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    token = os.environ.get('GITHUB_TOKEN')"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    token = os.environ.get('GITHUB_TOKEN')"},
+         "outcome": "succeeded", "attributed_to": "dep:jinja2", "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+    ]
+    raw_dep.write_text("\n".join(json.dumps(e) for e in events_dep) + "\n")
+    fp_dep = build_fingerprint(str(raw_dep), meta, claims["package"])
+    v_dep = evaluate(fp_dep, claims)
+    assert "decoded_exec" in v_dep["independent_signals"]
+    assert v_dep["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_regression_shim_canary_hit_not_benign_or_info(tmp_path):
+    # Hole 2: dep:jinja2 TemplateShim pass with canary_match ["ssh_key"] on dev and ci must not be info or BENIGN-CONSISTENT
+    raw = tmp_path / "raw_canary_shim.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "dep:jinja2",
+         "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "dyn.exec", "detail": {"decoded_snippet": "class TemplateShim:\n    pass\n"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "dep:jinja2",
+         "evidence": {"file": "jinja2/compiler.py", "line": 50}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert fp["events"][0]["canary_hit"] is True
+    v = evaluate(fp, claims)
+    assert not any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" for f in v["findings"])
+    assert "decoded_exec" in v["independent_signals"]
+    assert v["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_regression_canary_on_non_sensitive_path_never_dropped(tmp_path):
+    # Hole 3: file.read /tmp/not-sensitive.txt with canary_match ["ssh_key"] kept and mapped to fs_read_sensitive
+    raw = tmp_path / "raw_canary_nonsensitive.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/tmp/not-sensitive.txt"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"file": "app.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "file.read", "detail": {"path": "/tmp/not-sensitive.txt"},
+         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"file": "app.py", "line": 10}},
+        {"seq": 2, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "env.read", "detail": {"name": "MY_CUSTOM_VAR"},
+         "canary_match": ["env_canary"], "outcome": "succeeded", "attributed_to": "pkg",
+         "evidence": {"file": "app.py", "line": 11}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    assert len(fp["events"]) == 3
+    assert fp["events"][0]["capability"] == "fs_read_sensitive"
+    assert fp["events"][0]["canary_hit"] is True
+    assert fp["events"][2]["capability"] == "env_secrets"
+    assert fp["events"][2]["canary_hit"] is True
+    v = evaluate(fp, claims)
+    assert v["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_regression_url_in_install_note_not_inconclusive(tmp_path):
+    # Hole 4: URL in install note does not flip rest_wrapper to INCONCLUSIVE
+    claims = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    raw = tmp_path / "raw_url_note.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "net.http", "detail": {"url": "https://example.invalid/v1/timeout"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "rest_wrapper/__init__.py", "line": 10}},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "kind": "net.http", "detail": {"url": "https://example.invalid/v1/timeout"},
+         "outcome": "succeeded", "attributed_to": "pkg", "evidence": {"file": "rest_wrapper/__init__.py", "line": 10}},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": {"phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+                     "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+                     "install_note": "log line mentioned https://example.invalid/v1/timeout",
+                     "callables_total": 1, "callables_exercised": 1, "not_observed": []},
+    }
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    v = evaluate(fp, claims)
+    assert v["verdict"] == "BENIGN-CONSISTENT"
+    assert v["action"] == "PASS"
+
+    # Real timeout still flips to INCONCLUSIVE
+    meta_real_timeout = dict(meta)
+    meta_real_timeout["coverage"] = dict(meta["coverage"], install_note="command timed out after 30s")
+    fp_real = build_fingerprint(str(raw), meta_real_timeout, claims["package"])
+    v_real = evaluate(fp_real, claims)
+    assert v_real["verdict"] == "INCONCLUSIVE"
+    assert v_real["action"] == "REVIEW"
+
+
+def test_regression_no_crashes_on_malformed_inputs_and_coverage_isolation(tmp_path):
+    # Hole 5: detail null, missing kind, static_signals null, unknown capability, caller coverage isolation
+    raw = tmp_path / "raw_malformed.jsonl"
+    events = [
+        {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+         "kind": "dyn.exec", "detail": None, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
+         "detail": {"something": 123}, "outcome": "succeeded", "attributed_to": "pkg"},
+        {"seq": 2, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+         "kind": "run.error", "detail": {"message": "Execution timeout after 30s"}, "attributed_to": "toolchain"},
+    ]
+    raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    orig_coverage = {
+        "phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "variants_run": ["default"],
+        "triggers_run": ["install", "import", "call_all"], "install_completed": True,
+        "callables_total": 1, "callables_exercised": 1, "not_observed": ["phase_x"],
+    }
+    meta = {
+        "schema_version": "1.0",
+        "package": claims["package"],
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": orig_coverage,
+    }
+    # Run build_fingerprint with static_signals=None
+    fp = build_fingerprint(str(raw), meta, claims["package"], static_signals=None)
+
+    # Verify coverage dict isolation: orig_coverage was copied and not mutated
+    assert "run_error" not in orig_coverage
+    assert "run_timeout" not in orig_coverage
+    assert orig_coverage["not_observed"] == ["phase_x"]
+    assert fp["coverage"]["run_error"] is True
+    assert fp["coverage"]["run_timeout"] is True
+
+    # Inject unknown capability event into fingerprint
+    fp["events"].append({
+        "id": "ev99", "seq": 99, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
+        "capability": "alien_telepathy", "detail": {}, "canary_hit": False, "canary_ids": [],
+        "outcome": "succeeded", "attributed_to": "pkg", "evidence": {},
+    })
+    # Evaluate with static_signals=None coerced in fp
+    fp["static_signals"] = None
+    v = evaluate(fp, claims)
+    assert v["verdict"] in ("BENIGN-CONSISTENT", "SUSPICIOUS", "MALICIOUS-EVIDENT", "INCONCLUSIVE")
+    assert any("alien_telepathy" in f["title"] for f in v["findings"])
