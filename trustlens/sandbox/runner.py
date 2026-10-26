@@ -1,4 +1,4 @@
-"""Dev A: public entry point. Dispatches to the fixture replay runner or the live bwrap runner.
+"""Dev A: public entry point. Dispatches to the fixture replay, live bwrap, or docker runner.
 
 FROZEN SIGNATURE (docs/CONTRACTS.md 2.1). Keep it; change the internals freely.
 """
@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TypedDict
 
-DEFAULT_TRIGGERS = ("install", "import_all", "call_all")  # A adds: fresh_startup, cli
+DEFAULT_TRIGGERS = ("install", "fresh_startup", "import_all", "call_all", "cli")
 
 
 class RunResult(TypedDict):
@@ -46,4 +46,8 @@ def run_package(
         from .live_probe import run_live
 
         return run_live(pkg_path, out_dir, profiles=profiles, triggers=triggers, timeout_s=timeout_s)
+    if runner == "docker":
+        from .docker_runner import run_docker
+
+        return run_docker(pkg_path, out_dir, profiles=profiles, triggers=triggers, timeout_s=timeout_s)
     raise ValueError(f"unknown runner {runner!r}")

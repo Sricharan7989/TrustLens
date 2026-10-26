@@ -1,0 +1,106 @@
+{
+ "run": {
+  "sandbox": "bwrap",
+  "network": "blocked",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install"
+  ],
+  "profiles": [
+   "dev"
+  ],
+  "variants": [
+   "default"
+  ],
+  "started_at": "2026-10-25T22:27:10.269174+00:00",
+  "duration_s": 1.5,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "coverage": {
+  "phases_run": [
+   "install"
+  ],
+  "profiles_run": [
+   "dev"
+  ],
+  "variants_run": [
+   "default"
+  ],
+  "triggers_run": [
+   "install"
+  ],
+  "install_completed": false,
+  "install_note": "pip install exit 1: up.py\", line 2, in <module> raise RuntimeError(\"install-boom\") RuntimeError: install-boom [end of output] note: This error originates from a subprocess, and is likely not a problem with pip. error: metadata-generation-failed \u00d7 Encountered error while generating package metadata. \u2570\u2500> See above for output. note: This is an issue with the package mentioned above, not pip. hint: See above for details.",
+  "network": "blocked",
+  "callables_total": 0,
+  "callables_exercised": 0,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "fresh-interpreter startup not tested",
+   "clock variant not run",
+   "loopback sinkhole not active",
+   "CLI entry points not run",
+   "real pip install did not complete"
+  ]
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY808da4f13d80"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSffcc9429abc2"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC0fcd29c5f205"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS9c401b8d8ace"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG499b3f52791c"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV8b8941d07c57"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV787c582742ed"
+  }
+ ],
+ "files_added": []
+}
