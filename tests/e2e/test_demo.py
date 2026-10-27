@@ -716,3 +716,51 @@ def test_installed_layout_uses_bundled_schemas(tmp_path):
     assert "capabilities" in mod.load_capabilities()
     assert mod.OUTPUT_ROOT == Path.cwd()
     assert contracts.IN_REPO is True
+
+
+def test_webui_lists_every_bench_package():
+    """The picker offers all bench packages, not a hard-coded four."""
+    import yaml
+
+    from trustlens.webui.server import bench_packages
+
+    labels = yaml.safe_load((ROOT / "bench" / "labels.yaml").read_text())["packages"]
+    listed = {p["path"] for p in bench_packages()}
+    assert listed == {p["path"] for p in labels}
+
+
+def test_webui_page_has_no_default_evil_slug_scan():
+    """Regression: the page auto-scanned evil_slug on load and kept that report on screen when a later scan
+    was slow or failed, so every package seemed to show the evil-slug report."""
+    from trustlens.webui.server import HTML_PAGE
+
+    assert "runScan('bench/packages/malicious/evil_slug')" not in HTML_PAGE
+    assert 'value="bench/packages/malicious/evil_slug"' not in HTML_PAGE
+    assert "seq !== scanSeq" in HTML_PAGE  # late answers from an earlier click are dropped
+    assert "showPlaceholder('Scanning '" in HTML_PAGE  # old report cleared as soon as a scan starts
+    assert "showPlaceholder('No report for '" in HTML_PAGE  # errors replace the old report
+
+
+@pytest.mark.parametrize("pkg", ["malicious/delayed_slug", "clean/clean_slug", "clean/rest_wrapper"])
+def test_webui_scan_returns_report_of_requested_package(tmp_path, pkg):
+    """Each scan returns the report of the package that was asked for."""
+    import http.client
+    import threading
+    from http.server import ThreadingHTTPServer
+
+    from trustlens.webui import server as srv
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), srv.TrustLensWebHandler)
+    t = threading.Thread(target=httpd.serve_forever, daemon=True)
+    t.start()
+    try:
+        c = http.client.HTTPConnection("127.0.0.1", httpd.server_address[1], timeout=300)
+        c.request("POST", "/api/scan", body=json.dumps({"package": f"bench/packages/{pkg}", "profiles": "dev,ci"}),
+                  headers={"Content-Type": "application/json", "Host": "127.0.0.1"})
+        data = json.loads(c.getresponse().read())
+    finally:
+        httpd.shutdown()
+    name = pkg.split("/")[-1].replace("_", "-")
+    assert data["verdict"]["package"]["name"] == name
+    assert f"<title>TrustLens: {name}" in data["report_html"]
+    assert "evil-slug" not in data["report_html"]

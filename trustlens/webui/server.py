@@ -61,6 +61,28 @@ DEMO_PACKAGES = [
     {"id": "rest_wrapper", "name": "rest-wrapper (clean / noisy-benign REST client)", "path": "bench/packages/clean/rest_wrapper"},
 ]
 
+
+def bench_packages() -> list[dict]:
+    """Every bench/labels.yaml package present in this checkout (none in a pip install).
+
+    Falls back to DEMO_PACKAGES when the labels file is missing or unreadable.
+    """
+    labels = ROOT / "bench" / "labels.yaml"
+    try:
+        import yaml
+
+        rows = yaml.safe_load(labels.read_text(encoding="utf-8"))["packages"]
+        found = [
+            {"id": r["id"], "name": f"{r['id']} ({r.get('label', '?')} / {r.get('category', '?')})",
+             "path": r["path"], "label": r.get("label", "")}
+            for r in rows if (ROOT / r["path"]).is_dir()
+        ]
+        if found:
+            return found
+    except (OSError, KeyError, TypeError, ValueError):
+        pass
+    return [d for d in DEMO_PACKAGES if (ROOT / d["path"]).is_dir()]
+
 HTML_PAGE = """<!doctype html>
 <html lang="en">
 <head>
@@ -186,10 +208,7 @@ HTML_PAGE = """<!doctype html>
       <div class="form-group">
         <label for="demo-select">Pre-configured Benchmark Samples:</label>
         <select id="demo-select">
-          <option value="bench/packages/malicious/evil_slug">evil-slug (Malicious / Fake SSH & AWS Exfil)</option>
-          <option value="bench/packages/malicious/delayed_slug">delayed-slug (Malicious / CI-Gated Base64 Exec)</option>
-          <option value="bench/packages/clean/clean_slug">clean-slug (Clean Control / String Utility)</option>
-          <option value="bench/packages/clean/rest_wrapper">rest-wrapper (Clean Control / Legitimate REST Client)</option>
+          <option value="">Loading benchmark packages...</option>
         </select>
       </div>
 
@@ -227,15 +246,68 @@ HTML_PAGE = """<!doctype html>
 
   <div class="card" style="padding: 0.5rem;">
     <div class="report-frame-wrap">
-      <iframe id="report-iframe" sandbox="allow-scripts" src="about:blank"></iframe>
+      <iframe id="report-iframe" sandbox="allow-scripts" title="TrustLens report" srcdoc="<p style='font-family:sans-serif;color:#888;padding:2rem'>Select a package and click <b>Run Behavioral Scan</b>, or upload an archive. The report for that package appears here.</p>"></iframe>
     </div>
   </div>
 
   <script>
+    // Each click gets a number. A response is shown only if it belongs to the latest click,
+    // so a slow earlier scan can never overwrite the report of the package selected now.
+    let scanSeq = 0;
+
+    function escapeText(t) {
+      return String(t).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    }
+
+    function showPlaceholder(msg) {
+      document.getElementById('report-iframe').srcdoc =
+        "<p style='font-family:sans-serif;color:#888;padding:2rem'>" + escapeText(msg) + "</p>";
+    }
+
+    function setBusy(busy) {
+      ['btn-scan-preset', 'btn-compare', 'btn-scan-upload'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = busy;
+      });
+    }
+
+    function showResult(seq, label, data) {
+      if (seq !== scanSeq) return;  // a newer scan was started; drop this late answer
+      setBusy(false);
+      if (data.error) {
+        setStatus('❌ ' + label + ': ' + data.error, 'error');
+        showPlaceholder('No report for ' + label + ': ' + data.error);
+        return;
+      }
+      const v = data.verdict;
+      const who = v.package ? (v.package.name + ' ' + (v.package.version || '')) : label;
+      setStatus('✅ Report for ' + who + ': ' + v.verdict + ' (' + v.action + ')', 'running');
+      document.getElementById('report-iframe').srcdoc = data.report_html;
+    }
+
     async function loadStatus() {
       try {
         const res = await fetch('/api/status');
         const data = await res.json();
+        const sel = document.getElementById('demo-select');
+        sel.innerHTML = '';
+        const pkgs = data.demo_packages || [];
+        if (!pkgs.length) {
+          sel.innerHTML = '<option value="">No benchmark packages here (pip install): upload an archive instead</option>';
+        }
+        for (const group of ['malicious', 'clean', '']) {
+          const items = pkgs.filter(p => (p.label || '') === group || (group === '' && !['malicious', 'clean'].includes(p.label || '')));
+          if (!items.length) continue;
+          const og = document.createElement('optgroup');
+          og.label = group ? group : 'other';
+          for (const p of items) {
+            const o = document.createElement('option');
+            o.value = p.path;
+            o.textContent = p.name;
+            og.appendChild(o);
+          }
+          sel.appendChild(og);
+        }
         const badge = document.getElementById('runner-badge');
         if (data.bwrap_ok) {
           badge.textContent = 'Runner: LIVE (bwrap sandbox)';
@@ -267,41 +339,47 @@ HTML_PAGE = """<!doctype html>
       if (dev) profiles.push('dev');
       if (ci) profiles.push('ci');
 
-      setStatus('⏳ Running TrustLens behavioral sandbox & claims analysis...', 'running');
+      const label = targetPath.split('/').pop();
+      const seq = ++scanSeq;
+      setBusy(true);
+      setStatus('⏳ Scanning ' + label + ' (a live sandbox run takes about a minute)...', 'running');
+      showPlaceholder('Scanning ' + label + '... the report for this package will appear here.');
       try {
         const res = await fetch('/api/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ package: targetPath, profiles: profiles.join(',') })
         });
-        const data = await res.json();
-        if (data.error) {
-          setStatus('❌ Error: ' + data.error, 'error');
-        } else {
-          setStatus('✅ Scan complete: Verdict ' + data.verdict.verdict + ' (' + data.verdict.action + ')', 'running');
-          const iframe = document.getElementById('report-iframe');
-          iframe.srcdoc = data.report_html;
-        }
+        showResult(seq, label, await res.json());
       } catch (err) {
-        setStatus('❌ Network error: ' + err.message, 'error');
+        showResult(seq, label, { error: 'network error: ' + err.message });
       }
     }
 
     document.getElementById('btn-scan-preset').addEventListener('click', () => {
       const sel = document.getElementById('demo-select').value;
+      if (!sel) { setStatus('Select a benchmark package first.', 'error'); return; }
       runScan(sel);
     });
 
     document.getElementById('btn-compare').addEventListener('click', async () => {
-      setStatus('⏳ Generating Side-by-Side Comparison (rest_wrapper vs evil_slug)...', 'running');
+      const seq = ++scanSeq;
+      setBusy(true);
+      setStatus('⏳ Generating side-by-side comparison (rest_wrapper vs evil_slug)...', 'running');
+      showPlaceholder('Building the side-by-side comparison of rest_wrapper (PASS) and evil_slug (BLOCK)...');
       try {
         const res = await fetch('/api/compare-demo');
         const html = await res.text();
-        const iframe = document.getElementById('report-iframe');
-        iframe.srcdoc = html;
-        setStatus('✅ Displaying Side-by-Side Comparison', 'running');
+        if (seq !== scanSeq) return;
+        setBusy(false);
+        if (!res.ok) { setStatus('❌ Comparison failed: ' + html.slice(0, 200), 'error'); showPlaceholder('Comparison failed.'); return; }
+        document.getElementById('report-iframe').srcdoc = html;
+        setStatus('✅ Side-by-side comparison: rest_wrapper vs evil_slug', 'running');
       } catch (err) {
+        if (seq !== scanSeq) return;
+        setBusy(false);
         setStatus('❌ Error: ' + err.message, 'error');
+        showPlaceholder('Comparison failed: ' + err.message);
       }
     });
 
@@ -322,29 +400,24 @@ HTML_PAGE = """<!doctype html>
       if (ci) profiles.push('ci');
       formData.append('profiles', profiles.join(','));
 
+      const seq = ++scanSeq;
+      setBusy(true);
       setStatus('⏳ Uploading and scanning ' + file.name + '...', 'running');
+      showPlaceholder('Scanning ' + file.name + '... the report for this archive will appear here.');
       try {
         const res = await fetch('/api/upload', {
           method: 'POST',
           body: formData
         });
-        const data = await res.json();
-        if (data.error) {
-          setStatus('❌ Error: ' + data.error, 'error');
-        } else {
-          setStatus('✅ Scan complete: Verdict ' + data.verdict.verdict + ' (' + data.verdict.action + ')', 'running');
-          const iframe = document.getElementById('report-iframe');
-          iframe.srcdoc = data.report_html;
-        }
+        showResult(seq, file.name, await res.json());
       } catch (err) {
-        setStatus('❌ Upload error: ' + err.message, 'error');
+        showResult(seq, file.name, { error: 'upload error: ' + err.message });
       }
     });
 
     window.addEventListener('DOMContentLoaded', () => {
       loadStatus();
-      // Load default demo package on start
-      runScan('bench/packages/malicious/evil_slug');
+      // No automatic scan: the report area stays empty until a package is chosen.
     });
   </script>
 </body>
@@ -374,8 +447,8 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
             env = check_env()
             resp = {
                 "bwrap_ok": bool(env.get("bwrap_ok")),
-                # Bench demo packages exist only in a repo checkout, not in a pip install.
-                "demo_packages": [d for d in DEMO_PACKAGES if (ROOT / d["path"]).is_dir()],
+                # Bench packages exist only in a repo checkout, not in a pip install.
+                "demo_packages": bench_packages(),
             }
             data = json.dumps(resp).encode("utf-8")
             self.send_response(HTTPStatus.OK)
