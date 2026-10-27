@@ -438,5 +438,90 @@ def test_data_malregistry_strictly_untracked_by_git():
     assert tracked == "", f"Forbidden: malregistry samples tracked in git: {tracked}"
 
 
+def test_threshold_sweep_loads_weights_readonly():
+    from eval.threshold_sweep import WEIGHTS_FILE, load_weights_readonly
+    w = load_weights_readonly()
+    assert isinstance(w, dict)
+    assert w["suspicious_threshold"] == 4.0
+    assert w["block_min_independent_signals"] == 2
+    assert "strong_signal_classes" in w
+    assert WEIGHTS_FILE.exists()
+
+
+def test_threshold_sweep_roc_auc_math():
+    from eval.threshold_sweep import compute_roc_auc
+    # Perfect classifier: (0, 1)
+    assert compute_roc_auc([{"fpr": 0.0, "tpr": 1.0}]) == 1.0
+    # Diagonal classifier: AUC == 0.5
+    assert compute_roc_auc([{"fpr": 0.5, "tpr": 0.5}]) == 0.5
+    # Empty
+    assert compute_roc_auc([]) == 0.5
+
+
+def test_threshold_sweep_sensitivity_bounds_and_records():
+    from eval.threshold_sweep import sweep_thresholds
+    mock_evals = [
+        {"id": "p1", "label": "malicious", "score": 12.0, "top_finding_score": 12.0, "verdict": "MALICIOUS-EVIDENT", "signal_classes": ["canary_access"]},
+        {"id": "p2", "label": "malicious", "score": 3.8, "top_finding_score": 3.8, "verdict": "SUSPICIOUS", "signal_classes": []},
+        {"id": "p3", "label": "clean", "score": 0.0, "top_finding_score": 0.0, "verdict": "BENIGN-CONSISTENT", "signal_classes": []},
+        {"id": "p4", "label": "clean", "score": 0.0, "top_finding_score": 0.0, "verdict": "BENIGN-CONSISTENT", "signal_classes": []},
+    ]
+    res = sweep_thresholds(mock_evals)
+    assert "auc" in res
+    assert 0.0 <= res["auc"] <= 1.0
+    sens = res["sensitivity"]
+    assert sens["nominal_threshold"] == 4.0
+    assert sens["minus_20_pct"]["threshold"] == 3.2
+    assert sens["plus_20_pct"]["threshold"] == 4.8
+    # p2 has score 3.8: flagged at 3.2, but NOT flagged at 4.0 or 4.8
+    flips = sens["flipping_packages"]
+    flip_ids = [f["id"] for f in flips]
+    assert "p2" in flip_ids
+
+
+def test_compute_rule_coverage_structure():
+    from eval.threshold_sweep import compute_rule_coverage
+    mock_evals = [
+        {"id": "bad1", "label": "malicious", "verdict": "MALICIOUS-EVIDENT", "rules": ["canary_read_then_network", "network_unclaimed"], "score": 16.0},
+        {"id": "good1", "label": "clean", "verdict": "BENIGN-CONSISTENT", "rules": [], "score": 0.0},
+    ]
+    cov = compute_rule_coverage(mock_evals)
+    assert "verdict_categories" in cov
+    assert "rule_summary" in cov
+    assert "package_matrix" in cov
+    canary_summary = next((r for r in cov["rule_summary"] if r["rule"] == "canary_read_then_network"), None)
+    assert canary_summary is not None
+    assert canary_summary["malicious_evident"] == 1
+    assert canary_summary["total_hits"] == 1
+
+
+def test_heatmap_renders_all_three_sections():
+    from eval.heatmap import render
+    mock_results = {
+        "dataset": "labels.yaml",
+        "n_malicious": 2,
+        "n_clean": 2,
+        "tools": {
+            "trustlens": {
+                "available": True,
+                "recall_by_trigger_gate": {"install|none": {"detected": 1, "total": 1, "recall": 1.0}},
+                "per_package": {
+                    "p1": {"label": "malicious", "verdict": "MALICIOUS-EVIDENT", "score": 10.0, "rules": ["decoded_exec"], "flagged": True},
+                    "p2": {"label": "clean", "verdict": "BENIGN-CONSISTENT", "score": 0.0, "rules": [], "flagged": False},
+                },
+            }
+        },
+    }
+    html = render(mock_results)
+    assert "id='recall-matrix'" in html
+    assert "id='rule-coverage'" in html
+    assert "id='roc-sweep'" in html
+    assert "<svg" in html
+    assert "ROC AUC =" in html
+    assert "T=4.0" in html
+    assert "Detection Rule Hits by Verdict Category" in html
+
+
+
 
 

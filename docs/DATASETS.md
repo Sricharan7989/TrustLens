@@ -193,5 +193,35 @@ Backup malicious pool sourced from `lxyeternal/pypi_malregistry`. Used as a supp
   - Automatically discovered when running `--labels all`.
   - Aggregated under `external_malware` metrics alongside Datadog samples, ensuring synthetic planted toy recall remains strictly isolated.
 
+## Verdict &times; Rule Coverage & ROC Threshold Sweep (C12)
+
+Comprehensive visualization and sensitivity analysis combining detection rule coverage across verdicts with an empirical ROC threshold sweep using `trustlens/engine/weights.yaml` in read-only mode.
+
+### 1. Verdict &times; Rule Coverage Heatmap (`eval/heatmap.py`)
+- **Rule &times; Verdict Distribution Matrix:**
+  Maps TrustLens detection rules (`canary_read_then_network`, `canary_in_outgoing_bytes`, `network_unclaimed`, `decoded_exec`, `env_differential`, `startup_hook`, `persistence`, `download_exec`, `capability_not_claimed`, `sandbox_probe`) against the four engine verdicts:
+  - `MALICIOUS-EVIDENT` (Block: $\ge 2$ strong signals or canary in bytes)
+  - `SUSPICIOUS` (Review: 1 strong signal or score $\ge \text{threshold}$)
+  - `BENIGN-CONSISTENT` (Pass: observed behavior licensed by claims, coverage adequate)
+  - `INCONCLUSIVE` (Abstain: thin coverage / dead package)
+- **Package &times; Rule Activation Grid:**
+  Visualizes individual package rule activations, ground-truth labels, finding scores, and final verdicts across all evaluated packages.
+
+### 2. ROC-like Decision Threshold Sweep (`eval/threshold_sweep.py`)
+- **Read-Only Invariant:**
+  Scoring parameters and thresholds are read from `trustlens/engine/weights.yaml` in strict read-only mode. No scoring weights or thresholds in the engine are modified.
+- **Empirical ROC Curve & AUC:**
+  - Evaluates True Positive Rate (Recall) vs False Positive Rate (FPR) across 16 decision thresholds ($T \in [0.0, 1.0, 2.0, \dots, 15.0]$).
+  - Calculates Area Under the ROC Curve (AUC) via trapezoidal numerical integration.
+  - Inline SVG visualization in `reports/eval/heatmap.html` displays the empirical curve, random chance reference line, and callout badge for the nominal operating point.
+- **Sensitivity Analysis (&plusmn;20%):**
+  - Evaluates decision stability when `suspicious_threshold: 4.0` is perturbed by $\pm 20\%$:
+    - Lower sensitivity bound: $T = 3.2$
+    - Nominal operating point: $T = 4.0$
+    - Upper sensitivity bound: $T = 4.8$
+  - Tracks $\Delta \text{TPR}$ and $\Delta \text{FPR}$ to verify that the default operating point is robust and does not sit on an unstable decision boundary.
+  - Logs any packages that transition verdicts across the $\pm 20\%$ window.
+
+
 
 

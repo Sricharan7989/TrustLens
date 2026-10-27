@@ -22,6 +22,7 @@ import yaml
 import trustlens
 from eval import heatmap, metrics
 from eval.baselines import guarddog, packj, pipcanary
+from eval.threshold_sweep import compute_rule_coverage, sweep_thresholds
 from trustlens.cli import scan
 from trustlens.contracts import ROOT, validate
 
@@ -164,11 +165,21 @@ def scan_single_package(
             try:
                 r = scan(path, str(out_dir / "runs" / pkg_id), runner=runner)
                 elapsed = round(time.time() - t0, 2)
+                verd = r["verdict"]
+                findings = verd.get("findings", [])
+                rules = [f["rule"] for f in findings]
+                top_score = max([f.get("score", 0.0) for f in findings], default=0.0)
                 res = {
                     "available": True,
-                    "flagged": tl_flagged(r["verdict"], policy),
+                    "flagged": tl_flagged(verd, policy),
                     "runtime_s": elapsed,
-                    "verdict": r["verdict"]["verdict"],
+                    "verdict": verd.get("verdict"),
+                    "action": verd.get("action"),
+                    "score": verd.get("score", 0.0),
+                    "top_finding_score": top_score,
+                    "rules": rules,
+                    "signal_classes": verd.get("independent_signals", []),
+                    "findings_count": len(findings),
                 }
             except Exception as e:
                 elapsed = round(time.time() - t0, 2)
@@ -394,9 +405,38 @@ def main(argv=None) -> int:
             "tools": {t: tool_results[t].get("held_out_metrics") for t in tools},
         },
     }
+
+    # Compute threshold sweep and rule coverage (C12)
+    tl_pkg_evals = []
+    tl_per = tool_results.get("trustlens", {}).get("per_package", {})
+    for p in pk:
+        pkg_id = p["id"]
+        p_res = tl_per.get(pkg_id, {})
+        tl_pkg_evals.append({
+            "id": pkg_id,
+            "label": p["label"],
+            "category": p.get("category"),
+            "trigger": p.get("trigger"),
+            "gate": p.get("gate"),
+            "score": p_res.get("score", 0.0),
+            "top_finding_score": p_res.get("top_finding_score", p_res.get("score", 0.0)),
+            "verdict": p_res.get("verdict", "INCONCLUSIVE"),
+            "flagged": p_res.get("flagged"),
+            "rules": p_res.get("rules", []),
+            "signal_classes": p_res.get("signal_classes", []),
+            "inconclusive": p_res.get("verdict") == "INCONCLUSIVE",
+        })
+
+    sweep_res = sweep_thresholds(tl_pkg_evals)
+    coverage_res = compute_rule_coverage(tl_pkg_evals)
+    results["threshold_sweep"] = sweep_res
+    results["rule_coverage"] = coverage_res
+
     validate("eval_results", results)
 
     (out / "results.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
+    (out / "threshold_sweep.json").write_text(json.dumps(sweep_res, indent=2), encoding="utf-8")
+    (out / "rule_coverage.json").write_text(json.dumps(coverage_res, indent=2), encoding="utf-8")
     (out / "heatmap.html").write_text(heatmap.render(results), encoding="utf-8")
 
     # Generate triage report
@@ -525,7 +565,25 @@ def main(argv=None) -> int:
                 status = "TRUE POSITIVE" if flg is True else "FALSE NEGATIVE"
             summary_lines.append(f"| `{pkg_id}` | {lbl} | {cat} | {exp} | {v} | {flg_str} | **{status}** |")
 
+    # Threshold Sweep & Rule Coverage (C12)
+    nom_rec = sweep_res.get("sensitivity", {}).get("nominal", {})
+    lo_rec = sweep_res.get("sensitivity", {}).get("minus_20_pct", {}).get("record", {})
+    hi_rec = sweep_res.get("sensitivity", {}).get("plus_20_pct", {}).get("record", {})
+    nom_t = sweep_res.get("nominal_threshold", 4.0)
+
     summary_lines.extend([
+        "",
+        "### Decision Threshold Sweep & Sensitivity (weights.yaml)",
+        f"- **ROC AUC:** `{sweep_res.get('auc', 0.5):.4f}` across {len(sweep_res.get('sweep', []))} threshold evaluation points.",
+        f"- **Nominal Operating Point:** `suspicious_threshold = {nom_t}` (TPR: `{nom_rec.get('tpr', 0.0):.4f}`, FPR: `{nom_rec.get('fpr', 0.0):.4f}`).",
+        "- **Threshold Sensitivity (+/-20%):**",
+        f"  - `-20%` (T={sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('threshold')}): TPR `{lo_rec.get('tpr', 0.0):.4f}`, FPR `{lo_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
+        f"  - `+20%` (T={sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('threshold')}): TPR `{hi_rec.get('tpr', 0.0):.4f}`, FPR `{hi_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
+        f"- **Verdict Stability:** {len(sweep_res.get('sensitivity', {}).get('flipping_packages', []))} package(s) flip verdict within +/-20% threshold margin.",
+        "",
+        "### Detection Rule Coverage Summary (TrustLens)",
+        f"- **Active Rules Fired:** {sum(1 for r in coverage_res.get('rule_summary', []) if r['total_hits'] > 0)} / {len(coverage_res.get('rule_summary', []))} rules.",
+        f"- **Total Malicious-Evident Rule Activations:** {sum(r['malicious_evident'] for r in coverage_res.get('rule_summary', []))}.",
         "",
         "## Methodological Notes",
         "- **Wilson 95% Score Intervals:** Calculated using two-sided Wilson score intervals for binomial proportions to ensure scientific honesty on zero-FP observations.",
