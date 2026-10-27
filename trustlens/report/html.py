@@ -812,3 +812,92 @@ def render_comparison_html(
     h.append("<div class='footer'><p>TrustLens AI &middot; Proof-based dependency provenance.</p></div>")
     h.append("</div></body></html>")
     return "\n".join(h)
+
+
+def render_diff_html(v1: dict, fp1: dict, v2: dict, fp2: dict) -> str:
+    """Generate an HTML diff report between two versions of a package."""
+    p1 = v1.get("package", {})
+    p2 = v2.get("package", {})
+
+    action1, action2 = v1.get("action", "PASS"), v2.get("action", "BLOCK")
+    verd1, verd2 = v1.get("verdict", "BENIGN-CONSISTENT"), v2.get("verdict", "MALICIOUS-EVIDENT")
+
+    events1 = fp1.get("events") or []
+    events2 = fp2.get("events") or []
+    caps1 = {e.get("capability") for e in events1 if e.get("capability")}
+    caps2 = {e.get("capability") for e in events2 if e.get("capability")}
+
+    added_caps = sorted(caps2 - caps1)
+    retained_caps = sorted(caps2 & caps1)
+
+    findings1_rules = {f.get("rule") for f in v1.get("findings") or []}
+    new_findings = [f for f in v2.get("findings") or [] if f.get("rule") not in findings1_rules]
+
+    diff_css = CSS + """
+    .diff-banner { padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    .diff-escalation { background: rgba(239, 68, 68, 0.15); border: 2px solid var(--block); }
+    .diff-neutral { background: rgba(59, 130, 246, 0.15); border: 2px solid var(--info); }
+    .caps-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.8rem; margin: 0.2rem; }
+    .caps-added { background: #991b1b; color: #fee2e2; }
+    .caps-same { background: var(--surface-alt); color: var(--text-muted); }
+    """
+
+    banner_cls = "diff-escalation" if action1 != action2 and action2 in ("BLOCK", "REVIEW") else "diff-neutral"
+
+    h = [
+        "<!doctype html>",
+        "<html lang='en'>",
+        "<head>",
+        "<meta charset='utf-8'>",
+        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>",
+        f"<title>TrustLens Diff: {esc(p1.get('name'))} {esc(p1.get('version'))} vs {esc(p2.get('version'))}</title>",
+        f"<style>{diff_css}</style>",
+        "</head>",
+        "<body>",
+        "<div class='container'>",
+        "<div class='card' style='text-align: center;'>",
+        f"<h1>Package Behavioral Diff: {esc(p1.get('name'))}</h1>",
+        f"<p class='section-subtitle'>Comparing Baseline (v{esc(p1.get('version'))}) &rarr; Updated (v{esc(p2.get('version'))})</p>",
+        "</div>",
+        f"<div class='diff-banner {banner_cls}'>",
+        f"<h3>Verdict Shift: <span class='badge-verdict {esc(action1)}' style='padding: 0.2rem 0.6rem; font-size: 1rem;'>{esc(action1)}</span> &rarr; "
+        f"<span class='badge-verdict {esc(action2)}' style='padding: 0.2rem 0.6rem; font-size: 1rem;'>{esc(action2)}</span></h3>",
+        f"<p style='margin-top: 0.5rem;'>Base verdict: <strong>{esc(verd1)}</strong> (Score {v1.get('score', 0):.1f}) &middot; "
+        f"Updated verdict: <strong>{esc(verd2)}</strong> (Score {v2.get('score', 0):.1f})</p>",
+        "</div>",
+        "<div class='card'>",
+        "<h2>Runtime Capability Changes</h2>",
+        "<p class='section-subtitle'>Capabilities executed by the new version that were absent in the baseline</p>",
+    ]
+
+    if added_caps:
+        h.append("<h4 style='color: var(--block); margin: 0.5rem 0;'>Newly Introduced Capabilities:</h4><div>")
+        for c in added_caps:
+            h.append(f"<span class='caps-badge caps-added'>+ {esc(c)}</span>")
+        h.append("</div>")
+    else:
+        h.append("<p style='color: var(--pass);'>No new capabilities observed in the updated version.</p>")
+
+    if retained_caps:
+        h.append("<h4 style='color: var(--text-muted); margin: 1rem 0 0.5rem;'>Unchanged Capabilities:</h4><div>")
+        for c in retained_caps:
+            h.append(f"<span class='caps-badge caps-same'>{esc(c)}</span>")
+        h.append("</div>")
+    h.append("</div>")
+
+    h.append("<div class='card'>")
+    h.append(f"<h2>Newly Triggered Findings ({len(new_findings)})</h2>")
+    if not new_findings:
+        h.append("<p style='color: var(--pass);'>No new contradiction findings were triggered by the update.</p>")
+    else:
+        for f in new_findings:
+            sev = esc(f.get("severity", "medium").lower())
+            h.append(f"<div class='finding-card {sev}' style='margin-bottom: 1rem;'>")
+            h.append(f"<strong>[{esc(f.get('severity', '').upper())}] {esc(f.get('title'))}</strong> &middot; rule <code>{esc(f.get('rule'))}</code>")
+            h.append(f"<p style='margin-top: 0.4rem; color: #cbd5e1;'>{esc(f.get('explanation'))}</p></div>")
+    h.append("</div>")
+
+    h.append("<div class='footer'><p>TrustLens AI &middot; Version Differential Provenance.</p></div>")
+    h.append("</div></body></html>")
+    return "\n".join(h)
+

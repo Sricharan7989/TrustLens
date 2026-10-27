@@ -184,8 +184,19 @@ def main(argv=None) -> int:
     s.add_argument("--format", default="text", choices=["text", "json", "html", "sarif"], help="Output format")
     s.add_argument("--offline", action="store_true", default=True, help="Network off (default: True)")
     s.add_argument("--static", action="store_true", help="Add GuardDog static signals if installed (not with --offline)")
+    s.add_argument("--compare", action="store_true", help="Run GuardDog & PipCanary baselines side-by-side (if installed)")
 
     sub.add_parser("check-env", help="Check host sandbox capabilities (bwrap, namespaces, docker)")
+
+    srv = sub.add_parser("serve", help="Start localhost-only Web UI console")
+    srv.add_argument("--host", default="127.0.0.1", help="Host interface (strictly loopback)")
+    srv.add_argument("--port", type=int, default=8765, help="Port to bind (default: 8765)")
+
+    df = sub.add_parser("diff", help="Compare two package versions or directories and highlight behavioral deltas")
+    df.add_argument("pkg1", help="Path to base package (v1)")
+    df.add_argument("pkg2", help="Path to updated package (v2)")
+    df.add_argument("--runner", default="fixture", choices=["auto", "fixture", "live"])
+    df.add_argument("--out", default="reports/diff.html", help="Output path for HTML diff report")
 
     d = sub.add_parser("demo-all", help="Scan every package in bench/labels.yaml and print verification table")
     d.add_argument("--runner", default="fixture", choices=["auto", "fixture", "live", "docker"], help="Runner mode")
@@ -198,6 +209,45 @@ def main(argv=None) -> int:
     c.add_argument("--out", default="reports/compare_demo.html", help="Output path for comparison HTML")
 
     a = ap.parse_args(argv)
+
+    if a.cmd == "serve":
+        from trustlens.webui import run_server
+
+        if a.host not in ("127.0.0.1", "localhost", "::1"):
+            print("trustlens: error: --host must be a loopback address (e.g. 127.0.0.1).", file=sys.stderr)
+            return 2
+        run_server(a.host, a.port)
+        return 0
+
+    if a.cmd == "diff":
+        from trustlens.contracts import ROOT
+        from trustlens.report import render_diff_html
+
+        p1 = ROOT / a.pkg1 if not Path(a.pkg1).is_absolute() else Path(a.pkg1)
+        p2 = ROOT / a.pkg2 if not Path(a.pkg2).is_absolute() else Path(a.pkg2)
+
+        if not p1.exists() or not p2.exists():
+            print(f"trustlens: error: one or both paths do not exist ('{a.pkg1}', '{a.pkg2}')", file=sys.stderr)
+            return 2
+
+        out1 = Path("reports/diff_tmp/pkg1")
+        out2 = Path("reports/diff_tmp/pkg2")
+        r1 = scan(str(p1), str(out1), runner=a.runner, offline=True)
+        r2 = scan(str(p2), str(out2), runner=a.runner, offline=True)
+
+        v1, fp1 = r1["verdict"], r1["fingerprint"]
+        v2, fp2 = r2["verdict"], r2["fingerprint"]
+
+        diff_html = render_diff_html(v1, fp1, v2, fp2)
+        diff_out = Path(a.out)
+        diff_out.parent.mkdir(parents=True, exist_ok=True)
+        diff_out.write_text(diff_html, encoding="utf-8")
+
+        print(f"[*] Package Behavioral Diff:")
+        print(f"    v1 ({v1['package']['name']} {v1['package']['version']}): {v1['verdict']} (action: {v1['action']})")
+        print(f"    v2 ({v2['package']['name']} {v2['package']['version']}): {v2['verdict']} (action: {v2['action']})")
+        print(f"[+] HTML diff report generated: {diff_out}")
+        return {"PASS": 0, "REVIEW": 10, "BLOCK": 20}[v2["action"]]
 
     if a.cmd == "compare-demo":
         from trustlens.contracts import ROOT
@@ -369,6 +419,38 @@ def main(argv=None) -> int:
     else:
         print(render_text(v, color=sys.stdout.isatty()))
     print(f"  report: {out}/report.html", file=sys.stderr)
+    if a.compare:
+        print("\n" + "=" * 70)
+        print("BASELINE COMPARISON (TrustLens vs Static/Dynamic Baselines)")
+        print("-" * 70)
+        print(f"  TrustLens AI:   action={v['action']:6} verdict={v['verdict']} (score: {v['score']})")
+
+        # Try GuardDog
+        try:
+            from eval.baselines import guarddog
+            gd_res = guarddog.run(str(target_path))
+            if gd_res.get("available"):
+                gd_stat = "FLAGGED" if gd_res.get("flagged") else "CLEAN"
+                gd_rules = ", ".join(gd_res.get("rules", [])[:3]) or "none"
+                print(f"  GuardDog 3.2:   {gd_stat:8} rules: {gd_rules}")
+            else:
+                print(f"  GuardDog 3.2:   UNAVAILABLE ({gd_res.get('error', 'not installed')})")
+        except Exception as ex:
+            print(f"  GuardDog 3.2:   UNAVAILABLE ({ex})")
+
+        # Try PipCanary
+        try:
+            from eval.baselines import pipcanary
+            pc_res = pipcanary.run(str(target_path))
+            if pc_res.get("available"):
+                pc_stat = "FLAGGED" if pc_res.get("flagged") else "CLEAN"
+                print(f"  PipCanary 0.1:  {pc_stat:8} runtime: {pc_res.get('runtime_s', 0):.2f}s")
+            else:
+                print(f"  PipCanary 0.1:  UNAVAILABLE ({pc_res.get('error', 'not installed')})")
+        except Exception as ex:
+            print(f"  PipCanary 0.1:  UNAVAILABLE ({ex})")
+        print("=" * 70 + "\n")
+
     return {"PASS": 0, "REVIEW": 10, "BLOCK": 20}[v["action"]]
 
 

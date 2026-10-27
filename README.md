@@ -12,7 +12,9 @@ git clone <repo> && cd trustlens
 make setup-dev            # 1. venv + pinned deps (+ GuardDog/PipCanary baselines); needs python3-venv
 make demo                 # 2. scans 4 toy packages end to end on recorded fixtures -> reports/demo/*/report.html
 make demo-all             # 3. scans all benchmark packages and prints verification table
-make eval                 # 4. PS1-Bench metrics + heatmap vs baselines -> reports/eval/summary.md, heatmap.html
+make demo-compare         # 4. generates side-by-side comparison (clean vs malicious) -> reports/compare_demo.html
+make serve                # 5. launches local Web UI console at http://127.0.0.1:8765/
+make eval                 # 6. PS1-Bench metrics + heatmap vs baselines -> reports/eval/summary.md, heatmap.html
 ```
 
 *Note:* On Ubuntu/Debian, ensure `python3-venv` is installed (`sudo apt install python3-venv python3-pip`).
@@ -20,19 +22,61 @@ make eval                 # 4. PS1-Bench metrics + heatmap vs baselines -> repor
 ## Real sandbox (toys only!)
 Run `bash scripts/check_env.sh` then `make demo-live`. Needs `bubblewrap` (`sudo apt install bubblewrap strace`). On Ubuntu 24.04 you may need the unprivileged user namespace workaround that the check script prints.
 
-## Input Support
+## Input & Command Support
 TrustLens CLI accepts:
 1. **Package directories**: `python -m trustlens scan bench/packages/malicious/evil_slug`
 2. **Wheel / sdist archives**: `python -m trustlens scan dist/package-1.0.whl` (extracted safely without code execution)
 3. **Requirements files**: `python -m trustlens scan requirements.txt` (scans all local path references offline)
+4. **Baseline comparison**: `python -m trustlens scan bench/packages/malicious/evil_slug --compare` (compares with GuardDog & PipCanary)
+5. **Behavioral diff between versions**: `python -m trustlens diff bench/packages/clean/clean_slug bench/packages/malicious/evil_slug`
+6. **Localhost Web Console**: `python -m trustlens serve --port 8765` (100% offline, zero CDN dependencies)
 
-## Status: starter kit v0 (what is real and what is stubbed)
+## CI / CD & Pre-commit Integrations
+
+### 1. `pre-commit` Hook (`.pre-commit-config.yaml`)
+To block malicious or anomalous dependency updates prior to commit:
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: trustlens-audit
+        name: TrustLens Dependency Provenance
+        entry: python -m trustlens scan
+        language: system
+        files: (requirements\.txt|setup\.py|pyproject\.toml)$
+        pass_filenames: true
+```
+
+### 2. GitHub Actions Workflow (SARIF 2.1.0 Code Scanning)
+```yaml
+name: Dependency Provenance Scan
+on: [pull_request, push]
+
+jobs:
+  trustlens-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Scan Dependencies
+        run: python -m trustlens scan requirements.txt --format sarif --out reports/ci
+      - name: Publish SARIF Alerts
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: reports/ci/report.sarif
+```
+
+## Status: starter kit (what is real and what is stubbed)
 | Part | Status |
 |---|---|
 | Contracts, schemas, fixtures, tests, audit | real |
 | Sandbox live runner (bwrap, canaries, dev/ci, `setup.py egg_info`, import-all, call-all, audit hook, env wrapper) | **v0 real**; real `pip install`+`.pth` diff, fresh-startup, strace, clock+30d, CLI trigger, sinkhole: Dev A tasks |
 | Claims extractor, normalizer, rules, verdict ladder | **v0 real** (keyword intents, 10 rules) — Dev B extends |
-| Report (HTML/JSON/text), CLI orchestrator | **v1.5 real** (timeline lanes, evidence chains, archive & requirements support) — Dev D |
+| Report (HTML/JSON/text/SARIF), CLI orchestrator, Web UI | **v2.0 real** (interactive timeline filters, evidence chains, web UI console, SARIF 2.1.0) — Dev D |
 | PS1-Bench | 4 starter packages — Dev C grows to 8–10 malicious + 15–20 clean |
 | `make demo` / `make eval` | run on **recorded fixtures** (real bwrap recordings of the toys); marked `stub:true` in `run_meta` |
 

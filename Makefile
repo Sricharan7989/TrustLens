@@ -3,7 +3,7 @@ SHELL := /bin/bash
 PY ?= .venv/bin/python
 PIP ?= .venv/bin/pip
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-dev check-env demo demo-live demo-all demo-compare eval eval-live test lint fmt audit fixtures bench-data kit clean
+.PHONY: help setup setup-dev check-env demo demo-live demo-all demo-compare serve eval eval-live test lint fmt audit fixtures bench-data kit clean
 
 help:  ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n",$$1,$$2}'
@@ -34,6 +34,9 @@ demo-all:  ## scan every bench/labels.yaml package and print verification table
 demo-compare:  ## generate side-by-side comparison report (clean vs malicious) for presentation slides
 	$(PY) -m trustlens compare-demo
 	@echo "open reports/compare_demo.html"
+
+serve:  ## launch localhost Web UI console at http://127.0.0.1:8765/
+	$(PY) -m trustlens serve --port 8765
 
 eval:  ## PS1-Bench eval on fixtures: metrics + heatmap + baselines (if installed) -> reports/eval/
 	$(PY) -m eval.run_eval --runner fixture --tools trustlens,guarddog,pipcanary

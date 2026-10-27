@@ -116,8 +116,8 @@
 ---
 
 ### Backup Slide B1: Pitch Defense & What We Do NOT Claim
-* We do **NOT** claim to be the "first sandbox tool" (PipCanary and OpenSSF Package Analysis exist).
-* We do **NOT** claim "zero false positives" or "100% security" (we report Wilson 95% confidence intervals and abstain when unobserved).
+* We do not claim to be the "first sandbox tool" (PipCanary and OpenSSF Package Analysis exist).
+* We do not claim "zero false positives" or "100% security" (we report Wilson 95% confidence intervals and abstain when unobserved).
 * We do **NOT** claim live ML or LLM magic in the verdict path (our verdicts are deterministic, auditable, and offline).
 
 ### Backup Slide B2: Verification Commands for Judges

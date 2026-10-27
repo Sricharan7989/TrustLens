@@ -40,5 +40,5 @@
 
 ## Approved Terminology & Mandatory Phrases
 * Always prefix novel capabilities with *"to our knowledge"*.
-* Say *"consistent with stated purpose within tested coverage"*, never *"100% safe"* or *"catches all malware"*.
+* Say *"consistent with stated purpose within tested coverage"*, do not claim *"100% safe"* or *"catches all malware"*.
 * Say *"canary-in-bytes deterministic proof"*.
