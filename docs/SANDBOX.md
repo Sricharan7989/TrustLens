@@ -78,6 +78,16 @@ Recorded live outputs for those toys are under `tests/sandbox/recorded/<name>/` 
 
 `AUDIT.md` is lead-owned and was not edited.
 
+## PS1-Bench recordings (2026-10-27)
+
+The 22 `bench/labels.yaml` packages that had no recording now have live `raw_events.jsonl` + `run_meta.json` in `schemas/examples/<id>/` (branch `lead/recordings-ps1bench`). The other four (`evil_slug`, `delayed_slug`, `clean_slug`, `rest_wrapper`) are the 2026-10-25 recordings, unchanged.
+
+- Recorded 2026-10-27 11:55:33–11:57:28 UTC, one package at a time, with `python -m trustlens scan <path> --runner live`.
+- Machine: Windows 11 + WSL2 Ubuntu 24.04.1, kernel 6.6.87.2-microsoft-standard-WSL2, `/usr/bin/python3` 3.12.3, bubblewrap 0.9.0, strace 6.8, libfaketime 0.9.10. The runner ran as **uid 0** (WSL default user), so this is not a rootless run.
+- Every run: `run.stub=false`, `run.sandbox=bwrap`, `network=sinkhole`, `install_completed=true`, strace layer on.
+- **Known noise.** This machine has `python3-attr` 23.2.0 in `/usr/lib/python3/dist-packages`. pip's vendored `rich` (`pip._vendor.rich.pretty`) imports it, so every install records 212 `dyn.compile`/`dyn.exec` events from `attr/_make.py:318`, labelled `attributed_to: pkg`. They become `decoded_exec` findings on all 22 recordings, and 12 of the 14 clean packages come out SUSPICIOUS. The 2026-10-25 recordings came from a machine without `python3-attr`. Fixing this belongs to attribution (A) or the noise whitelist (B); the recordings are kept as recorded.
+- An earlier pass the same day was discarded: libfaketime was installed partway through it (dpkg log 11:45:53 UTC), so half of those runs had Python-only clock shift.
+
 ## Reproduce
 
 ```bash
