@@ -79,10 +79,10 @@
 ### Slide 8: Evaluation & PS1-Bench Metrics
 * **Source:** `reports/eval/results.json` (as of 2026-10-26, fixture evaluation).
 * **Metrics Summary:**
-  * **Malicious Packages Tested:** 2/2 detected (100% recall on tested variants).
+  * **Malicious Packages Tested:** 2/2 detected (2/2 on tested variants).
   * **Clean Controls Tested:** 2/2 passed without false alarms.
-  * **False-Positive Rate:** 0/2 observed (Wilson 95% CI: `[0.0, 0.6576]`).
-  * **Median Runtime:** 0.02s per fixture replay (live sandbox: ~1.5s per package).
+  * **False-Positive Rate:** FP 0/2 with Wilson 95% CI [0.0, 0.6576].
+  * **Median Runtime:** 0.01s per fixture replay (baselines not run).
   * **Honest Footnote:** Datasets are used exclusively for calibration and testing, never for model training.
 
 ---

@@ -4,7 +4,6 @@ Conforms to OASIS SARIF v2.1.0. Completely offline, deterministic.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 
 def render_sarif(verdict: dict, fingerprint: dict | None = None, claims: dict | None = None) -> str:

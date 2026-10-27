@@ -14,8 +14,8 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from trustlens.contracts import validate
 
@@ -89,12 +89,12 @@ def _extract_archive_safely(archive_path: Path, dest_dir: Path) -> Path:
 
 
 def _is_valid_package_dir(path: Path) -> bool:
-    """Check if directory has package files."""
+    """Check if directory has package files in that directory itself."""
     if not path.is_dir():
         return False
     if (path / "setup.py").is_file() or (path / "pyproject.toml").is_file() or (path / "setup.cfg").is_file():
         return True
-    return any(path.glob("*.py")) or any(path.glob("*/*.py"))
+    return any(p.is_file() and p.suffix == ".py" for p in path.iterdir())
 
 
 def scan(
@@ -243,7 +243,7 @@ def main(argv=None) -> int:
         diff_out.parent.mkdir(parents=True, exist_ok=True)
         diff_out.write_text(diff_html, encoding="utf-8")
 
-        print(f"[*] Package Behavioral Diff:")
+        print("[*] Package Behavioral Diff:")
         print(f"    v1 ({v1['package']['name']} {v1['package']['version']}): {v1['verdict']} (action: {v1['action']})")
         print(f"    v2 ({v2['package']['name']} {v2['package']['version']}): {v2['verdict']} (action: {v2['action']})")
         print(f"[+] HTML diff report generated: {diff_out}")
@@ -274,6 +274,7 @@ def main(argv=None) -> int:
 
     if a.cmd == "demo-all":
         import yaml
+
         from trustlens.contracts import ROOT
 
         labels_file = Path(a.labels)
@@ -315,7 +316,10 @@ def main(argv=None) -> int:
 
         # Print formatted table
         col_widths = [max(len(h), max(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
-        format_row = lambda cols: "  ".join(cols[i].ljust(col_widths[i]) for i in range(len(cols)))
+
+        def format_row(cols):
+            return "  ".join(cols[i].ljust(col_widths[i]) for i in range(len(cols)))
+
         sep = "  ".join("-" * w for w in col_widths)
 
         print(format_row(headers))
@@ -328,7 +332,7 @@ def main(argv=None) -> int:
             print(f"\n[+] All {len(packages)} packages verified successfully against expected verdicts.")
             return 0
         else:
-            print(f"\n[-] One or more packages failed verification.", file=sys.stderr)
+            print("\n[-] One or more packages failed verification.", file=sys.stderr)
             return 10
 
     if a.cmd == "check-env":
@@ -388,7 +392,8 @@ def main(argv=None) -> int:
                 return 2
             v = r["verdict"]
             from trustlens.report import render_html, render_text
-            print(render_html(v, r["fingerprint"], r["claims"]) if a.format == "html" else json.dumps(v, indent=1) if a.format == "json" else render_text(v, color=sys.stdout.isatty()))
+            color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+            print(render_html(v, r["fingerprint"], r["claims"]) if a.format == "html" else json.dumps(v, indent=1) if a.format == "json" else render_text(v, color=color_enabled))
             if priority_map[v["action"]] > priority_map[worst_action]:
                 worst_action = v["action"]
 
@@ -417,7 +422,8 @@ def main(argv=None) -> int:
     elif a.format == "json":
         print(json.dumps(v, indent=1))
     else:
-        print(render_text(v, color=sys.stdout.isatty()))
+        color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+        print(render_text(v, color=color_enabled))
     print(f"  report: {out}/report.html", file=sys.stderr)
     if a.compare:
         print("\n" + "=" * 70)

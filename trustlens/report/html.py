@@ -7,14 +7,24 @@ All dynamic text MUST pass through esc() (package READMEs, payloads, and metadat
 """
 from __future__ import annotations
 
+import re
 from html import escape
+
+_CANARY_RE = re.compile(r"TLCANARY[A-Za-z0-9]+")
+
+
+def redact_canaries(s: str) -> str:
+    """Redact canary token bytes (replace TLCANARY... with [canary])."""
+    if not isinstance(s, str):
+        s = str(s)
+    return _CANARY_RE.sub("[canary]", s)
 
 
 def esc(val: object) -> str:
-    """Strict HTML escaping for untrusted attacker-controlled inputs."""
+    """Strict HTML escaping for untrusted attacker-controlled inputs, with canary token bytes redacted."""
     if val is None:
         return ""
-    return escape(str(val), quote=True)
+    return escape(redact_canaries(str(val)), quote=True)
 
 
 CSS = """
@@ -453,20 +463,20 @@ def _generate_why_verdict(verdict: dict) -> tuple[str, str]:
     if action == "BLOCK":
         # Check if canary_in_bytes or canary_hit fired
         canary_finding = next((f for f in findings if f.get("canary_hit")), None)
-        rules = ", ".join(f"`{f.get('rule')}`" for f in findings[:3])
+        rules = ", ".join(f"{f.get('rule')}" for f in findings[:3])
         sig_str = ", ".join(signals) if signals else "unlicensed sensitive behavior"
         if canary_finding and any(e.get("detail", {}).get("canary_in_bytes") for e in canary_finding.get("evidence", [])):
             reason = (
-                f"**BLOCK triggered (Deterministic Proof):** Planted canary credentials were detected inside outgoing request bytes "
+                f"BLOCK triggered (Deterministic Proof): Planted canary credentials were detected inside outgoing request bytes "
                 f"(rule {rules}). The ladder requires BLOCK when canary-in-bytes is proven. Signals: {sig_str}."
             )
         elif len(signals) >= 2:
             reason = (
-                f"**BLOCK triggered (Multi-Signal Threshold):** Observed {len(signals)} independent strong signal classes "
-                f"({sig_str}) with rules {rules}. The ladder requires BLOCK when &ge; 2 independent signals contradict stated package claims."
+                f"BLOCK triggered (Multi-Signal Threshold): Observed {len(signals)} independent strong signal classes "
+                f"({sig_str}) with rules {rules}. The ladder requires BLOCK when ≥ 2 independent signals contradict stated package claims."
             )
         else:
-            reason = f"**BLOCK triggered:** Malicious behavior detected contradicting claims under rules {rules}."
+            reason = f"BLOCK triggered: Malicious behavior detected contradicting claims under rules {rules}."
         return "BLOCK", reason
 
     if action == "REVIEW":
@@ -474,19 +484,19 @@ def _generate_why_verdict(verdict: dict) -> tuple[str, str]:
         if verdict_name == "INCONCLUSIVE":
             not_obs = ", ".join(cov.get("not_observed", ["execution incomplete"])[:2])
             reason = (
-                f"**REVIEW / INCONCLUSIVE triggered (Honest Abstention):** TrustLens abstains from issuing a clean verdict "
+                f"REVIEW / INCONCLUSIVE triggered (Honest Abstention): TrustLens abstains from issuing a clean verdict "
                 f"because critical phases or triggers were not observed ({not_obs}). We do not guess when runtime coverage is incomplete."
             )
         else:
             reason = (
-                f"**REVIEW / SUSPICIOUS triggered:** Anomalous behavior was observed (score {verdict.get('score', 0):.1f}), "
+                f"REVIEW / SUSPICIOUS triggered: Anomalous behavior was observed (score {verdict.get('score', 0):.1f}), "
                 f"but it did not satisfy the strict multi-signal threshold required for an automatic BLOCK. Manual review recommended."
             )
         return "REVIEW", reason
 
     # PASS
     return "PASS", (
-        "**PASS / BENIGN-CONSISTENT:** All observed runtime capabilities match the declared claims in the README / metadata "
+        "PASS / BENIGN-CONSISTENT: All observed runtime capabilities match the declared claims in the README / metadata "
         "within the tested coverage boundary. Zero malicious rules triggered. (Verdicts describe observed behavior; they are not proof of safety)."
     )
 
@@ -626,7 +636,11 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
 
                 for ev in evidence_items:
                     det = ev.get("detail", {})
-                    det_preview = esc(str(det.get("path") or det.get("url") or det.get("name") or det.get("dest") or det)[:140])
+                    if det.get("canary_in_bytes"):
+                        raw_val = det.get("path") or det.get("name") or det.get("dest") or "[url redacted]"
+                    else:
+                        raw_val = det.get("path") or det.get("url") or det.get("name") or det.get("dest") or det
+                    det_preview = esc(str(raw_val)[:140])
                     canary_txt = " [CANARY IN PAYLOAD]" if det.get("canary_in_bytes") else ""
                     h.append("<div class='chain-arrow'>&darr;</div>")
                     h.append(f"<div class='chain-node'><span class='node-label'>3. Evidence</span><span class='node-val'><code>{det_preview}{esc(canary_txt)}</code></span></div>")
@@ -681,9 +695,14 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
                     for ev in ph_events:
                         dot_cls = "dot-succeeded" if ev.get("outcome") == "succeeded" and ev.get("canary_hit") else ("dot-blocked" if ev.get("outcome") == "blocked" else "dot-clean")
                         d = ev.get("detail", {})
-                        snip = str(d.get("path") or d.get("url") or d.get("dest") or ev.get("capability") or "")[:40]
+                        if d.get("canary_in_bytes"):
+                            snip = str(d.get("path") or d.get("dest") or "[url redacted]")[:40]
+                            title_txt = str({k: ("[url redacted]" if k == "url" else v) for k, v in d.items()})
+                        else:
+                            snip = str(d.get("path") or d.get("url") or d.get("dest") or ev.get("capability") or "")[:40]
+                            title_txt = str(d)
                         canary_tag = " [canary]" if ev.get("canary_hit") else ""
-                        h.append(f"<span class='event-dot {dot_cls}' title='{esc(str(d))}'>{esc(ev.get('capability', ''))}: {esc(snip)}{esc(canary_tag)}</span>")
+                        h.append(f"<span class='event-dot {dot_cls}' title='{esc(title_txt)}'>{esc(ev.get('capability', ''))}: {esc(snip)}{esc(canary_tag)}</span>")
                     h.append("</div>")
             h.append("</div></div>")
         h.append("</div>")
@@ -693,13 +712,16 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
         h.append("<table><tr><th>#</th><th>Profile</th><th>Phase</th><th>Capability</th><th>Detail</th><th>Outcome</th><th>Canaries</th></tr>")
         for e in events:
             d = e.get("detail", {})
-            txt = str(d.get("path") or d.get("name") or d.get("dest") or d.get("host") or d.get("url") or d.get("decoded_snippet") or d)[:100]
+            if d.get("canary_in_bytes"):
+                txt = str(d.get("path") or d.get("name") or d.get("dest") or d.get("host") or "[url redacted]")[:100]
+            else:
+                txt = str(d.get("path") or d.get("name") or d.get("dest") or d.get("host") or d.get("url") or d.get("decoded_snippet") or d)[:100]
             outc = esc(e.get("outcome", ""))
             canary_str = esc(", ".join(e.get("canary_ids", [])))
             norm_phase = "startup" if e.get("phase") == "fresh_startup" else e.get("phase", "")
             h.append(
                 f"<tr class='timeline-row' data-profile='{esc(e.get('profile'))}' data-phase='{esc(norm_phase)}'>"
-                f"<td>{e.get('seq')}</td><td><code>{esc(e.get('profile'))}</code></td>"
+                f"<td>{esc(e.get('seq'))}</td><td><code>{esc(e.get('profile'))}</code></td>"
                 f"<td>{esc(e.get('phase'))}</td><td><code>{esc(e.get('capability'))}</code></td>"
                 f"<td><code>{esc(txt)}</code></td><td>{outc}</td><td>{canary_str}</td></tr>"
             )
@@ -751,17 +773,19 @@ def render_comparison_html(
     fp_mal: dict,
     claims_mal: dict,
 ) -> str:
-    """Generate a side-by-side comparison HTML report: Clean Control (PASS) vs Malicious Package (BLOCK).
-    Ideal for slide deck screenshots and live judge presentations.
-    """
+    """Generate a side-by-side comparison HTML report showing each column's real action, verdict, score, and finding titles."""
     clean_pkg = v_clean.get("package", {})
     mal_pkg = v_mal.get("package", {})
 
     comp_css = CSS + """
     .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
     @media (max-width: 800px) { .comp-grid { grid-template-columns: 1fr; } }
-    .col-clean { border-top: 4px solid var(--pass); }
-    .col-mal { border-top: 4px solid var(--block); }
+    .col-card.PASS { border-top: 4px solid var(--pass); }
+    .col-card.REVIEW { border-top: 4px solid var(--review); }
+    .col-card.BLOCK { border-top: 4px solid var(--block); }
+    .comp-findings { margin-top: 1rem; font-size: 0.9rem; }
+    .comp-findings ul { padding-left: 1.25rem; margin-top: 0.5rem; }
+    .comp-findings li { margin-bottom: 0.35rem; }
     """
 
     h = [
@@ -770,47 +794,61 @@ def render_comparison_html(
         "<head>",
         "<meta charset='utf-8'>",
         "<meta name='viewport' content='width=device-width, initial-scale=1.0'>",
-        f"<title>TrustLens Comparison: {esc(clean_pkg.get('name'))} (PASS) vs {esc(mal_pkg.get('name'))} (BLOCK)</title>",
+        f"<title>TrustLens Comparison: {esc(clean_pkg.get('name'))} vs {esc(mal_pkg.get('name'))}</title>",
         f"<style>{comp_css}</style>",
         "</head>",
         "<body>",
         "<div class='container'>",
         "<div class='card' style='text-align: center; margin-bottom: 2rem;'>",
         "<h1>⚖️ TrustLens AI: Side-by-Side Verification</h1>",
-        "<p class='section-subtitle'>Demonstrating Claim-Aware Behavioral Provenance: Benign Control vs Contradictory Malware</p>",
+        "<p class='section-subtitle'>Demonstrating Claim-Aware Behavioral Provenance Comparison</p>",
         "</div>",
         "<div class='comp-grid'>",
     ]
 
-    # Column 1: Clean Control (e.g. rest_wrapper)
-    h.append("<div class='card col-clean'>")
-    h.append(f"<div class='badge-verdict PASS' style='float: right;'><span class='verdict-action'>PASS</span><span>{esc(v_clean.get('verdict'))}</span></div>")
-    h.append(f"<h2>{esc(clean_pkg.get('name'))} {esc(clean_pkg.get('version'))}</h2>")
-    h.append(f"<p class='section-subtitle'>{esc(v_clean.get('summary'))}</p>")
-    h.append("<h3 style='margin-top: 1rem; font-size: 1rem;'>Declared Intent</h3>")
-    if claims_clean.get("intents"):
-        h.append(f"<p style='font-style: italic; color: #94a3b8;'>&ldquo;{esc(claims_clean['intents'][0].get('quote'))}&rdquo;</p>")
-    h.append("<h3 style='margin-top: 1rem; font-size: 1rem;'>Observed Capabilities</h3>")
-    h.append("<p style='font-size: 0.9rem;'>Performs legitimate REST calls and reads API token, exactly matching its stated purpose. Zero mismatch findings.</p>")
-    h.append(f"<div style='margin-top: 1.5rem; font-weight: 700; color: var(--pass);'>Outcome: 0 findings &middot; Exit Code 0 (PASS)</div>")
-    h.append("</div>")
+    for v, _fp, cl in ((v_clean, fp_clean, claims_clean), (v_mal, fp_mal, claims_mal)):
+        pkg = v.get("package", {})
+        act = v.get("action", "REVIEW")
+        verd = v.get("verdict", "INCONCLUSIVE")
+        sc = v.get("score", 0.0)
+        findings = v.get("findings") or []
 
-    # Column 2: Malicious Package (e.g. evil_slug)
-    h.append("<div class='card col-mal'>")
-    h.append(f"<div class='badge-verdict BLOCK' style='float: right;'><span class='verdict-action'>BLOCK</span><span>{esc(v_mal.get('verdict'))}</span></div>")
-    h.append(f"<h2>{esc(mal_pkg.get('name'))} {esc(mal_pkg.get('version'))}</h2>")
-    h.append(f"<p class='section-subtitle'>{esc(v_mal.get('summary'))}</p>")
-    h.append("<h3 style='margin-top: 1rem; font-size: 1rem;'>Declared Intent</h3>")
-    if claims_mal.get("intents"):
-        h.append(f"<p style='font-style: italic; color: #94a3b8;'>&ldquo;{esc(claims_mal['intents'][0].get('quote'))}&rdquo;</p>")
-    h.append("<h3 style='margin-top: 1rem; font-size: 1rem;'>Observed Contradictions</h3>")
-    h.append("<p style='font-size: 0.9rem;'>Reads ~/.ssh/id_rsa in install phase, followed by exfiltration of planted canary token in HTTP request.</p>")
-    h.append(f"<div style='margin-top: 1.5rem; font-weight: 700; color: var(--block);'>Outcome: {len(v_mal.get('findings', []))} critical findings &middot; Exit Code 20 (BLOCK)</div>")
-    h.append("</div>")
+        h.append(f"<div class='card col-card {esc(act)}'>")
+        h.append(
+            f"<div class='badge-verdict {esc(act)}' style='float: right;'>"
+            f"<span class='verdict-action'>{esc(act)}</span><span>{esc(verd)}</span></div>"
+        )
+        h.append(f"<h2>{esc(pkg.get('name', 'Package'))} {esc(pkg.get('version', ''))}</h2>")
+        h.append(f"<p class='section-subtitle'>{esc(v.get('summary', ''))}</p>")
+        h.append(f"<div style='margin-top: 0.75rem;'><strong>Risk Score:</strong> <code>{sc:.1f} / 100</code></div>")
+
+        h.append("<h3 style='margin-top: 1rem; font-size: 1rem;'>Declared Intent</h3>")
+        if cl and cl.get("intents"):
+            h.append(f"<p style='font-style: italic; color: #94a3b8;'>&ldquo;{esc(cl['intents'][0].get('quote'))}&rdquo;</p>")
+        elif cl and cl.get("unknown_intent"):
+            h.append("<p style='font-style: italic; color: #94a3b8;'>Unknown intent (no explicit claims)</p>")
+        else:
+            h.append("<p style='font-style: italic; color: #94a3b8;'>No claims extracted</p>")
+
+        h.append(f"<div class='comp-findings'><h3 style='font-size: 1rem;'>Findings ({len(findings)})</h3>")
+        if findings:
+            h.append("<ul>")
+            for f in findings:
+                sev = esc(f.get("severity", "medium").upper())
+                h.append(f"<li><strong>[{sev}]</strong> {esc(f.get('title', ''))} (rule <code>{esc(f.get('rule', ''))}</code>)</li>")
+            h.append("</ul>")
+        else:
+            h.append("<p style='color: var(--pass); margin-top: 0.5rem;'>&check; No contradiction findings detected.</p>")
+        h.append("</div>")
+
+        outcome_cls = f"var(--{act.lower()})"
+        h.append(f"<div style='margin-top: 1.5rem; font-weight: 700; color: {outcome_cls};'>Outcome: {len(findings)} findings &middot; {esc(act)} (Score {sc:.1f})</div>")
+        h.append("</div>")
 
     h.append("</div>")  # end comp-grid
     h.append("<div class='footer'><p>TrustLens AI &middot; Proof-based dependency provenance.</p></div>")
     h.append("</div></body></html>")
+    return "\n".join(h)
     return "\n".join(h)
 
 

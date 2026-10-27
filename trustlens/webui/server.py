@@ -3,15 +3,12 @@ Pure Python, offline, zero CDN dependencies, strict loopback binding (127.0.0.1)
 """
 from __future__ import annotations
 
-import io
 import json
 import os
 import re
-import shutil
 import sys
 import tempfile
 import threading
-from email.message import EmailMessage
 from email.parser import BytesParser
 from email.policy import default
 from http import HTTPStatus
@@ -21,7 +18,7 @@ from typing import Any
 
 from trustlens.cli import scan
 from trustlens.contracts import ROOT
-from trustlens.report import render_comparison_html, render_html
+from trustlens.report import render_comparison_html
 from trustlens.sandbox.env_check import check_env
 
 MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -386,9 +383,14 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
         if not self._validate_host():
             return
 
-        content_length = int(self.headers.get("Content-Length", 0))
-        if content_length > MAX_UPLOAD_SIZE:
-            self.send_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Payload exceeds maximum 20 MB limit.")
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+        except (ValueError, TypeError):
+            self.send_error(HTTPStatus.BAD_REQUEST, "Invalid Content-Length")
+            return
+
+        if content_length < 0 or content_length > MAX_UPLOAD_SIZE:
+            self.send_error(HTTPStatus.BAD_REQUEST, "Content-Length must be between 0 and 20MB.")
             return
 
         if self.path == "/api/scan":
@@ -396,21 +398,53 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
             try:
                 payload = json.loads(body.decode("utf-8"))
             except Exception as e:
-                self.send_error(HTTPStatus.BAD_REQUEST, f"Invalid JSON payload: {e}")
+                self._send_json({"error": f"Invalid JSON payload: {e}"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            rel_pkg = payload.get("package", "bench/packages/malicious/evil_slug")
-            pkg_path = ROOT / rel_pkg if not Path(rel_pkg).is_absolute() else Path(rel_pkg)
-            profiles = payload.get("profiles", "dev,ci").split(",")
+            rel_pkg = payload.get("package", "")
+            if not isinstance(rel_pkg, str) or not rel_pkg.strip():
+                self._send_json({"error": "Missing package path"}, HTTPStatus.BAD_REQUEST)
+                return
 
-            if not pkg_path.exists():
+            raw_path = Path(rel_pkg)
+            if (
+                rel_pkg.startswith(("/", "\\"))
+                or raw_path.is_absolute()
+                or ".." in raw_path.parts
+                or (len(rel_pkg) >= 2 and rel_pkg[1] == ":")
+            ):
+                self._send_json({"error": f"Forbidden: path traversal or absolute path '{rel_pkg}'"}, HTTPStatus.BAD_REQUEST)
+                return
+
+            resolved = (ROOT / raw_path).resolve()
+            bench_root = (ROOT / "bench/packages").resolve()
+            upload_root = (ROOT / "reports/webui/uploads").resolve()
+
+            try:
+                resolved.relative_to(bench_root)
+                is_in_bench = True
+            except ValueError:
+                is_in_bench = False
+
+            try:
+                resolved.relative_to(upload_root)
+                is_in_upload = True
+            except ValueError:
+                is_in_upload = False
+
+            if not (is_in_bench or is_in_upload):
+                self._send_json({"error": f"Forbidden: path must be inside bench/packages/ or uploads/: '{rel_pkg}'"}, HTTPStatus.BAD_REQUEST)
+                return
+
+            if not resolved.exists():
                 self._send_json({"error": f"Package path '{rel_pkg}' does not exist"}, HTTPStatus.NOT_FOUND)
                 return
 
-            out_dir = ROOT / "reports/webui" / pkg_path.name
+            profiles = payload.get("profiles", "dev,ci").split(",")
+            out_dir = ROOT / "reports/webui" / resolved.name
             with scan_lock:
                 try:
-                    res = scan(str(pkg_path), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
+                    res = scan(str(resolved), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
                     report_html = (Path(res["out_dir"]) / "report.html").read_text(encoding="utf-8")
                     self._send_json({"verdict": res["verdict"], "report_html": report_html})
                 except Exception as e:

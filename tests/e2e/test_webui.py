@@ -1,10 +1,10 @@
 """Dev D. End-to-end tests for the localhost-only Web UI console (D14)."""
+import http.client
 import json
 import socket
 import threading
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 import pytest
 
@@ -119,13 +119,44 @@ def test_webui_upload_hostile_filename(webui_server):
 
 
 def test_webui_rejects_oversized_payload(webui_server):
-    """Safety: payload exceeding 20 MB must be rejected with 413 Payload Too Large."""
-    req = urllib.request.Request(
-        f"{webui_server}/api/upload",
-        data=b"a",
-        headers={"Content-Type": "application/json", "Content-Length": str(25 * 1024 * 1024)},
-        method="POST",
-    )
-    with pytest.raises(urllib.error.HTTPError) as exc_info:
-        urllib.request.urlopen(req, timeout=10)
-    assert exc_info.value.code == 413
+    """Safety: payload exceeding 20 MB must be rejected with 400 Bad Request."""
+    host_port = webui_server.removeprefix("http://").split(":")
+    conn = http.client.HTTPConnection(host_port[0], int(host_port[1]))
+    conn.putrequest("POST", "/api/scan")
+    conn.putheader("Host", host_port[0])
+    conn.putheader("Content-Length", str(25 * 1024 * 1024))
+    conn.endheaders()
+    resp = conn.getresponse()
+    assert resp.status == 400
+    conn.close()
+
+
+def test_webui_rejects_path_traversal(webui_server):
+    """Safety: escaping bench/packages/ or uploads/ must return HTTP 400 JSON error."""
+    for bad_path in ["../../../../../../etc/passwd", "/etc/passwd"]:
+        payload = json.dumps({"package": bad_path}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{webui_server}/api/scan",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(req, timeout=10)
+        assert exc_info.value.code == 400
+        err_body = json.loads(exc_info.value.read().decode("utf-8"))
+        assert "error" in err_body
+        assert "Forbidden" in err_body["error"]
+
+
+def test_webui_rejects_negative_content_length(webui_server):
+    """Safety: Content-Length < 0 must be rejected with HTTP 400 immediately."""
+    host_port = webui_server.removeprefix("http://").split(":")
+    conn = http.client.HTTPConnection(host_port[0], int(host_port[1]))
+    conn.putrequest("POST", "/api/scan")
+    conn.putheader("Host", host_port[0])
+    conn.putheader("Content-Length", "-1")
+    conn.endheaders()
+    resp = conn.getresponse()
+    assert resp.status == 400
+    conn.close()

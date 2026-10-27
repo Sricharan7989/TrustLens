@@ -293,3 +293,116 @@ def test_scan_compare_flag(tmp_path):
     assert "GuardDog 3.2" in r.stdout
     assert "PipCanary 0.1" in r.stdout
 
+
+def test_unrecorded_package_dir_exit_10(tmp_path):
+    """(a) Package dir with a .py and README and no recording exits 10."""
+    pkg = tmp_path / "unrecorded_pkg"
+    pkg.mkdir()
+    (pkg / "module.py").write_text("def run(): pass\n", encoding="utf-8")
+    (pkg / "README.md").write_text("# Unrecorded\nA simple package.\n", encoding="utf-8")
+
+    out = tmp_path / "out_unrec"
+    r = subprocess.run(
+        [sys.executable, "-m", "trustlens", "scan", str(pkg), "--runner", "fixture", "--out", str(out)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 10
+    v = json.loads((out / "verdict.json").read_text(encoding="utf-8"))
+    assert v["action"] == "REVIEW"
+    assert v["verdict"] == "INCONCLUSIVE"
+
+
+def test_synthetic_pth_startup_exit_20(tmp_path):
+    """(b) _synthetic_pth_startup expecting exit 20 and rule startup_hook."""
+    pkg = tmp_path / "_synthetic_pth_startup"
+    pkg.mkdir()
+    (pkg / "setup.py").write_text("from setuptools import setup\nsetup(name='zz-helper', version='1.0')\n", encoding="utf-8")
+    (pkg / "README.md").write_text("# zz-helper\nstring helper\n", encoding="utf-8")
+
+    out = tmp_path / "out_pth"
+    r = subprocess.run(
+        [sys.executable, "-m", "trustlens", "scan", str(pkg), "--runner", "fixture", "--out", str(out)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 20
+    v = json.loads((out / "verdict.json").read_text(encoding="utf-8"))
+    rules = [f.get("rule") for f in v.get("findings", [])]
+    assert "startup_hook" in rules
+
+
+def test_hostile_package_name_sanitized(tmp_path):
+    """(e) Package whose setup.py name contains \x1b[31mPWN\x1b[0m and <script>alert(1)</script>:
+    stdout has no \x1b and no '<script>', report.html has escaped script and no TLCANARY.
+    """
+    pkg = tmp_path / "hostile_pkg"
+    pkg.mkdir()
+    (pkg / "setup.py").write_text(
+        "from setuptools import setup\n"
+        "setup(name='\x1b[31mPWN\x1b[0m<script>alert(1)</script>', version='1.0')\n",
+        encoding="utf-8",
+    )
+    (pkg / "README.md").write_text("# Hostile Package\nToken: TLCANARYSECRET12345\n", encoding="utf-8")
+
+    out = tmp_path / "out_hostile"
+    r = subprocess.run(
+        [sys.executable, "-m", "trustlens", "scan", str(pkg), "--runner", "fixture", "--out", str(out)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    # Stdout must have no raw ANSI escapes and no literal '<script>'
+    assert "\x1b" not in r.stdout
+    assert "<script>" not in r.stdout
+
+    # report.html must have the escaped script and no TLCANARY
+    html = (out / "report.html").read_text(encoding="utf-8")
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "TLCANARY" not in html
+
+
+def test_no_color_emits_no_ansi(monkeypatch):
+    """(f) NO_COLOR=1 emits no \x1b."""
+    import os
+
+    from trustlens.report.text import render_text
+
+    monkeypatch.setenv("NO_COLOR", "1")
+    use_color = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+    assert not use_color
+    v = {"action": "BLOCK", "verdict": "MALICIOUS", "package": {"name": "test", "version": "1.0"}}
+    txt = render_text(v, color=use_color)
+    assert "\x1b" not in txt
+
+
+def test_no_color_on_pty():
+    """(f) NO_COLOR=1 on a pty emits no \x1b when pty is available (POSIX)."""
+    import os
+
+    try:
+        import pty
+    except ImportError:
+        pytest.skip("pty is only available on POSIX systems")
+
+    master, slave = pty.openpty()
+    try:
+        env = dict(os.environ, NO_COLOR="1")
+        proc = subprocess.run(
+            [sys.executable, "-m", "trustlens", "scan", str(ROOT / "bench/packages/clean/clean_slug"), "--runner", "fixture"],
+            stdin=slave,
+            stdout=slave,
+            stderr=slave,
+            env=env,
+            timeout=30,
+        )
+        assert proc.returncode == 0
+        os.close(slave)
+        out = os.read(master, 10240).decode("utf-8", errors="ignore")
+        assert "\x1b" not in out
+    finally:
+        os.close(master)
+
