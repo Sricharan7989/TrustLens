@@ -28,6 +28,14 @@ REPO = "https://github.com/DataDog/malicious-software-packages-dataset.git"
 
 
 _HTML_TAG = re.compile(r"<[^>]*>")
+_MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_BADGE_URL = re.compile(
+    r"https?://(?:img\.shields\.io|shields\.io|badge\.fury\.io|badgen\.net|travis-ci\.(?:org|com))\S*",
+    re.I,
+)
+BANNED_CLAIMS = frozenset({"uninspected Datadog sample"})
+NEUTRAL_CLAIM = "not stated"
+NO_README_NOTE = "no descriptive README line available"
 
 
 def safe_extract_zip(zip_path: Path, target_dir: Path) -> bool:
@@ -52,20 +60,31 @@ def find_pkg_root(target: Path, name: str) -> Path:
 
 
 def descriptive_claim_line(line: str) -> str | None:
-    """Return visible claim text, skipping blanks, rules, and HTML-only lines."""
-    raw = line.strip()
-    if not raw or raw.startswith(("==", "--", "<!--")):
+    """Return the first descriptive line, skipping badges, images, HTML, and blanks.
+
+    Does not invent text. HTML-only lines, markdown images, and badge rows yield None.
+    """
+    raw = line.strip().lstrip("\ufeff")
+    if raw.startswith("ï»¿"):
+        raw = raw[len("ï»¿"):].strip()
+    if not raw or raw.startswith(("==", "--", "<!--", "```")):
         return None
-    visible = _HTML_TAG.sub("", raw).replace("&nbsp;", " ").strip().lstrip("#").strip()
-    if not visible or visible.startswith(("==", "--")):
+    without_images = _MD_IMAGE.sub(" ", raw)
+    visible = _HTML_TAG.sub(" ", without_images).replace("&nbsp;", " ")
+    visible = re.sub(r"\s+", " ", visible).strip().lstrip("#").strip()
+    if not visible or visible.startswith(("==", "--", "<")):
         return None
-    if raw.startswith("<") and visible == raw:
+    if _HTML_TAG.search(visible):
+        return None
+    if _BADGE_URL.search(visible) and _BADGE_URL.sub("", visible).strip(" []()") == "":
+        return None
+    if visible in BANNED_CLAIMS:
         return None
     return visible[:120]
 
 
-def get_readme_summary(pkg_root: Path) -> str:
-    """Read first descriptive README line, otherwise 'uninspected Datadog sample'."""
+def get_readme_summary(pkg_root: Path) -> str | None:
+    """Return the first descriptive README line, or None when the README has none."""
     for alt_name in ("README.md", "README.rst", "README.txt", "README"):
         alt = pkg_root / alt_name
         if alt.exists():
@@ -76,7 +95,31 @@ def get_readme_summary(pkg_root: Path) -> str:
                         return claim
             except Exception:
                 pass
-    return "uninspected Datadog sample"
+    return None
+
+
+def claim_from_stored(stored: str | None) -> str | None:
+    """Keep a claim already recorded from a README. Drop placeholders and HTML."""
+    if stored is None:
+        return None
+    if stored.strip() in BANNED_CLAIMS or stored.lstrip().startswith("<"):
+        return None
+    return descriptive_claim_line(stored)
+
+
+def apply_claim(stored: str | None, notes: str) -> tuple[str, str]:
+    """Return a schema-valid claim and notes.
+
+    A recovered README line is kept. When none exists, the claim is the neutral
+    token ``not stated`` (not README text) and notes record that no descriptive
+    line was available.
+    """
+    claim = claim_from_stored(stored)
+    if claim is None:
+        if NO_README_NOTE not in notes:
+            notes = f"{notes}; {NO_README_NOTE}" if notes else NO_README_NOTE
+        return NEUTRAL_CLAIM, notes
+    return claim, notes
 
 
 def main(argv=None) -> int:
@@ -136,12 +179,13 @@ def main(argv=None) -> int:
             continue
 
         pkg_root = find_pkg_root(target_dir, pkg_name)
-        claim_summary = get_readme_summary(pkg_root)
+        claim_summary, _note = apply_claim(get_readme_summary(pkg_root), "")
         extracted_packages.append({
             "id": pkg_name.replace(".", "-").replace("_", "-").lower(),
             "name": pkg_name,
             "path": str(pkg_root.relative_to(ROOT)).replace("\\", "/"),
             "claim": claim_summary,
+            "missing_readme_line": claim_summary == NEUTRAL_CLAIM,
             "zips": [z.name for z in zips],
         })
 
@@ -158,7 +202,11 @@ def main(argv=None) -> int:
                 "category": "datadog",
                 "claim": p["claim"],
                 "expected_verdict": None,
-                "notes": f"Datadog PyPI malicious package ({', '.join(p['zips'])})",
+                "notes": (
+                    f"Datadog PyPI malicious package ({', '.join(p['zips'])}); {NO_README_NOTE}"
+                    if p["missing_readme_line"]
+                    else f"Datadog PyPI malicious package ({', '.join(p['zips'])})"
+                ),
             }
             for p in extracted_packages
         ],

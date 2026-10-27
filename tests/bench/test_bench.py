@@ -774,6 +774,25 @@ def test_build_noise_whitelist_drops_unmatchable_proc_globs(tmp_path):
     assert "127.0.0.1" in text
 
 
+def test_build_noise_whitelist_emits_exact_loopback_host(tmp_path):
+    from bench.calibration.build_noise_whitelist import main
+    from bench.tools.cross_check_whitelist import cross_check
+    csv_path = tmp_path / "dns.csv"
+    rows = ["0,127.0.0.1\n"] * 20
+    csv_path.write_text("Level,dns\n" + "".join(rows), encoding="utf-8")
+    out = tmp_path / "noise_whitelist.yaml"
+    assert main(["--csv", str(csv_path), "--cols", "dns", "--out", str(out), "--min-prevalence", "0.02"]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert "*127.0.0.1*" not in text
+    data = yaml.safe_load(text)
+    hosts = [r for r in data["rules"] if "127.0.0.1" in str(r.get("host_glob", ""))]
+    assert hosts
+    assert all(r["host_glob"] == "127.0.0.1" for r in hosts)
+    measured = [r for r in hosts if r.get("source") != "seed"]
+    assert measured and measured[0]["host_glob"] == "127.0.0.1"
+    assert cross_check(out)["is_safe"] is True
+
+
 def _outside_snapshot(root: Path) -> dict[str, bytes | None]:
     snap: dict[str, bytes | None] = {}
     if not root.exists():
@@ -1074,15 +1093,23 @@ def test_datadog_extract_failure_does_not_create_dest_or_keep_html_claim(tmp_pat
     assert not dest.exists()
     root = tmp_path / "readme"
     root.mkdir()
-    (root / "README.md").write_text("<p align=\"center\">\n\nActual package purpose\n", encoding="utf-8")
+    (root / "README.md").write_text(
+        "![badge](https://img.shields.io/badge/x)\n\n<p align=\"center\">\n\nActual package purpose\n",
+        encoding="utf-8",
+    )
     assert get_readme_summary(root) == "Actual package purpose"
     (root / "README.md").write_text("<p align=\"center\">\n<img src=\"x\">\n", encoding="utf-8")
-    assert get_readme_summary(root) == "uninspected Datadog sample"
+    assert get_readme_summary(root) is None
     assert descriptive_claim_line('<p align="center">') is None
+    assert descriptive_claim_line("uninspected Datadog sample") is None
     labels = yaml.safe_load((ROOT / "bench/labels_datadog.yaml").read_text(encoding="utf-8"))
     for pkg in labels["packages"]:
-        assert "<p align" not in pkg["claim"]
-        assert not str(pkg["claim"]).lstrip().startswith("<")
+        claim = str(pkg["claim"])
+        assert claim != "uninspected Datadog sample"
+        assert claim.lstrip().startswith("<") is False
+        assert "<p align" not in claim
+        if claim == "not stated":
+            assert "no descriptive README line available" in pkg.get("notes", "")
 
 
 def test_held_out_wording_is_a_reported_slice():

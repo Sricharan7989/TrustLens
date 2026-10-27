@@ -20,6 +20,13 @@ from pathlib import Path
 
 import yaml
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from bench.tools.cross_check_whitelist import ADVERSARIAL_PROBES, strings_matched_by  # noqa: E402
+from trustlens.fingerprint.normalize import SECRET_ENV  # noqa: E402
+
 CAP_OF = {
     "processes": ("subprocess", "path_glob"),
     "read_processes": ("subprocess", "path_glob"),
@@ -76,6 +83,15 @@ def parse_cell(cell: str) -> set[str]:
 def is_safe_rule(cap: str, key: str, val: str) -> bool:
     """Ensure no rule can suppress canary hits or planted malware signals."""
     if FORBIDDEN_PATTERNS.search(val):
+        return False
+    return True
+
+
+def glob_is_exact_enough(key: str, glob_pat: str) -> bool:
+    """Reject globs that match an adversarial probe, and env globs that name a secret."""
+    if set(strings_matched_by(glob_pat)) & set(ADVERSARIAL_PROBES):
+        return False
+    if key == "env_glob" and SECRET_ENV.search(glob_pat):
         return False
     return True
 
@@ -158,6 +174,8 @@ def main(argv=None) -> int:
 
     for seed in calibrated_seeds:
         key = "host_glob" if "host_glob" in seed else "env_glob"
+        if not glob_is_exact_enough(key, seed[key]):
+            continue
         seen_globs.add((seed["capability"], seed[key]))
         rules.append(seed)
 
@@ -177,25 +195,36 @@ def main(argv=None) -> int:
             pb = count / max(nb, 1)
             pm = mal[c][tok] / max(nm, 1)
             if pb >= a.min_prevalence and pm < pb / 4:
-                glob_pat = f"*{tok}*" if not tok.startswith("*") else tok
+                # host and env globs are exact tokens. A wrapped *glob* also matches lookalikes.
+                if key in ("host_glob", "env_glob"):
+                    glob_pat = tok
+                else:
+                    glob_pat = tok if tok.startswith("*") else f"*{tok}*"
                 # path_glob is matched against detail["path"]. proc.spawn has argv, so these rules never fire.
                 if cap == "subprocess" and key == "path_glob":
                     continue
                 if glob_pat in UNMATCHABLE_PROC_GLOBS:
                     continue
+                if not is_safe_rule(cap, key, glob_pat):
+                    continue
+                if not glob_is_exact_enough(key, glob_pat):
+                    continue
                 rule_key = (cap, glob_pat)
-                if rule_key in seen_globs:
-                    continue
-                if not is_safe_rule(cap, key, tok):
-                    continue
-                seen_globs.add(rule_key)
-                rules.append({
+                measured = {
                     "capability": cap,
                     key: glob_pat,
                     "reason": f"benign prevalence {pb:.1%} vs malicious {pm:.1%} in trace dataset",
                     "source": f"{Path(csv_paths[0]).name}:{c}",
                     "benign_prevalence": round(pb, 4),
-                })
+                }
+                if rule_key in seen_globs:
+                    for i, existing in enumerate(rules):
+                        if existing.get("capability") == cap and existing.get(key) == glob_pat and existing.get("source") == "seed":
+                            rules[i] = measured
+                            break
+                    continue
+                seen_globs.add(rule_key)
+                rules.append(measured)
 
     out_path = Path(a.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
