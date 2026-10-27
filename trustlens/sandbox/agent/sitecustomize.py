@@ -60,8 +60,25 @@ if _LOG:
         for _form in _forms(_tok):
             _FORM_INDEX.append((_form, _cid))
 
+    # Libraries shipped with the sandbox interpreter itself (e.g. Ubuntu's python3-attr in
+    # /usr/lib/python3/dist-packages). The package is installed under /w, never here: /usr is
+    # read-only in the sandbox, so code in these folders cannot belong to the scanned package.
+    _SYSTEM_LIBS = ("/usr/lib/python3/dist-packages/", "/usr/lib/python3/site-packages/",
+                    "/usr/local/lib/python3/dist-packages/")
+
+    def _is_system_lib(fn: str) -> bool:
+        if fn.startswith(_SYSTEM_LIBS):
+            return True
+        parts = fn.split("/")
+        # /usr/lib/python3.12/dist-packages/..., /usr/local/lib/python3.12/site-packages/...
+        return (len(parts) > 5 and parts[1] == "usr" and parts[-1] != ""
+                and any(p.startswith("python3") for p in parts[2:5])
+                and any(p in ("dist-packages", "site-packages") for p in parts[3:6]))
+
     def _is_stdlib(fn: str) -> bool:
-        return fn.startswith("<frozen") or (fn.startswith(_STDLIB) and "site-packages" not in fn and "dist-packages" not in fn)
+        if fn.startswith("<frozen") or _is_system_lib(fn):
+            return True
+        return fn.startswith(_STDLIB) and "site-packages" not in fn and "dist-packages" not in fn
 
     def _classify(fn: str) -> str | None:
         if not fn:
@@ -239,7 +256,8 @@ if _LOG:
                 _emit("proc.spawn", {"argv": argv, "via": event}, "attempted", who, ev)
             elif event in ("compile", "exec"):
                 frame = sys._getframe(1)
-                if _classify(frame.f_code.co_filename) in (None, "toolchain"):
+                who = _classify(frame.f_code.co_filename)
+                if who in (None, "toolchain"):
                     return
                 if event == "compile":
                     src, fname = args[0], args[1]
@@ -253,7 +271,7 @@ if _LOG:
                         "dyn.compile",
                         {"code_sha256": hashlib.sha256(text.encode()).hexdigest(), "decoded_snippet": text[:500], "source_kind": "compile"},
                         "succeeded",
-                        "pkg",
+                        who,
                         {"file": frame.f_code.co_filename, "line": frame.f_lineno},
                     )
                 else:
@@ -271,7 +289,7 @@ if _LOG:
                                 "decoded_snippet": snippet,
                             },
                             "succeeded",
-                            "pkg",
+                            who,
                             {"file": frame.f_code.co_filename, "line": frame.f_lineno},
                         )
             elif event == "ctypes.dlopen":
