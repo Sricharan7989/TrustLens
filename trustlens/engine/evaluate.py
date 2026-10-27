@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 from trustlens.contracts import load_capabilities
-from trustlens.fingerprint.normalize import SENSITIVE_PATH, snippet_mentions_env_secret
+from trustlens.fingerprint.normalize import snippet_has_denylisted_secret
 
 W = yaml.safe_load((Path(__file__).parent / "weights.yaml").read_text())
 NETWORK_WORDS = ("socket", "urllib", "requests", "http", "connect", "subprocess", "os.system", "curl", "wget")
@@ -158,7 +158,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         snippet_lower = snippet.lower()
         has_network_or_exec = any(w in snippet_lower for w in NETWORK_WORDS) or any(w in snippet_lower for w in EXEC_WORDS)
         has_obf = any(w in snippet_lower for w in OBF_WORDS)
-        has_secret = bool(SENSITIVE_PATH.search(snippet) or snippet_mentions_env_secret(snippet))
+        has_secret = snippet_has_denylisted_secret(snippet)
         has_canary = bool(e.get("canary_hit") or e.get("canary_ids") or (e.get("detail") or {}).get("canary_in_bytes"))
         is_dep = str(e.get("attributed_to", "")).startswith("dep:")
         claimed_shim = (

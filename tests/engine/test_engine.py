@@ -1492,10 +1492,15 @@ def test_regression_loose_secret_scan_does_not_block(tmp_path):
 
 @pytest.mark.parametrize("snippet", [
     "token = None",
+    "for key, value in items:\n    pass",
+    "GITHUB_ACTIONS",
     "os.environ.get('GITHUB_ACTIONS')",
     "print('hello from the tool')",
     "class TemplateShim:\n    pass\n",
     "open('/opt/valid_rsa')",
+    "json.load(open('config.json'))",
+    "import logging\npassword='x'\nlogging.info('started')",
+    "import argparse\np = argparse.ArgumentParser()\np.add_argument('--token', help='API token')",
 ])
 def test_regression_benign_snippets_stay_score_zero(tmp_path, snippet):
     claims = _pkg(
@@ -1661,6 +1666,220 @@ def test_regression_install_note_real_timeout_phrases(tmp_path, note):
     _fp, verdict = _pipeline(tmp_path, claims, events, install_note=note)
     assert verdict["verdict"] == "INCONCLUSIVE"
     assert verdict["action"] == "REVIEW"
+
+
+def _cli_claims(tmp_path):
+    return _pkg(
+        tmp_path, "cli_tool_pkg",
+        "This is a command line utility package with a long description.\n",
+        '\n[project.scripts]\nmytool = "cli_tool_pkg:main"\n',
+    )
+
+
+@pytest.mark.parametrize("snippet", [
+    "pathlib.Path.home()/'.aws'/'credentials'",
+    "pathlib.Path.home() / '.aws' / 'credentials'",
+    "open('/et'+'c/passwd')",
+    "open('/et' + 'c/passwd')",
+    "open('~/.aws/credentials')",
+    "pathlib.Path.home()/'.ssh'/'id_rsa'",
+    "open('/root/'+'.ssh/id_rsa')",
+    "getattr(os,'environ')['AWS_SECRET_ACCESS_KEY']",
+    'getattr(os, "environ")["AWS_SECRET_ACCESS_KEY"]',
+    "subprocess.run(['cat','/etc/shadow'])",
+])
+def test_regression_split_literal_secrets_are_suspicious(tmp_path, snippet):
+    # Split markers and path joins must stay decoded_exec in cli_tool and dep TemplateShim contexts.
+    claims = _cli_claims(tmp_path)
+    _fp, verdict = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert verdict["verdict"] == "SUSPICIOUS"
+    assert verdict["action"] == "REVIEW"
+    assert verdict["score"] == 10.8
+    assert verdict["independent_signals"] == ["decoded_exec"]
+
+    dep = "class TemplateShim:\n    " + snippet
+    _fp_dep, verdict_dep = _pipeline(
+        tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": dep}, attributed="dep:jinja2"),
+    )
+    assert verdict_dep["verdict"] == "SUSPICIOUS"
+    assert verdict_dep["action"] == "REVIEW"
+    assert verdict_dep["score"] == 7.56
+    assert verdict_dep["independent_signals"] == ["decoded_exec"]
+    assert not any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" for f in verdict_dep["findings"])
+
+
+@pytest.mark.parametrize("snippet", [
+    "os.environ.get('SSH_AUTH_SOCK')",
+    "os.environ.get('AWS_DEFAULT_REGION')",
+    "os.environ.get('AWS_REGION')",
+    "TOKEN = None",
+    "for KEY, value in items: pass",
+    "help='Set API_KEY'",
+])
+def test_regression_nonsecret_caps_do_not_block(tmp_path, snippet):
+    # All-caps non-secrets and bare tokens are BENIGN alone, and only network_unclaimed with one request.
+    claims = _cli_claims(tmp_path)
+    _fp, alone = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert alone["verdict"] == "BENIGN-CONSISTENT"
+    assert alone["action"] == "PASS"
+    assert alone["score"] == 0
+    assert alone["independent_signals"] == []
+
+    events = _pair("dyn.exec", {"decoded_snippet": snippet})
+    events += _pair("net.http", {"url": "https://example.invalid"}, seq0=2)
+    _fp_net, with_net = _pipeline(tmp_path, claims, events)
+    assert with_net["verdict"] == "SUSPICIOUS"
+    assert with_net["action"] == "REVIEW"
+    assert with_net["score"] == 2.4
+    assert with_net["independent_signals"] == ["network_unclaimed"]
+
+    dep = "class TemplateShim:\n    " + snippet
+    _fp_dep, verdict_dep = _pipeline(
+        tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": dep}, attributed="dep:jinja2"),
+    )
+    assert verdict_dep["verdict"] == "BENIGN-CONSISTENT"
+    assert verdict_dep["action"] == "PASS"
+    assert verdict_dep["score"] == 0
+    assert "decoded_exec" not in verdict_dep["independent_signals"]
+
+
+@pytest.mark.parametrize("snippet", [
+    "os.environ.get('AWS_SESSION_TOKEN')",
+    "os.environ['GH_TOKEN']",
+    "os.getenv('NPM_TOKEN')",
+    "os.environ.get('PYPI_TOKEN')",
+    "os.environ['GOOGLE_APPLICATION_CREDENTIALS']",
+    "os.environ.get('MY_SERVICE_SECRET')",
+    "os.environ['SERVICE_TOKEN']",
+])
+def test_regression_curated_env_reads_stay_suspicious(tmp_path, snippet):
+    claims = _cli_claims(tmp_path)
+    _fp, verdict = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert verdict["verdict"] == "SUSPICIOUS"
+    assert verdict["action"] == "REVIEW"
+    assert verdict["score"] == 10.8
+    assert "decoded_exec" in verdict["independent_signals"]
+
+    dep = "class TemplateShim:\n    " + snippet
+    _fp_dep, verdict_dep = _pipeline(
+        tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": dep}, attributed="dep:jinja2"),
+    )
+    assert verdict_dep["verdict"] == "SUSPICIOUS"
+    assert "decoded_exec" in verdict_dep["independent_signals"]
+    assert not any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" for f in verdict_dep["findings"])
+
+
+def _shim(snippet: str) -> str:
+    return "class TemplateShim:\n    " + snippet
+
+
+def _expect_secret_contexts(tmp_path, claims, snippet):
+    """cli_tool pkg, pkg TemplateShim, and dep:jinja2 TemplateShim."""
+    contexts = (
+        ("pkg", snippet, 10.8),
+        ("pkg", _shim(snippet), 10.8),
+        ("dep:jinja2", _shim(snippet), 7.56),
+    )
+    for attributed, text, score in contexts:
+        _fp, verdict = _pipeline(
+            tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": text}, attributed=attributed),
+        )
+        assert verdict["verdict"] == "SUSPICIOUS", text
+        assert verdict["action"] == "REVIEW", text
+        assert verdict["score"] == score, text
+        assert verdict["independent_signals"] == ["decoded_exec"], text
+        assert not any(
+            f["rule"] == "decoded_exec" and f["signal_class"] == "info" for f in verdict["findings"]
+        ), text
+
+
+def _expect_benign_contexts(tmp_path, claims, snippet):
+    contexts = (
+        ("pkg", snippet),
+        ("pkg", _shim(snippet)),
+        ("dep:jinja2", _shim(snippet)),
+    )
+    for attributed, text in contexts:
+        _fp, alone = _pipeline(
+            tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": text}, attributed=attributed),
+        )
+        assert alone["verdict"] == "BENIGN-CONSISTENT", text
+        assert alone["action"] == "PASS", text
+        assert alone["score"] == 0, text
+        assert alone["independent_signals"] == [], text
+        events = _pair("dyn.exec", {"decoded_snippet": text}, attributed=attributed)
+        events += _pair("net.http", {"url": "https://example.invalid"}, seq0=2)
+        _fp_net, with_net = _pipeline(tmp_path, claims, events)
+        assert with_net["verdict"] == "SUSPICIOUS", text
+        assert with_net["action"] == "REVIEW", text
+        assert with_net["score"] == 2.4, text
+        assert with_net["independent_signals"] == ["network_unclaimed"], text
+
+
+_SECRET_SNIPPETS = [
+    "pathlib.Path.home()/'.aws'/'credentials'",
+    "open('/et'+'c/passwd')",
+    "open('~/.aws/credentials')",
+    "pathlib.Path.home()/'.ssh'/'id_rsa'",
+    "open('/root/'+'.ssh/id_rsa')",
+    "getattr(os,'environ')['AWS_SECRET_ACCESS_KEY']",
+    "subprocess.run(['cat','/etc/shadow'])",
+    "open('/etc/passwd')",
+    "open('/root/.docker/config.json')",
+    "open('/root/.config/gcloud/application_default_credentials.json')",
+    "os.environ['AWS_SECRET_ACCESS_KEY']",
+    "os.environ.get('GITHUB_TOKEN')",
+    "os.getenv('GITHUB_TOKEN')",
+    "os.environ[f'AWS_SECRET_ACCESS_KEY']",
+    "os.environ.get(f'GITHUB_TOKEN')",
+    "os.getenv(f'NPM_TOKEN')",
+    "os.environ.copy()['AWS_SECRET_ACCESS_KEY']",
+    "dict(os.environ)['AWS_SECRET_ACCESS_KEY']",
+    "from os import environ; environ['AWS_SECRET_ACCESS_KEY']",
+    "open('/etc/' 'passwd')",
+    "os.path.join('/etc','passwd')",
+]
+
+_BENIGN_SNIPPETS = [
+    "os.environ.get('SSH_AUTH_SOCK')",
+    "os.environ.get('AWS_DEFAULT_REGION')",
+    "os.environ.get('AWS_REGION')",
+    "os.environ[f'SSH_AUTH_SOCK']",
+    "os.environ.get(f'AWS_REGION')",
+    "os.environ.get('MY_TOKEN_COUNT')",
+    "os.environ['MY_TOKEN_COUNT']",
+    "MY_TOKEN_COUNT",
+    "TOKEN = None",
+    "TOKEN_LIMIT = 5",
+    "for KEY, value in items: pass",
+    "for KEY, value in items",
+    "for key, value in items:\n    pass",
+    "token = None",
+    "secret_len",
+    "help='Set API_KEY'",
+    "help='SECRET_SAUCE'",
+    "help='Use SECRET_SAUCE'",
+    "GITHUB_ACTIONS",
+    "os.environ.get('GITHUB_ACTIONS')",
+    "open('/opt/valid_rsa')",
+    "json.load(open('config.json'))",
+    "import logging\npassword='x'\nlogging.info('started')",
+    "import argparse\np = argparse.ArgumentParser()\np.add_argument('--token', help='API token')",
+    "os.path.join('/opt', 'valid_rsa')",
+    "print('not' 'a secret')",
+]
+
+
+@pytest.mark.parametrize("snippet", _SECRET_SNIPPETS)
+def test_regression_secret_snippets_all_contexts(tmp_path, snippet):
+    claims = _cli_claims(tmp_path)
+    _expect_secret_contexts(tmp_path, claims, snippet)
+
+
+@pytest.mark.parametrize("snippet", _BENIGN_SNIPPETS)
+def test_regression_benign_snippets_all_contexts(tmp_path, snippet):
+    claims = _cli_claims(tmp_path)
+    _expect_benign_contexts(tmp_path, claims, snippet)
 
 
 def test_regression_run_timeout_and_run_error_are_inconclusive(tmp_path):
