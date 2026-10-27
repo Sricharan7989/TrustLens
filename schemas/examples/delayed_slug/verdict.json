@@ -9,7 +9,7 @@
  },
  "verdict": "MALICIOUS-EVIDENT",
  "action": "BLOCK",
- "score": 18.6,
+ "score": 24.0,
  "confidence": "high",
  "summary": "delayed-slug: behaviour contradicts its claims. Independent signals: decoded_exec, env_differential, network_unclaimed.",
  "findings": [
@@ -52,12 +52,52 @@
      }
     }
    ],
-   "explanation": "During call (call_all, profile ci), __init__.py:8 executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1). The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Decoded code: \"import socket;socket.create_connection(('198.51.100.7',80),1)\". It touches network/process APIs."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under ci it executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1) at __init__.py:8. Outcome: succeeded. Decoded code: \"import socket;socket.create_connection(('198.51.100.7',80),1)\". Detected: touches network/process APIs."
   },
   {
    "id": "f2",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "A tiny string utility that turns titles into URL slugs",
+    "source": "readme"
+   },
+   "events": [
+    "ev3"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev3",
+     "file": "/w/site/delayed_slug/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under ci it executed runtime-built code  at __init__.py:8. Outcome: succeeded. Decoded code: \"\". Detected: runtime-built execution."
+  },
+  {
+   "id": "f3",
    "rule": "env_differential",
-   "title": "dynamic_exec only appears under some environment profiles (ci)",
+   "title": "dynamic_exec only appears under some environment profiles/variants",
    "severity": "medium",
    "score": 5.4,
    "capability": "dynamic_exec",
@@ -106,12 +146,12 @@
      }
     }
    ],
-   "explanation": "During call (call_all, profile ci), __init__.py:8 executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1). The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: succeeded. Seen only in profile(s) ci of dev, ci: behaviour gated on the environment."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under ci it executed runtime-built code import socket;socket.create_connection(('198.51.100.7',80),1) at __init__.py:8. Outcome: succeeded. Seen conditionally under profile(s) ci (gated from dev): execution behaviour is gated on the environment."
   },
   {
-   "id": "f3",
+   "id": "f4",
    "rule": "env_differential",
-   "title": "network only appears under some environment profiles (ci)",
+   "title": "network only appears under some environment profiles/variants",
    "severity": "low",
    "score": 3.6,
    "capability": "network",
@@ -157,7 +197,7 @@
      }
     }
    ],
-   "explanation": "During call (call_all, profile ci), <string>:1 attempted network access to 198.51.100.7. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked. Seen only in profile(s) ci of dev, ci: behaviour gated on the environment."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under ci it attempted network access to 198.51.100.7 at <string>:1. Outcome: blocked. Seen conditionally under profile(s) ci (gated from dev): execution behaviour is gated on the environment."
   },
   {
    "id": "f0",
@@ -208,10 +248,10 @@
      }
     }
    ],
-   "explanation": "During call (call_all, profile ci), <string>:1 attempted network access to 198.51.100.7. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: blocked."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under ci it attempted network access to 198.51.100.7 at <string>:1. Outcome: blocked."
   },
   {
-   "id": "f4",
+   "id": "f5",
    "rule": "sandbox_probe",
    "title": "Package inspects whether it is being watched",
    "severity": "low",
@@ -247,7 +287,7 @@
      }
     }
    ],
-   "explanation": "During call (call_all, profile dev), __init__.py:7 probed its environment via CI. The README says: \"A tiny string utility that turns titles into URL slugs\" (nothing there licenses it). Outcome: attempted."
+   "explanation": "The README says \u00abA tiny string utility that turns titles into URL slugs\u00bb (readme); during call under dev it probed its environment via CI at __init__.py:7. Outcome: attempted."
   }
  ],
  "independent_signals": [
@@ -295,5 +335,6 @@
   ],
   "claimed_capabilities": [],
   "unknown_intent": false
- }
+ },
+ "dependency_attribution": {}
 }

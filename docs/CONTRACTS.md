@@ -64,7 +64,7 @@ Rules: pure function of `pkg_path`; writes only under `out_dir`; **never execute
 
 **run_meta.json** (`schemas/run_meta.schema.json`): `run{sandbox,network,canaries,phases,profiles,variants,started_at,duration_s,stub,tool_versions}`, `coverage{phases_run,profiles_run,variants_run,triggers_run,install_completed,install_note,network,callables_total,callables_exercised,native_skipped,strace_layer,not_observed[]}`, `canaries[]` (ids + where; **never the token text of anything real**). `not_observed` is an honest list of what this run could NOT see; the engine converts it to INCONCLUSIVE/coverage text. Fixture replays set `run.stub=true, run.sandbox="fixture"`.
 
-**Canary world** (A builds, ids are contract): files `ssh_key` (`~/.ssh/id_rsa`), `aws_creds`, `npmrc`; env `aws_secret_env`, `github_token_env`. Each token is unique per run (`TLCANARY…`). A `canary_match` is set when a read touches the file or bytes/URL contain the token.
+**Canary world** (A builds, ids are contract; source of truth `CANARY_DEFS` in `trustlens/sandbox/live_probe.py`): files `ssh_key` (`~/.ssh/id_rsa`), `aws_creds` (`~/.aws/credentials`), `npmrc` (`~/.npmrc`), `gcloud_creds` (`~/.config/gcloud/application_default_credentials.json`), `docker_config` (`~/.docker/config.json`); env `aws_secret_env` (`AWS_SECRET_ACCESS_KEY`), `github_token_env` (`GITHUB_TOKEN`). Each token is unique per run (`TLCANARY…`). A `canary_match` is set when a read touches the file or bytes/URL contain the token.
 
 ## 3. Dev B: claims, fingerprint, verdict (FROZEN signatures)
 
@@ -107,7 +107,7 @@ Python API for C's eval (frozen): `from trustlens.cli import scan; scan(pkg_path
 
 ## 6. Fixtures / stubs rule
 
-`schemas/examples/<package-dir-name>/{raw_events.jsonl, run_meta.json, claims.json, fingerprint.json, verdict.json}` are the shared golden files. `raw_events.jsonl`+`run_meta.json` of the 4 starter toys are real recorded bwrap runs; `_synthetic_pth_startup/` is **hand-written** (startup `.pth` case) and says so. The fixture runner replays by directory name. Regenerate derived JSON with `make fixtures` (lead). New bench packages: A (or C with A's runner) records `raw_events.jsonl`+`run_meta.json` into `schemas/examples/<name>/` via a lead-reviewed PR, because it is a shared folder.
+`schemas/examples/<package-dir-name>/{raw_events.jsonl, run_meta.json, claims.json, fingerprint.json, verdict.json}` are the shared golden files. `raw_events.jsonl`+`run_meta.json` of the 4 starter toys are real recorded bwrap runs; `_synthetic_pth_startup/` is **hand-written** (startup `.pth` case) and says so. The 12 sandbox test toys recorded under `tests/sandbox/recorded/` (`broken_install`, `call_matrix`, `canary_shapes`, `cli_toy`, `clock_gate`, `env_patterns`, `github_gate`, `hostname_gate`, `native_open`, `probe_toy`, `pth_toy`, `sink_dropper`) are copied here as raw-event golden files only; they are not PS1-Bench packages, so `make fixtures` derives nothing for them. The fixture runner replays by directory name. Regenerate derived JSON with `make fixtures` (lead). New bench packages: A (or C with A's runner) records `raw_events.jsonl`+`run_meta.json` into `schemas/examples/<name>/` via a lead-reviewed PR, because it is a shared folder.
 
 ## 7. Cross-cutting rules every contract implies
 
