@@ -11,7 +11,7 @@ import yaml
 from trustlens.contracts import ROOT, iter_jsonl
 
 SENSITIVE_PATH = re.compile(
-    r"(\.ssh/|id_rsa|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
+    r"(\.ssh/|(?<![A-Za-z0-9])id_rsa|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
     r"\.mozilla/|\.config/google-chrome|Library/Application Support|/etc/shadow|/etc/passwd|\.gnupg/|\.bash_history)",
     re.I,
 )
@@ -22,6 +22,17 @@ PERSIST_PATH = re.compile(
     r"authorized_keys|\.ssh/authorized_keys|/etc/init\.d|rc\.local|\.git/hooks)"
 )
 SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)", re.I)
+# Decoded snippets: only real env lookups, or a standalone all-caps secret name.
+# A case-insensitive scan of the whole snippet treats "for key, value" and "token = None" as secrets.
+_ENV_LOOKUP_RE = re.compile(
+    r"""os\.environ\s*\[\s*(['"])([^'"]+)\1"""
+    r"""|os\.environ\.get\s*\(\s*(['"])([^'"]+)\3"""
+    r"""|os\.getenv\s*\(\s*(['"])([^'"]+)\5"""
+)
+_SECRET_NAME_TOKEN_RE = re.compile(
+    r"\b(?:(?:AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)[A-Z0-9_]+"
+    r"|(?:[A-Z][A-Z0-9]*_)?(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)(?:_[A-Z0-9]+)*)\b"
+)
 PROBE_ENV = {
     "CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "JENKINS_URL",
     "BUILDKITE", "CIRCLECI", "CONTAINER", "KUBERNETES_SERVICE_HOST",
@@ -29,6 +40,22 @@ PROBE_ENV = {
 }
 PROBE_PATH = ("/.dockerenv", "/proc/1/cgroup", "/proc/uptime", "/proc/self/cgroup", "/proc/cpuinfo")
 SAFE_WRITE = re.compile(r"^(/tmp/|/var/tmp/|/w/site/|/pkg/|/w/[^/]+\.egg-info|~/\.cache/|.*/site-packages/)")
+
+
+def snippet_mentions_env_secret(snippet: str) -> bool:
+    """True when a decoded snippet reads a secret env name, not a loose substring."""
+    for match in _ENV_LOOKUP_RE.finditer(snippet):
+        name = ""
+        for group in (2, 4, 6):
+            if match.group(group):
+                name = match.group(group)
+                break
+        if name.upper() not in PROBE_ENV and SECRET_ENV.search(name):
+            return True
+    for match in _SECRET_NAME_TOKEN_RE.finditer(snippet):
+        if match.group(0) not in PROBE_ENV:
+            return True
+    return False
 
 
 def _home(p: str) -> str:
@@ -63,13 +90,13 @@ def classify(e: dict, written_paths: set[str] | None = None, net_seen: set[tuple
     if not k:
         return None, d
     cm = list(e.get("canary_match") or [])
-    if cm:
-        if str(k).startswith("file."):
-            p = _home(d.get("path", ""))
-            d["path"] = p
-            return "fs_read_sensitive", d
-        if str(k).startswith("env."):
-            return "env_secrets", d
+    # Canary promotion is only for reads. file.write/file.new must still reach PERSIST_PATH.
+    if cm and k == "file.read":
+        p = _home(d.get("path", ""))
+        d["path"] = p
+        return "fs_read_sensitive", d
+    if cm and k == "env.read":
+        return "env_secrets", d
     if k == "file.read":
         p = _home(d.get("path", ""))
         d["path"] = p

@@ -7,14 +7,35 @@ from pathlib import Path
 import yaml
 
 from trustlens.contracts import load_capabilities
-from trustlens.fingerprint.normalize import SECRET_ENV, SENSITIVE_PATH
+from trustlens.fingerprint.normalize import SENSITIVE_PATH, snippet_mentions_env_secret
 
 W = yaml.safe_load((Path(__file__).parent / "weights.yaml").read_text())
 NETWORK_WORDS = ("socket", "urllib", "requests", "http", "connect", "subprocess", "os.system", "curl", "wget")
+_URL_IN_NOTE = re.compile(r"https?://\S+", re.I)
+_NEGATED_TIMEOUT = re.compile(
+    r"\bno[\s-]+time(?:[\s-]*out|d[\s-]+out)(?:[\s-]*error)?\b",
+    re.I,
+)
+_REAL_TIMEOUT = re.compile(
+    r"(?<!/)\btime(?:[\s-]*out|d[\s-]+out)(?:[\s-]*error)?\b",
+    re.I,
+)
 VERB = {"fs_read_sensitive": "read the sensitive file", "env_secrets": "read the secret-looking environment variable", "network": "attempted network access to",
         "dynamic_exec": "executed runtime-built code", "subprocess": "spawned the process", "persistence": "wrote the persistence file",
         "startup_hook": "installed an interpreter startup hook", "fs_write_outside_pkg": "wrote outside the package to", "sandbox_probe": "probed its environment via",
         "native_code": "loaded native code", "install_hook": "ran an install hook", "download_exec": "wrote then executed"}
+
+
+def _install_note_timeout(note: str) -> bool:
+    """True when an install note reports a real timeout, ignoring URLs and negated phrases."""
+    stripped = _URL_IN_NOTE.sub(" ", note)
+    stripped = _NEGATED_TIMEOUT.sub(" ", stripped)
+    return _REAL_TIMEOUT.search(stripped) is not None
+
+
+def _event_canary(e: dict) -> bool:
+    """True when the event itself carried a canary hit. A claim does not license that."""
+    return bool(e.get("canary_hit") or e.get("canary_ids") or (e.get("detail") or {}).get("canary_in_bytes"))
 
 
 def _sev_label(score: float) -> str:
@@ -137,7 +158,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
         snippet_lower = snippet.lower()
         has_network_or_exec = any(w in snippet_lower for w in NETWORK_WORDS) or any(w in snippet_lower for w in EXEC_WORDS)
         has_obf = any(w in snippet_lower for w in OBF_WORDS)
-        has_secret = bool(SENSITIVE_PATH.search(snippet) or SENSITIVE_PATH.search(snippet_lower) or SECRET_ENV.search(snippet))
+        has_secret = bool(SENSITIVE_PATH.search(snippet) or snippet_mentions_env_secret(snippet))
         has_canary = bool(e.get("canary_hit") or e.get("canary_ids") or (e.get("detail") or {}).get("canary_in_bytes"))
         is_dep = str(e.get("attributed_to", "")).startswith("dep:")
         claimed_shim = (
@@ -222,7 +243,10 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     # R9 other unclaimed capabilities (weak)
     done = {f.get("capability") for f in findings if f.get("signal_class") != "info"}
     for cap in ("fs_read_sensitive", "env_secrets", "subprocess", "fs_write_outside_pkg"):
-        evs = [e for e in by_cap.get(cap, []) if _claim_for(claims, cap, e.get("phase", "call"))["status"] != "claimed"]
+        evs = [
+            e for e in by_cap.get(cap, [])
+            if _event_canary(e) or _claim_for(claims, cap, e.get("phase", "call"))["status"] != "claimed"
+        ]
         if evs and cap not in done:
             add("capability_not_claimed", f"{cap} observed but not claimed", evs, "mismatch_other")
     for e in by_cap.get("sandbox_probe", [])[:1]:
@@ -244,8 +268,7 @@ def evaluate(fingerprint: dict, claims: dict) -> dict:
     callables_total = cov.get("callables_total", 0)
     callables_exercised = cov.get("callables_exercised", 0)
     install_note = str(cov.get("install_note", ""))
-    note_without_urls = re.sub(r"https?://\S+", "", install_note)
-    real_note_timeout = bool(re.search(r"(?<!/)\btime(?:d[\s-]*)?out\b", note_without_urls, re.I))
+    real_note_timeout = _install_note_timeout(install_note)
 
     run_err = (
         bool(cov.get("run_error"))
