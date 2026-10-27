@@ -220,3 +220,51 @@ Comprehensive visualization and sensitivity analysis combining detection rule co
 - **Observed Behavior:** On the pre-Dev-B engine, live dynamic scans mark clean packages `cli_runner` and `hash_util` as `SUSPICIOUS`.
 - **Root Cause Analysis:** The sandbox baseline's inspection scripts execute utility pipelines (specifically `cut -c1` and `cut -c2-` during shell command execution). On the pre-Dev-B engine, these sandbox overhead processes are incorrectly attributed to the package under analysis rather than filtered as toolchain/runner baseline activity.
 - **Ground-Truth Invariant:** In accordance with project integrity constraints, the expected verdict for both `cli_runner` and `hash_util` remains strictly `BENIGN-CONSISTENT` in `bench/labels.yaml`. We never relabel clean packages to SUSPICIOUS to match temporary engine calibration artifacts.
+
+## Live Evaluation Headline Numbers (dev-c/live-eval)
+
+- **Date (UTC):** 2026-10-27 11:02 UTC
+- **Machine:** Darwin 25.6.0 (Apple Silicon, macOS)
+- **Tool Versions:**
+  - Python: Python 3.13.9
+  - TrustLens: TrustLens 0.1.0
+  - Baselines (`guarddog`, `pipcanary`, `packj`): not installed on this host (reported as 'not run')
+- **Policy:** `review` (SUSPICIOUS and MALICIOUS-EVIDENT flagged; INCONCLUSIVE abstains (flagged None))
+
+### Table 1: PS1-Bench 26 Toys (`bench/labels.yaml`)
+- **Command:** `python -m eval.run_eval --runner live --labels bench/labels.yaml --tools trustlens --jobs 4 --timeout 120 --out reports/eval-live-ps1bench`
+- **Dataset Composition:** 10 malicious planted toys / 16 clean controls (9 clean control + 7 noisy benign)
+
+| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive (Abstain) | Precision | Recall | F1 | Median (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| trustlens | 0 | 0 | 0/0 [None] | 0 | 26 | None | None | None | 0.01 |
+
+*Category breakdown:*
+- Planted Toys Recall: - (inconclusive 10)
+- Clean Controls FP: - (inconclusive 9)
+- Noisy-Benign FP: - (inconclusive 7)
+*Methodological note:* On macOS without Linux namespaces/`bwrap`, all packages abstain honestly with `INCONCLUSIVE` (never counted as false TN or FN) in accordance with project safety and honest abstention contracts.
+
+### Table 2: Top-PyPI Clean Set (`bench/labels_external.yaml`)
+- **Command:** `python -m eval.run_eval --runner live --labels bench/labels_external.yaml --tools trustlens --jobs 4 --timeout 120 --out reports/eval-live-clean`
+- **Dataset Composition:** 30 popular packages fetched via PyPI JSON API with SHA-256 validation (zero pip/setup.py execution on host).
+
+| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive (Abstain) | Precision | Recall | F1 | Median (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| trustlens | 0 | 0 | 0/0 [None] | 0 | 30 | None | None | None | 0.04 |
+
+*Category breakdown:*
+- Top-PyPI Clean FP: 0/0 [None] (inconclusive 30)
+
+### Table 3: Datadog PyPI Malware Sample (`bench/labels_datadog.yaml`)
+- **Command:** `python -m eval.run_eval --runner live --labels bench/labels_datadog.yaml --tools trustlens --jobs 4 --timeout 120 --out reports/eval-live-datadog`
+- **Dataset Composition:** 150 sampled all-versions-malicious packages from Datadog PyPI manifest (`bench/datadog_sample.txt`, seed `1337`).
+
+| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive (Abstain) | Precision | Recall | F1 | Median (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| trustlens | 0 | 0 | 0/0 [None] | 0 | 150 | None | None | None | 0.00 |
+
+*Category breakdown:*
+- External Malware Recall: - (inconclusive 150)
+*Methodological note:* In adherence to `AGENTS.md` safety contracts, malware samples are never extracted on the host when `bwrap` is missing. Unexecuted packages register strictly as `INCONCLUSIVE` (honest abstention), never misclassified as clean or false passes.
+

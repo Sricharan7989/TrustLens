@@ -107,6 +107,13 @@ packages:
   claim: Fuzzy string matching in python
   expected_verdict: BENIGN-CONSISTENT
   notes: 'Top-PyPI clean control thefuzz 0.22.1 (sha256: 7138039a7ecf540d...)'
+- id: clickhouse-connect
+  path: data/clean/clickhouse-connect/1.11.0/src/clickhouse_connect-1.11.0
+  label: clean
+  category: top_pypi
+  claim: ClickHouse Database Core Driver for Python, Pandas, and Superset
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control clickhouse-connect 1.11.0 (sha256: 73a71e82a8b7ef02...)'
 - id: pytest-django
   path: data/clean/pytest-django/4.14.0/src/pytest_django-4.14.0
   label: clean
@@ -206,10 +213,3 @@ packages:
   claim: Library for handling efficiently sorted integer sets.
   expected_verdict: BENIGN-CONSISTENT
   notes: 'Top-PyPI clean control pyroaring 1.2.0 (sha256: e33bf8fc8d8aad73...)'
-- id: jsondiff
-  path: data/clean/jsondiff/2.2.1/src/jsondiff-2.2.1
-  label: clean
-  category: top_pypi
-  claim: Diff JSON and JSON-like structures in Python
-  expected_verdict: BENIGN-CONSISTENT
-  notes: 'Top-PyPI clean control jsondiff 2.2.1 (sha256: 658d162c8a86ba86...)'
