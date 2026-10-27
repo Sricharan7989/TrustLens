@@ -26,11 +26,23 @@ SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AWS_|GITH
 # A bare all-caps token (TOKEN = None, for KEY, help='Set API_KEY') is not a secret read.
 _STR_LIT = r"""(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")"""
 _LITERAL_JOIN_RE = re.compile(rf"(?P<left>{_STR_LIT})\s*(?P<op>[+/])\s*(?P<right>{_STR_LIT})")
+# Implicit concat: '/etc/' 'passwd'. Whitespace only, so commas between args stay put.
+_IMPLICIT_CONCAT_RE = re.compile(rf"(?P<left>{_STR_LIT})\s+(?P<right>{_STR_LIT})")
+_OS_PATH_JOIN_RE = re.compile(
+    rf"""os\.path\.join\s*\(\s*(?P<left>{_STR_LIT})\s*,\s*(?P<right>{_STR_LIT})"""
+)
 _GETATTR_ENVIRON_RE = re.compile(r"""getattr\s*\(\s*os\s*,\s*(['"])environ\1\s*\)""")
+_ENV_COPY_RE = re.compile(r"""os\.environ\s*\.\s*copy\s*\(\s*\)""")
+_DICT_ENVIRON_RE = re.compile(r"""dict\s*\(\s*os\.environ\s*\)""")
+_FROM_OS_IMPORT_ENVIRON_RE = re.compile(r"""\bfrom\s+os\s+import\s+environ\b""")
+# Bare environ[ / environ.get( only after `from os import environ`. Do not touch os.environ.
+_BARE_ENVIRON_LOOKUP_RE = re.compile(r"""(?<![\w.])environ\s*(?P<tail>\[\s*|\.get\s*\()""")
+# Optional f/r/b (or fr/rf/rb/br) prefix so os.environ[f'NAME'] still yields NAME.
+_STR_PREFIX = r"""(?:[fFrRbB]{1,2})?"""
 _ENV_LOOKUP_RE = re.compile(
-    r"""os\.environ\s*\[\s*(['"])(?P<idx>[^'"]+)\1"""
-    r"""|os\.environ\.get\s*\(\s*(['"])(?P<get>[^'"]+)\3"""
-    r"""|os\.getenv\s*\(\s*(['"])(?P<getenv>[^'"]+)\5"""
+    rf"""os\.environ\s*\[\s*{_STR_PREFIX}(['"])(?P<idx>[^'"]+)\1"""
+    rf"""|os\.environ\.get\s*\(\s*{_STR_PREFIX}(['"])(?P<get>[^'"]+)\3"""
+    rf"""|os\.getenv\s*\(\s*{_STR_PREFIX}(['"])(?P<getenv>[^'"]+)\5"""
 )
 # Names that are secrets even when they do not contain _SECRET or end in _TOKEN.
 _CURATED_SECRET_ENV = frozenset({
@@ -92,19 +104,49 @@ PROBE_PATH = ("/.dockerenv", "/proc/1/cgroup", "/proc/uptime", "/proc/self/cgrou
 SAFE_WRITE = re.compile(r"^(/tmp/|/var/tmp/|/w/site/|/pkg/|/w/[^/]+\.egg-info|~/\.cache/|.*/site-packages/)")
 
 
-def _join_literal_match(match: re.Match[str]) -> str:
-    left = match.group("left")
-    right = match.group("right")
-    sep = "/" if match.group("op") == "/" else ""
+def _quote_bodies(left: str, right: str, sep: str) -> str:
     quote = left[0]
     return quote + left[1:-1] + sep + right[1:-1] + quote
 
 
+def _join_literal_match(match: re.Match[str]) -> str:
+    sep = "/" if match.group("op") == "/" else ""
+    return _quote_bodies(match.group("left"), match.group("right"), sep)
+
+
+def _implicit_concat_match(match: re.Match[str]) -> str:
+    return _quote_bodies(match.group("left"), match.group("right"), "")
+
+
+def _path_join_match(match: re.Match[str]) -> str:
+    left, right = match.group("left"), match.group("right")
+    lbody, rbody = left[1:-1], right[1:-1]
+    if lbody.endswith("/"):
+        joined = lbody + rbody.lstrip("/")
+    elif rbody.startswith("/"):
+        joined = lbody.rstrip("/") + rbody
+    else:
+        joined = lbody + "/" + rbody
+    return left[0] + joined + left[0]
+
+
+def _canonicalize_env_reads(text: str) -> str:
+    """Turn aliased environ reads into os.environ so the lookup regex can see them."""
+    text = _GETATTR_ENVIRON_RE.sub("os.environ", text)
+    text = _ENV_COPY_RE.sub("os.environ", text)
+    text = _DICT_ENVIRON_RE.sub("os.environ", text)
+    if _FROM_OS_IMPORT_ENVIRON_RE.search(text):
+        text = _BARE_ENVIRON_LOOKUP_RE.sub(lambda m: "os.environ" + m.group("tail"), text)
+    return text
+
+
 def normalize_decoded_snippet(snippet: str) -> str:
     """Reassemble split string literals so denylist markers are contiguous."""
-    text = _GETATTR_ENVIRON_RE.sub("os.environ", snippet)
+    text = _canonicalize_env_reads(snippet)
     for _ in range(32):
         updated = _LITERAL_JOIN_RE.sub(_join_literal_match, text)
+        updated = _IMPLICIT_CONCAT_RE.sub(_implicit_concat_match, updated)
+        updated = _OS_PATH_JOIN_RE.sub(_path_join_match, updated)
         if updated == text:
             return text
         text = updated
