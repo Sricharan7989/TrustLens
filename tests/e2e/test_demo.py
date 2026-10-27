@@ -678,3 +678,41 @@ def test_decoded_exec_report_keeps_string_frame(tmp_path):
     )
     assert "<string>" in (out / "verdict.json").read_text(encoding="utf-8")
     assert "<string>" in (out / "fingerprint.json").read_text(encoding="utf-8")
+
+
+def test_scan_zip_with_same_name_package_folder(tmp_path):
+    """Regression: evil_slug/evil_slug/__init__.py in a zip crashed with 'Destination path already exists'."""
+    from trustlens.cli import scan
+
+    archive_path = tmp_path / "evil_slug.zip"
+    src_dir = ROOT / "bench/packages/malicious/evil_slug"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        for f in src_dir.rglob("*"):
+            if f.is_file():
+                zf.write(f, arcname=str(Path("evil_slug") / f.relative_to(src_dir)))
+    r = scan(str(archive_path), str(tmp_path / "zip_out"), runner="fixture", offline=True)
+    assert r["verdict"]["package"]["name"] == "evil-slug"
+    assert r["verdict"]["action"] == "BLOCK"
+
+
+def test_installed_layout_uses_bundled_schemas(tmp_path):
+    """A pip install has no repo schemas/: contracts must fall back to the bundled package data."""
+    import importlib
+    import shutil
+
+    import trustlens.contracts as contracts
+
+    fake_root = tmp_path / "site-packages"
+    shutil.copytree(ROOT / "trustlens", fake_root / "trustlens", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(ROOT / "schemas", fake_root / "trustlens" / "_schemas", ignore=shutil.ignore_patterns("examples"))
+    (fake_root / "trustlens" / "_calibration").mkdir()
+    shutil.copy2(ROOT / "bench" / "calibration" / "noise_whitelist.yaml", fake_root / "trustlens" / "_calibration")
+    spec = importlib.util.spec_from_file_location("installed_contracts", fake_root / "trustlens" / "contracts.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.IN_REPO is False
+    assert mod.SCHEMAS == (fake_root / "trustlens" / "_schemas").resolve()
+    assert mod.CALIBRATION_WHITELIST.is_file()
+    assert "capabilities" in mod.load_capabilities()
+    assert mod.OUTPUT_ROOT == Path.cwd()
+    assert contracts.IN_REPO is True

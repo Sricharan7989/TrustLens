@@ -3,22 +3,52 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "trustlens"
+name = "trustlens-provenance"
 version = "0.1.0"
-description = "TrustLens AI: environment-differential, claims-vs-behavior provenance checks for dependencies (PS1)."
+description = "TrustLens: run a Python package in a no-network sandbox with fake secrets and compare what it does with what its README claims."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
+authors = [{ name = "TrustLens team (IOTA x Enigma, IIIT Sri City)" }]
+keywords = ["supply-chain", "security", "sandbox", "pypi", "provenance", "malware"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: Security",
+  "Environment :: Console",
+]
+
 dependencies = ["PyYAML>=6", "jsonschema>=4", "setuptools", "wheel", "packaging"]
 
 [project.scripts]
 trustlens = "trustlens.cli:main"
 
-[tool.setuptools.packages.find]
-include = ["trustlens*", "eval*"]
+[project.urls]
+Homepage = "https://github.com/Sricharan7989/TrustLens"
+Source = "https://github.com/Sricharan7989/TrustLens"
+
+[tool.setuptools]
+# Explicit list so schemas/ and the calibrated whitelist ship inside the package without moving them in the repo.
+packages = [
+  "trustlens", "trustlens.claims", "trustlens.engine", "trustlens.fingerprint", "trustlens.report",
+  "trustlens.sandbox", "trustlens.sandbox.agent", "trustlens.webui",
+  "trustlens._schemas", "trustlens._calibration",
+  "eval", "eval.baselines",
+]
+
+[tool.setuptools.package-dir]
+"trustlens._schemas" = "schemas"
+"trustlens._calibration" = "bench/calibration"
 
 [tool.setuptools.package-data]
 trustlens = ["engine/*.yaml", "sandbox/agent/*.py"]
+"trustlens._schemas" = ["*.schema.json", "capabilities.yaml"]
+"trustlens._calibration" = ["noise_whitelist.yaml"]
+
+[tool.setuptools.exclude-package-data]
+"trustlens._schemas" = ["examples/**"]
+"trustlens._calibration" = ["*.py"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

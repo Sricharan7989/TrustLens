@@ -13,8 +13,15 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-SCHEMAS = ROOT / "schemas"
+# A repo checkout has schemas/ next to the package. An installed package (pip) carries copies of the
+# schemas and the calibrated noise whitelist as package data (trustlens/_schemas, trustlens/_calibration).
+IN_REPO = (ROOT / "schemas" / "capabilities.yaml").is_file()
+_PKG = Path(__file__).resolve().parent
+SCHEMAS = ROOT / "schemas" if IN_REPO else _PKG / "_schemas"
 EXAMPLES = SCHEMAS / "examples"
+CALIBRATION_WHITELIST = (ROOT / "bench" / "calibration" if IN_REPO else _PKG / "_calibration") / "noise_whitelist.yaml"
+# Where reports go by default: the repo in a checkout, the current folder when installed (never site-packages).
+OUTPUT_ROOT = ROOT if IN_REPO else Path.cwd()
 KINDS = ("raw_event", "run_meta", "fingerprint", "claims", "verdict", "bench_labels", "eval_results")
 
 
