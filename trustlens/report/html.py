@@ -18,10 +18,13 @@ from trustlens.report.redact import (
 
 
 def esc(val: object, *, urls: bool = False) -> str:
-    """HTML-escape untrusted text, strip ESC/CSI/C1, and redact canary token bytes."""
+    """HTML-escape untrusted text, strip ESC/CSI/C1, and redact canary token bytes.
+
+    Tags are escaped here, not dropped. JSON redaction drops them.
+    """
     if val is None:
         return ""
-    return escape(redact_text(val, urls=urls), quote=True)
+    return escape(redact_text(val, urls=urls, drop_tags=False), quote=True)
 
 
 CSS = """

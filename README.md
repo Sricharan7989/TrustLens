@@ -86,5 +86,7 @@ Read **`AGENTS.md`** (ownership, rules), **`docs/CONTRACTS.md`** (interfaces), t
 ## Safety
 Malware samples never run on the host: only inside bwrap, network off, fake HOME, data in gitignored `data/`. Never `pip install supply-chain-guard`. Packj is AGPL: never copied.
 
+The scan output directory is not uniformly redacted. `verdict.json`, `fingerprint.json`, `claims.json`, and `report.*` (HTML, JSON, and SARIF) have canary token bytes removed. `raw_events.jsonl` and `run_meta.json` are the raw sandbox logs and still contain the fake `TLCANARY` token strings. Do not share those two files as-is.
+
 ## AI-assistance disclosure
 This repo was scaffolded with coding agents for a hackathon; every dev reviews generated diffs. License: MIT.
