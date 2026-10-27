@@ -13,8 +13,6 @@ Written to be shown to judges. Update with real facts; delete a line only when i
 8. Dummy-argument call-all cannot reach code behind real credentials/complex objects: `callables_exercised/total` is reported.
 
 ## Known (v0 implementation; remove as fixed)
-* Install phase runs `setup.py egg_info` (not a real `pip install`) → wheel/`.pth` startup hooks not exercised until Dev A P0 lands. Synthetic fixture `_synthetic_pth_startup` shows the intended output.
-* No strace layer yet; clock+30d, CLI and fresh-startup triggers not run (`run_meta.coverage.not_observed` lists them).
 * PS1-Bench is small and *ours*: planted toys test the mechanism, not the real-world detection rate. Report externally sampled results separately.
 * PipCanary baseline needs `strace`; if absent it is "not run". GuardDog is run with 3 network-dependent rules excluded (offline).
 * QUT-DV25 / OSPtrack column formats unverified until Dev C opens the files.

@@ -1,23 +1,44 @@
-# DEMO_SCRIPT (Owner: Dev D) — 5 minutes, one laptop, Wi-Fi may be off
+# DEMO_SCRIPT (Owner: Dev D) — 5 minutes, single laptop, offline-ready
 
-**Before going on stage:** `make setup-dev && make demo && make eval` once; open `reports/demo/evil_slug/report.html`, `reports/demo/delayed_slug/report.html`, `reports/demo/rest_wrapper/report.html`, `reports/eval/heatmap.html` in tabs. Run `bash scripts/check_env.sh` and say which runner you use (live vs recorded fixtures: **say it out loud**). Have a screen recording as backup.
+**Before going on stage:**
+1. Ensure dependencies are ready: `make setup-dev`
+2. Pre-generate all demo artifacts: `make demo && make demo-all && make demo-compare && make eval`
+3. Check sandbox capability: `python -m trustlens check-env`
+   * If bwrap is available: use `--runner live` (or `auto`)
+   * If bwrap is unavailable: use `--runner fixture` and state out loud: *"Events replayed from a recorded fixture run."*
+4. Open the following tabs in your browser:
+   * `reports/demo/evil_slug/report.html`
+   * `reports/demo/delayed_slug/report.html`
+   * `reports/compare_demo.html`
+   * `reports/eval/heatmap.html` (or `reports/eval/summary.md`)
+5. Have a backup screen recording saved locally outside git.
 
-| t | Say / do | Show |
-|---|---|---|
-| 0:00 | "Your `requirements.txt` is trust you never checked. Attackers hide in install scripts, `.pth` files, CI-only branches." | slide 2 |
-| 0:30 | `python -m trustlens scan bench/packages/malicious/evil_slug --runner live` (or fixture) | terminal: BLOCK, exit 20, evidence lines |
-| 1:15 | Open `report.html`: README says "turns titles into URL slugs"; during install it read the fake SSH key and sent **our canary token inside an HTTP request** (blocked by sandbox). "That is proof, not a guess." | evidence chain, timeline |
-| 2:00 | `delayed_slug`: clean on a laptop, fires only when `CI` is set; base64-decoded `exec`. "Environment-differential execution finds what a single run misses." | dev vs ci columns |
-| 3:00 | `rest_wrapper`: network + env token, **PASS** because README claims a REST client. "Claims license behavior: that is how we avoid false alarms." | report + claim quote |
-| 3:30 | Unknown/failed install ⇒ `INCONCLUSIVE`. "We abstain instead of bluffing." Show coverage block `not_observed`. | coverage |
-| 4:00 | `make eval` heatmap: recall per trigger × gate; FP as `k/n` + CI; baselines GuardDog/PipCanary (as measured, with how-run note). | heatmap, summary.md |
-| 4:40 | Limitations + roadmap (npm, sinkhole, native). | slide |
-| 5:00 | Q&A. | |
+---
 
-## Hard rules for the demo
-* Say "to our knowledge". Never claim "first", "100%", "zero false positives" or "safe".
-* Only toy packages run live. If asked about real malware: "tested in a no-network sandbox on a seeded Datadog sample; numbers on slide N" (only if Dev C finished it).
-* If live fails: `--runner fixture` and say "recorded run".
+## Minute-by-Minute Stage Walkthrough
 
-## Likely questions
-How do you avoid FPs? (claims license + calibrated whitelist + abstention + CI) · What if malware detects the sandbox? (limitations slide, camouflage + differential + sandbox_probe) · Why not an LLM? (offline, reproducible) · How is this different from PipCanary/GuardDog? (see comparison slide, factual) · Does it run on npm? (roadmap).
+| Time | Action / Terminal Command | Spoken Narrative & Stage Cue | Visual Display |
+|---|---|---|---|
+| **0:00 - 0:30** | Advance to Slide 2 | *"Every time you run `pip install`, you are granting unverified code full execution rights on your machine. Attackers hide inside setup.py scripts, .pth startup hooks, and CI-only execution gates. Static analysis is easily defeated by base64 obfuscation; signatures lag days behind."* | Slide 2 (Problem & Attack Surface) |
+| **0:30 - 1:15** | `python -m trustlens scan bench/packages/malicious/evil_slug --runner live` *(or fixture)* | *"Here is TrustLens scanning `evil_slug`. Notice the loud runner mode banner. We observe exit code 20 — BLOCK. Let's look at why."* | Terminal output: `MALICIOUS-EVIDENT` (Exit 20), runner mode banner |
+| **1:15 - 2:00** | Switch to tab: `reports/demo/evil_slug/report.html` | *"The package claims in its README to be a 'tiny string utility that turns titles into URL slugs'. But during the install phase, it accessed `~/.ssh/id_rsa` and attempted an HTTP exfiltration. TrustLens baited it with a canary SSH key, and the canary token appeared directly in the outgoing request payload. That is deterministic proof, not a score."* | Evidence Chain card, Timeline lanes, Canary-in-bytes badge |
+| **2:00 - 2:45** | Switch to tab: `reports/demo/delayed_slug/report.html` | *"Next: evasion techniques. `delayed_slug` appears completely benign on a developer's laptop, but executes base64-encoded payloads when run in CI. Because TrustLens runs differential environments (`dev` vs `ci`), it catches the discrepancy and flags the environmental trigger."* | Dev vs CI timeline columns, `env_differential` pill |
+| **2:45 - 3:30** | Switch to tab: `reports/compare_demo.html` | *"How do we prevent false alarms? Look at this side-by-side view. `rest_wrapper` makes network requests and reads environment variables. Yet it receives a clean PASS (exit code 0). Why? Because its README licenses REST API calls. Stated intent licenses observed behavior."* | `compare_demo.html` side-by-side PASS vs BLOCK |
+| **3:30 - 4:00** | Scroll down to Coverage Block in report | *"Notice the coverage block. If a package cannot be installed or executed, TrustLens does not claim it is clean. It reports `INCONCLUSIVE` with an honest list of unobserved phases. We abstain instead of guessing."* | `not_observed` list, Coverage block |
+| **4:00 - 4:40** | Switch to tab: `reports/eval/heatmap.html` / `summary.md` | *"We evaluated TrustLens on PS1-Bench. Across planted triggers, gated branches, and clean controls, we report recall and false-positive rates with Wilson 95% confidence intervals. Datasets are strictly for calibration and evaluation, never model training."* | PS1-Bench heatmap & metrics table |
+| **4:40 - 5:00** | Advance to Slide 10 | *"In summary: deterministic proof over suspicion, environment-differential execution, and claims-aware licensing. Thank you. We welcome your questions."* | Architecture & Roadmap slide |
+
+---
+
+## Contingency & Fallback Plans
+
+* **Wi-Fi Down**: Entire pipeline is offline by default (`--offline`). Zero network requests are made.
+* **Sandbox / Kernel Namespace Issue**: Add `--runner fixture` to any command. All fixtures replay authentic recorded runs. Say: *"We are running fixture replay mode on pre-recorded bwrap traces."*
+* **Browser Rendering**: Reports are self-contained single files with inline CSS and zero external CDN links; they render cleanly offline.
+
+---
+
+## Approved Terminology & Mandatory Phrases
+* Always prefix novel capabilities with *"to our knowledge"*.
+* Say *"consistent with stated purpose within tested coverage"*, do not claim *"100% safe"* or *"catches all malware"*.
+* Say *"canary-in-bytes deterministic proof"*.
