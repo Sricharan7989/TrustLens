@@ -70,3 +70,79 @@ def test_libc_open_of_canary_is_visible_to_strace(tmp_path):
     ]
     assert hits
     assert any("ssh_key" in row.get("canary_match", []) for row in hits)
+
+
+# strace -f splits a syscall when another traced process runs at the same moment.
+# Shape copied from a real `strace -f` log of the baseline pipeline under CPU load.
+SPLIT_BASE = """\
+1409  execve("/bin/sh", ["/bin/sh", "-c", "printf %s x | tr ..."], 0x7ffd /* 9 vars */) = 0
+1409  clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7f) = 1410
+1410  execve("/usr/bin/tr", ["tr", "[:lower:]", "[:upper:]"], 0x55f4 /* 9 vars */ <unfinished ...>
+1411  execve("/usr/bin/cut", ["cut", "-c1"], 0x55f5 /* 9 vars */) = 0
+1410  <... execve resumed>)             = 0
+1412  openat(AT_FDCWD, "/w/home/.aws/credentials", O_RDONLY <unfinished ...>
+1413  connect(3, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("198.51.100.9")}, 16 <unfinished ...>
+1412  <... openat resumed>)             = 4
+1413  <... connect resumed>)            = -1 ENETUNREACH (Network is unreachable)
+"""
+
+
+def test_baseline_keeps_helper_exec_split_by_strace():
+    keys = baseline_keys(SPLIT_BASE)
+    assert "execargv:" + "\0".join(["/usr/bin/tr", "tr", "[:lower:]", "[:upper:]"]) in keys
+    assert "execargv:" + "\0".join(["/usr/bin/cut", "cut", "-c1"]) in keys
+
+
+def test_split_helper_exec_is_subtracted_not_reported_as_spawn():
+    """The flake: a baseline `tr` split by strace leaked into package runs as proc.spawn."""
+    baseline = baseline_keys(SPLIT_BASE)
+    run = '7 execve("/usr/bin/tr", ["tr", "[:lower:]", "[:upper:]"], 0x1 /* 9 vars */) = 0\n'
+    rows = parse_strace(
+        run, baseline, phase="install", trigger="install", profile="ci", variant="default",
+        file_canaries=[], match_ids=lambda text: [],
+    )
+    assert not any(row["kind"] == "proc.spawn" for row in rows)
+
+
+def test_split_package_syscalls_are_still_reported():
+    """Splits on the package side used to drop real evidence (canary reads, connects)."""
+    rows = parse_strace(
+        SPLIT_BASE, set(), phase="install", trigger="install", profile="ci", variant="default",
+        file_canaries=[(".aws/credentials", "aws_creds")], match_ids=lambda text: [],
+    )
+    reads = [row for row in rows if row["kind"] == "file.read"]
+    assert reads and reads[0]["detail"]["path"] == "/w/home/.aws/credentials"
+    assert reads[0]["canary_match"] == ["aws_creds"]
+    assert any(row["kind"] == "net.connect" and row["detail"]["dest"] == "198.51.100.9:443" for row in rows)
+    assert any(row["kind"] == "proc.spawn" and row["detail"]["argv"] == ["tr", "[:lower:]", "[:upper:]"] for row in rows)
+
+
+def test_stitch_ignores_orphan_and_mismatched_resumes():
+    from trustlens.sandbox.strace_parse import stitch_lines
+
+    text = (
+        '5 <... execve resumed>) = 0\n'
+        '6 openat(AT_FDCWD, "/x", O_RDONLY <unfinished ...>\n'
+        '6 <... connect resumed>) = 0\n'
+        '8 execve("/bin/echo", ["echo"], 0x1) = 0\n'
+    )
+    assert stitch_lines(text) == ['8 execve("/bin/echo", ["echo"], 0x1) = 0']
+
+
+def test_stitch_on_real_strace_log(tmp_path):
+    """Run the baseline pipeline under the host strace (when allowed) and check stitching is lossless."""
+    import shutil
+    import subprocess
+
+    strace = shutil.which("strace")
+    if not strace:
+        pytest.skip("strace not installed")
+    log = tmp_path / "b.log"
+    cmd = "printf %s x | tr '[:lower:]' '[:upper:]' >/dev/null; printf %s x | cut -c1 >/dev/null"
+    proc = subprocess.run([strace, "-f", "-qq", "-e", "trace=execve", "-o", str(log), "/bin/sh", "-c", cmd],
+                          capture_output=True, timeout=30)
+    if proc.returncode != 0 or not log.exists():
+        pytest.skip("ptrace not permitted here")
+    keys = baseline_keys(log.read_text())
+    assert any(k.startswith("execargv:/usr/bin/tr\0") or k.startswith("execargv:/bin/tr\0") for k in keys)
+    assert any(k.startswith("execargv:/usr/bin/cut\0") or k.startswith("execargv:/bin/cut\0") for k in keys)

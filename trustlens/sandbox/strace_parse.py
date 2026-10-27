@@ -26,10 +26,41 @@ def _quotes(body: str) -> list[str]:
     return [_unescape(part) for part in _QUOTED.findall(body)]
 
 
+_UNFINISHED = re.compile(r"^(?P<pid>\d+)\s+(?P<head>.*?)\s*<unfinished \.\.\.>\s*$")
+_RESUMED = re.compile(r"^(?P<pid>\d+)\s+<\.\.\. (?P<call>\w+) resumed>(?P<tail>.*)$")
+
+
+def stitch_lines(text: str) -> list[str]:
+    """Rejoin syscalls that `strace -f` split across lines.
+
+    When two traced processes make syscalls at the same moment (pipelines, or any
+    run on a busy machine), strace writes `pid call(args <unfinished ...>` and later
+    `pid <... call resumed>rest) = ret`. Neither half matches a complete syscall, so
+    without this the event is silently lost. Losing it in the baseline made helper
+    execs (`tr`, `cut`) leak into package runs as proc.spawn under parallel load.
+    """
+    pending: dict[str, str] = {}
+    lines: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        unfinished = _UNFINISHED.match(line)
+        if unfinished:
+            pending[unfinished.group("pid")] = unfinished.group("pid") + " " + unfinished.group("head")
+            continue
+        resumed = _RESUMED.match(line)
+        if resumed:
+            head = pending.pop(resumed.group("pid"), None)
+            if head is not None and head.split(" ", 1)[-1].startswith(resumed.group("call") + "("):
+                lines.append(head + resumed.group("tail"))
+            continue
+        lines.append(line)
+    return lines
+
+
 def baseline_keys(text: str) -> set[str]:
     """Syscall fingerprints from a python -c pass run. Paths and exec targets only."""
     keys: set[str] = set()
-    for raw in text.splitlines():
+    for raw in stitch_lines(text):
         match = _LINE.search(raw.strip())
         if not match:
             continue
@@ -100,7 +131,7 @@ def parse_strace(
             "evidence": {"layer": "strace", "file": None, "line": None, "syscall": kind.split(".")[0]},
         })
 
-    for raw in text.splitlines():
+    for raw in stitch_lines(text):
         match = _LINE.search(raw.strip())
         if not match:
             continue
