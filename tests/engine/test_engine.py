@@ -659,11 +659,11 @@ def test_claimed_ssh_tool_read_stays_quiet(tmp_path):
     events = [
         {"seq": 0, "phase": "call", "trigger": "call_all", "profile": "dev", "variant": "default",
          "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
-         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "outcome": "succeeded", "attributed_to": "pkg",
          "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
         {"seq": 1, "phase": "call", "trigger": "call_all", "profile": "ci", "variant": "default",
          "kind": "file.read", "detail": {"path": "/w/home/.ssh/id_rsa"},
-         "canary_match": ["ssh_key"], "outcome": "succeeded", "attributed_to": "pkg",
+         "outcome": "succeeded", "attributed_to": "pkg",
          "evidence": {"layer": "audit", "file": "app.py", "line": 10}},
     ]
     raw.write_text("\n".join(json.dumps(e) for e in events) + "\n")
@@ -1412,3 +1412,270 @@ def test_regression_no_crashes_on_malformed_inputs_and_coverage_isolation(tmp_pa
     v = evaluate(fp, claims)
     assert v["verdict"] in ("BENIGN-CONSISTENT", "SUSPICIOUS", "MALICIOUS-EVIDENT", "INCONCLUSIVE")
     assert any("alien_telepathy" in f["title"] for f in v["findings"])
+
+
+def _full_meta(package, **coverage_extra):
+    coverage = {
+        "phases_run": ["install", "import", "call"],
+        "profiles_run": ["dev", "ci"],
+        "variants_run": ["default"],
+        "triggers_run": ["install", "import", "call_all"],
+        "install_completed": True,
+        "callables_total": 1,
+        "callables_exercised": 1,
+        "not_observed": [],
+    }
+    coverage.update(coverage_extra)
+    return {
+        "schema_version": "1.0",
+        "package": package,
+        "run": {"started_at": 1, "finished_at": 2, "sandbox": "bwrap", "timeout_s": 30},
+        "coverage": coverage,
+    }
+
+
+def _pair(kind, detail, *, phase="call", attributed="pkg", canary=None, seq0=0):
+    rows = []
+    for offset, profile in enumerate(("dev", "ci")):
+        row = {
+            "seq": seq0 + offset, "phase": phase,
+            "trigger": "install" if phase == "install" else "call_all",
+            "profile": profile, "variant": "default", "kind": kind, "detail": detail,
+            "outcome": "succeeded", "attributed_to": attributed,
+            "evidence": {"file": "pkg/__init__.py", "line": 1},
+        }
+        if canary is not None:
+            row["canary_match"] = canary
+        rows.append(row)
+    return rows
+
+
+def _pipeline(tmp_path, claims, events, **coverage_extra):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("\n".join(json.dumps(e) for e in events) + ("\n" if events else ""))
+    meta = _full_meta(claims["package"], **coverage_extra)
+    before = json.dumps(meta, sort_keys=True)
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    verdict = evaluate(fp, claims)
+    assert json.dumps(meta, sort_keys=True) == before
+    return fp, verdict
+
+
+def _pkg(tmp_path, name, readme, toml_extra=""):
+    root = tmp_path / name
+    root.mkdir()
+    (root / "README.md").write_text(readme)
+    (root / "pyproject.toml").write_text(
+        f'[project]\nname = "{name}"\nversion = "0.1.0"\ndescription = "demo"\n{toml_extra}'
+    )
+    return extract_claims(str(root))
+
+
+def test_regression_loose_secret_scan_does_not_block(tmp_path):
+    # 'for key, value' used to match SECRET_ENV and turn one unclaimed request into a false BLOCK.
+    claims = _pkg(
+        tmp_path, "cli_tool_pkg",
+        "This is a command line utility package with a long description.\n",
+        '\n[project.scripts]\nmytool = "cli_tool_pkg:main"\n',
+    )
+    assert claims["unknown_intent"] is False
+    assert any(i["intent"] == "cli_tool" for i in claims["intents"])
+    events = _pair("dyn.exec", {"decoded_snippet": "for key, value in items:\n    pass"})
+    events += _pair("net.http", {"url": "https://example.invalid/v1/x"}, seq0=2)
+    _fp, verdict = _pipeline(tmp_path, claims, events)
+    assert verdict["verdict"] == "SUSPICIOUS"
+    assert verdict["action"] == "REVIEW"
+    assert verdict["score"] == 2.4
+    assert verdict["independent_signals"] == ["network_unclaimed"]
+    assert any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" and f["score"] == 0 for f in verdict["findings"])
+
+
+@pytest.mark.parametrize("snippet", [
+    "token = None",
+    "os.environ.get('GITHUB_ACTIONS')",
+    "print('hello from the tool')",
+    "class TemplateShim:\n    pass\n",
+    "open('/opt/valid_rsa')",
+])
+def test_regression_benign_snippets_stay_score_zero(tmp_path, snippet):
+    claims = _pkg(
+        tmp_path, "cli_tool_pkg",
+        "This is a command line utility package with a long description.\n",
+        '\n[project.scripts]\nmytool = "cli_tool_pkg:main"\n',
+    )
+    _fp, verdict = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert verdict["verdict"] == "BENIGN-CONSISTENT"
+    assert verdict["score"] == 0
+    assert "decoded_exec" not in verdict["independent_signals"]
+
+
+def test_regression_plain_pth_path_stays_score_zero(tmp_path):
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    _fp, verdict = _pipeline(
+        tmp_path, claims,
+        _pair("startup.pth", {"file": "plain.pth", "line_text": "/opt/custom/path"}, phase="install"),
+    )
+    assert verdict["verdict"] == "BENIGN-CONSISTENT"
+    assert verdict["score"] == 0
+    assert "startup_hook" not in verdict["independent_signals"]
+
+
+@pytest.mark.parametrize("snippet", [
+    "open('/etc/passwd')",
+    "open('/root/.docker/config.json')",
+    "open('/root/.config/gcloud/application_default_credentials.json')",
+    "os.environ['AWS_SECRET_ACCESS_KEY']",
+    "os.environ.get('GITHUB_TOKEN')",
+    "os.getenv('GITHUB_TOKEN')",
+])
+def test_regression_secret_snippets_stay_suspicious(tmp_path, snippet):
+    claims = _pkg(
+        tmp_path, "cli_tool_pkg",
+        "This is a command line utility package with a long description.\n",
+        '\n[project.scripts]\nmytool = "cli_tool_pkg:main"\n',
+    )
+    _fp, verdict = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert verdict["verdict"] == "SUSPICIOUS"
+    assert "decoded_exec" in verdict["independent_signals"]
+
+    dep_snippet = "class TemplateShim:\n    " + snippet
+    _fp_dep, verdict_dep = _pipeline(
+        tmp_path, claims,
+        _pair("dyn.exec", {"decoded_snippet": dep_snippet}, attributed="dep:jinja2"),
+    )
+    assert verdict_dep["verdict"] == "SUSPICIOUS"
+    assert "decoded_exec" in verdict_dep["independent_signals"]
+    assert not any(f["rule"] == "decoded_exec" and f["signal_class"] == "info" for f in verdict_dep["findings"])
+
+
+def test_regression_ssh_id_rsa_snippet_stays_non_benign(tmp_path):
+    claims = _pkg(
+        tmp_path, "cli_tool_pkg",
+        "This is a command line utility package with a long description.\n",
+        '\n[project.scripts]\nmytool = "cli_tool_pkg:main"\n',
+    )
+    snippet = "open('/root/.ssh/id_rsa')"
+    _fp, verdict = _pipeline(tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": snippet}))
+    assert verdict["verdict"] != "BENIGN-CONSISTENT"
+    assert "decoded_exec" in verdict["independent_signals"]
+    dep = "class TemplateShim:\n    " + snippet
+    _fp_dep, verdict_dep = _pipeline(
+        tmp_path, claims, _pair("dyn.exec", {"decoded_snippet": dep}, attributed="dep:jinja2"),
+    )
+    assert verdict_dep["verdict"] != "BENIGN-CONSISTENT"
+    assert "decoded_exec" in verdict_dep["independent_signals"]
+
+
+def test_regression_canary_write_keeps_persistence(tmp_path):
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    events = _pair("file.write", {"path": "/w/home/.bashrc"}, phase="call", canary=["ssh_key"])
+    events += _pair(
+        "startup.pth", {"file": "x.pth", "line_text": "import os; os.system('x')"},
+        phase="install", seq0=2,
+    )
+    fp, verdict = _pipeline(tmp_path, claims, events)
+    assert {e["capability"] for e in fp["events"] if e["detail"].get("path", "").endswith(".bashrc")} == {"persistence"}
+    assert all(e["canary_hit"] for e in fp["events"] if e["capability"] == "persistence")
+    assert verdict["verdict"] == "MALICIOUS-EVIDENT"
+    assert verdict["action"] == "BLOCK"
+    assert verdict["score"] == 17.6
+    assert set(verdict["independent_signals"]) == {"persistence", "startup_hook"}
+
+    new_fp, _new_verdict = _pipeline(
+        tmp_path, claims,
+        _pair("file.new", {"path": "/w/home/.bashrc"}, phase="call", canary=["ssh_key"]),
+    )
+    assert {e["capability"] for e in new_fp["events"]} == {"persistence"}
+
+    read_fp, read_verdict = _pipeline(
+        tmp_path, claims,
+        _pair("file.read", {"path": "/tmp/not-sensitive.txt"}, canary=["ssh_key"]),
+    )
+    assert {e["capability"] for e in read_fp["events"]} == {"fs_read_sensitive"}
+    assert all(e["canary_hit"] for e in read_fp["events"])
+    assert read_verdict["verdict"] != "BENIGN-CONSISTENT"
+
+
+def test_regression_claimed_canary_does_not_pass(tmp_path):
+    ssh = _pkg(tmp_path, "sshpkg", "An ssh client and key management helper for local hosts and servers.\n")
+    assert any(i["intent"] == "ssh_tool" for i in ssh["intents"])
+    assert any(c["capability"] == "fs_read_sensitive" for c in ssh["claims"])
+    _fp, quiet = _pipeline(tmp_path, ssh, _pair("file.read", {"path": "/w/home/.ssh/id_rsa"}))
+    assert quiet["verdict"] == "BENIGN-CONSISTENT"
+    assert quiet["score"] == 0
+    _fp, hit = _pipeline(
+        tmp_path, ssh, _pair("file.read", {"path": "/w/home/.ssh/id_rsa"}, canary=["ssh_key"]),
+    )
+    assert hit["verdict"] == "SUSPICIOUS"
+    assert hit["action"] == "REVIEW"
+    assert hit["score"] == 7.2
+    assert any(f["canary_hit"] and f["capability"] == "fs_read_sensitive" for f in hit["findings"])
+
+    cfg = _pkg(
+        tmp_path, "cfgpkg",
+        "A configuration loader that reads each environment variable for service settings.\n",
+    )
+    assert any(i["intent"] == "config_loader" for i in cfg["intents"])
+    _fp, cfg_quiet = _pipeline(tmp_path, cfg, _pair("env.read", {"name": "AWS_SECRET_ACCESS_KEY"}))
+    assert cfg_quiet["verdict"] == "BENIGN-CONSISTENT"
+    _fp, cfg_hit = _pipeline(
+        tmp_path, cfg, _pair("env.read", {"name": "AWS_SECRET_ACCESS_KEY"}, canary=["aws_secret_env"]),
+    )
+    assert cfg_hit["verdict"] == "SUSPICIOUS"
+    assert cfg_hit["action"] == "REVIEW"
+    assert cfg_hit["score"] == 6.0
+
+
+@pytest.mark.parametrize("note", [
+    "log line mentioned https://example.invalid/v1/timeout",
+    "log line mentioned HTTPS://example.invalid/v1/TIMEOUT",
+    "completed with no timeout",
+])
+def test_regression_install_note_url_or_negation_stays_benign(tmp_path, note):
+    claims = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    events = _pair("net.http", {"url": "https://example.invalid/v1/timeout"})
+    _fp, verdict = _pipeline(tmp_path, claims, events, install_note=note)
+    assert verdict["verdict"] == "BENIGN-CONSISTENT"
+    assert verdict["action"] == "PASS"
+
+
+def test_regression_net_http_timeout_url_stays_benign(tmp_path):
+    claims = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    _fp, verdict = _pipeline(
+        tmp_path, claims, _pair("net.http", {"url": "https://example.invalid/v1/timeout"}),
+    )
+    assert not _fp["coverage"].get("run_timeout")
+    assert verdict["verdict"] == "BENIGN-CONSISTENT"
+    assert verdict["score"] == 0
+
+
+@pytest.mark.parametrize("note", [
+    "Execution timeout after 30s",
+    "command timed out after 30s",
+    "TimeoutError: deadline exceeded",
+    "hit a time-out during install",
+])
+def test_regression_install_note_real_timeout_phrases(tmp_path, note):
+    claims = extract_claims(str(BENCH / "clean/rest_wrapper"))
+    events = _pair("net.http", {"url": "https://example.invalid/v1/ok"})
+    _fp, verdict = _pipeline(tmp_path, claims, events, install_note=note)
+    assert verdict["verdict"] == "INCONCLUSIVE"
+    assert verdict["action"] == "REVIEW"
+
+
+def test_regression_run_timeout_and_run_error_are_inconclusive(tmp_path):
+    claims = extract_claims(str(BENCH / "clean/clean_slug"))
+    _fp, verdict = _pipeline(tmp_path, claims, [], run_timeout=True)
+    assert verdict["verdict"] == "INCONCLUSIVE"
+    assert verdict["action"] == "REVIEW"
+
+    for message in ("Execution timeout after 30s", "TimeoutError: deadline exceeded"):
+        events = [{
+            "seq": 0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+            "kind": "run.error", "detail": {"message": message}, "outcome": "unknown",
+            "attributed_to": "toolchain", "evidence": {"file": "runner.py", "line": 1},
+        }]
+        fp, verdict = _pipeline(tmp_path, claims, events)
+        assert fp["coverage"]["run_timeout"] is True
+        assert verdict["verdict"] == "INCONCLUSIVE"
+        assert verdict["action"] == "REVIEW"
