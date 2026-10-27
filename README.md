@@ -11,9 +11,20 @@ Verdicts: `MALICIOUS-EVIDENT` (exit 20) · `SUSPICIOUS` (10) · `INCONCLUSIVE` (
 git clone <repo> && cd trustlens
 make setup-dev            # 1. venv + pinned deps (+ GuardDog/PipCanary baselines); needs python3-venv
 make demo                 # 2. scans 4 toy packages end to end on recorded fixtures -> reports/demo/*/report.html
-make eval                 # 3. PS1-Bench metrics + heatmap vs baselines -> reports/eval/summary.md, heatmap.html
+make demo-all             # 3. scans all benchmark packages and prints verification table
+make eval                 # 4. PS1-Bench metrics + heatmap vs baselines -> reports/eval/summary.md, heatmap.html
 ```
-Real sandbox (toys only!): `bash scripts/check_env.sh` then `make demo-live`. Needs `bubblewrap` (`sudo apt install bubblewrap strace`). On Ubuntu 24.04 you may need the userns workaround the script prints.
+
+*Note:* On Ubuntu/Debian, ensure `python3-venv` is installed (`sudo apt install python3-venv python3-pip`).
+
+## Real sandbox (toys only!)
+Run `bash scripts/check_env.sh` then `make demo-live`. Needs `bubblewrap` (`sudo apt install bubblewrap strace`). On Ubuntu 24.04 you may need the unprivileged user namespace workaround that the check script prints.
+
+## Input Support
+TrustLens CLI accepts:
+1. **Package directories**: `python -m trustlens scan bench/packages/malicious/evil_slug`
+2. **Wheel / sdist archives**: `python -m trustlens scan dist/package-1.0.whl` (extracted safely without code execution)
+3. **Requirements files**: `python -m trustlens scan requirements.txt` (scans all local path references offline)
 
 ## Status: starter kit v0 (what is real and what is stubbed)
 | Part | Status |
@@ -21,7 +32,7 @@ Real sandbox (toys only!): `bash scripts/check_env.sh` then `make demo-live`. Ne
 | Contracts, schemas, fixtures, tests, audit | real |
 | Sandbox live runner (bwrap, canaries, dev/ci, `setup.py egg_info`, import-all, call-all, audit hook, env wrapper) | **v0 real**; real `pip install`+`.pth` diff, fresh-startup, strace, clock+30d, CLI trigger, sinkhole: Dev A tasks |
 | Claims extractor, normalizer, rules, verdict ladder | **v0 real** (keyword intents, 10 rules) — Dev B extends |
-| Report (HTML/JSON/text), CLI | v0 real — Dev D polishes |
+| Report (HTML/JSON/text), CLI orchestrator | **v1.5 real** (timeline lanes, evidence chains, archive & requirements support) — Dev D |
 | PS1-Bench | 4 starter packages — Dev C grows to 8–10 malicious + 15–20 clean |
 | `make demo` / `make eval` | run on **recorded fixtures** (real bwrap recordings of the toys); marked `stub:true` in `run_meta` |
 

@@ -3,7 +3,7 @@ SHELL := /bin/bash
 PY ?= .venv/bin/python
 PIP ?= .venv/bin/pip
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-dev check-env demo demo-live eval eval-live test lint fmt audit fixtures bench-data kit clean
+.PHONY: help setup setup-dev check-env demo demo-live demo-all eval eval-live test lint fmt audit fixtures bench-data kit clean
 
 help:  ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n",$$1,$$2}'
@@ -27,6 +27,9 @@ demo:  ## end-to-end on recorded fixtures (no sandbox needed): scan 4 toy packag
 
 demo-live:  ## same, but really runs the toys in bwrap (needs bwrap; toys only!)
 	$(PY) -m trustlens scan bench/packages/malicious/evil_slug --runner live --out reports/demo-live/evil_slug --format text; test $$? -eq 20
+
+demo-all:  ## scan every bench/labels.yaml package and print verification table
+	$(PY) -m trustlens demo-all --runner fixture
 
 eval:  ## PS1-Bench eval on fixtures: metrics + heatmap + baselines (if installed) -> reports/eval/
 	$(PY) -m eval.run_eval --runner fixture --tools trustlens,guarddog,pipcanary
