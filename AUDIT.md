@@ -85,4 +85,12 @@ Open risks: ...
 Severity: **S1** sandbox escape / real credential leak / malware on host (stop everything, tell lead) · **S2** false claim in pitch material, license breach · **S3** contract drift, flaky test · **S4** cosmetic.
 
 ### Log
-_(empty — first entry is the lead's baseline run at hour 0)_
+
+
+### 2026-10-26 18:32 UTC — Claude (coding agent, for Lead) — follow-up check on lead/followup-fixes over main eedb335 (PRs #6, #7, #8 merged)
+make audit: AUDIT AUTOMATED CHECKS: PASS   make test: 322 passed, 21 skipped (bwrap/docker unavailable)   make demo: 20, 20, 0, 0 OK   ruff: clean   audit_contracts: 46 example files, 0 problems
+check_env.sh on cloud VM: bwrap NO, strace OK (host only), network n/a. No live sandbox run.
+Manual rows ticked: none (agent cannot sign; owners sign §9 after their own checks).
+Findings: S3 PR #6 regressions vs main (aliased `os` access, DB_PASSWORD/PRIVATE_KEY names) PR #6 merged without the fix; fixed on lead/followup-fixes. S3 PR #7 tag stripping removed `<string>`/`<module>` and code comparisons from JSON evidence; PR #7 merged without the fix; narrowed to active HTML on lead/followup-fixes. S3 strace split lines dropped baseline helper execs (cut/tr flake) and package syscalls; fixed in PR #8 (merged). S3 `make demo-all` reports 22 MISMATCH on main as well: the 22 bench packages without a recording come out INCONCLUSIVE; not fixed.
+FP audit: not run (needs `make eval-live` on a bwrap machine).
+Open risks: fixture eval only decides 4/26 packages; 22 bench packages have no recording, so pitch numbers need `make eval-live` (and recordings) on Linux. Docker fallback never executed live.

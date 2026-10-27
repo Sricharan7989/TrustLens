@@ -58,5 +58,6 @@
    "network"
   ],
   "unknown_intent": false
- }
+ },
+ "dependency_attribution": {}
 }

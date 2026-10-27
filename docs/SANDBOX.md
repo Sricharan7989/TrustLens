@@ -74,7 +74,7 @@ Strace file events are limited to sensitive suffixes (ssh, aws, npmrc, docker, g
 
 New toys live in `tests/sandbox/data/` (synthetic only). The repo `.gitignore` pattern `data/` also ignores that directory, so the files are tracked with `git add -f`. Lead: adding `!tests/sandbox/data/` to `.gitignore` keeps the next toy visible to `git status`.
 
-Recorded live outputs for those toys are under `tests/sandbox/recorded/<name>/` (`raw_events.jsonl`, `run_meta.json`). They are not copied into `schemas/examples/` (lead-owned). Dev C has not added packages, so there is nothing further to record for C.
+Recorded live outputs for those toys are under `tests/sandbox/recorded/<name>/` (`raw_events.jsonl`, `run_meta.json`). The lead copied them into `schemas/examples/<name>/` as raw-event golden files (see `docs/CONTRACTS.md`). Dev C has not added packages, so there is nothing further to record for C.
 
 `AUDIT.md` is lead-owned and was not edited.
 

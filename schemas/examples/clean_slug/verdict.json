@@ -54,5 +54,6 @@
   ],
   "claimed_capabilities": [],
   "unknown_intent": false
- }
+ },
+ "dependency_attribution": {}
 }

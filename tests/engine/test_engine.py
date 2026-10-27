@@ -1838,6 +1838,20 @@ _SECRET_SNIPPETS = [
     "from os import environ; environ['AWS_SECRET_ACCESS_KEY']",
     "open('/etc/' 'passwd')",
     "os.path.join('/etc','passwd')",
+    # Regressions vs main found in verification: aliased os access and real secret names.
+    "import os as o\no.environ['AWS_SECRET_ACCESS_KEY']",
+    "import os as o\no.getenv('GITHUB_TOKEN')",
+    "import sys, os as o\no.environ.get('DB_PASSWORD')",
+    "from os import getenv\ngetenv('NPM_TOKEN')",
+    "from os import getenv as g\ng('NPM_TOKEN')",
+    "from os import environ as E\nE['AWS_SECRET_ACCESS_KEY']",
+    "from os import (environ as e,\n    getenv)\ngetenv('GITHUB_TOKEN')",
+    "__import__('os').environ['AWS_SECRET_ACCESS_KEY']",
+    "os.environ['DB_PASSWORD']",
+    "os.environ['PRIVATE_KEY']",
+    "os.getenv('SSH_PRIVATE_KEY')",
+    "os.getenv('MYSQL_PASSWD')",
+    "os.getenv('SERVICE_CREDENTIALS')",
 ]
 
 _BENIGN_SNIPPETS = [
@@ -1867,6 +1881,12 @@ _BENIGN_SNIPPETS = [
     "import argparse\np = argparse.ArgumentParser()\np.add_argument('--token', help='API token')",
     "os.path.join('/opt', 'valid_rsa')",
     "print('not' 'a secret')",
+    "import os as o\no.getenv('HOME')",
+    "from os import environ as e\ne['HOME']",
+    "from os import getenv\ngetenv('AWS_REGION')",
+    "from os import getenv\nself.getenv('NPM_TOKEN')",
+    "os.getenv('PRIMARY_KEYBOARD')",
+    "os.getenv('SORT_KEYS')",
 ]
 
 
