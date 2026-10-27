@@ -22,17 +22,67 @@ PERSIST_PATH = re.compile(
     r"authorized_keys|\.ssh/authorized_keys|/etc/init\.d|rc\.local|\.git/hooks)"
 )
 SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)", re.I)
-# Decoded snippets: only real env lookups, or a standalone all-caps secret name.
-# A case-insensitive scan of the whole snippet treats "for key, value" and "token = None" as secrets.
+# Decoded snippets: rejoin split literals, then match sensitive paths and real env reads.
+# A bare all-caps token (TOKEN = None, for KEY, help='Set API_KEY') is not a secret read.
+_STR_LIT = r"""(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")"""
+_LITERAL_JOIN_RE = re.compile(rf"(?P<left>{_STR_LIT})\s*(?P<op>[+/])\s*(?P<right>{_STR_LIT})")
+_GETATTR_ENVIRON_RE = re.compile(r"""getattr\s*\(\s*os\s*,\s*(['"])environ\1\s*\)""")
 _ENV_LOOKUP_RE = re.compile(
-    r"""os\.environ\s*\[\s*(['"])([^'"]+)\1"""
-    r"""|os\.environ\.get\s*\(\s*(['"])([^'"]+)\3"""
-    r"""|os\.getenv\s*\(\s*(['"])([^'"]+)\5"""
+    r"""os\.environ\s*\[\s*(['"])(?P<idx>[^'"]+)\1"""
+    r"""|os\.environ\.get\s*\(\s*(['"])(?P<get>[^'"]+)\3"""
+    r"""|os\.getenv\s*\(\s*(['"])(?P<getenv>[^'"]+)\5"""
 )
-_SECRET_NAME_TOKEN_RE = re.compile(
-    r"\b(?:(?:AWS_|GITHUB_|GITLAB_|NPM_|PYPI_|SSH_)[A-Z0-9_]+"
-    r"|(?:[A-Z][A-Z0-9]*_)?(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)(?:_[A-Z0-9]+)*)\b"
-)
+# Names that are secrets even when they do not contain _SECRET or end in _TOKEN.
+_CURATED_SECRET_ENV = frozenset({
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_SECURITY_TOKEN",
+    "GITHUB_TOKEN",
+    "GH_TOKEN",
+    "GH_ENTERPRISE_TOKEN",
+    "GITLAB_TOKEN",
+    "GITLAB_PRIVATE_TOKEN",
+    "NPM_TOKEN",
+    "NODE_AUTH_TOKEN",
+    "PYPI_TOKEN",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "GOOGLE_CREDENTIALS",
+    "AZURE_CLIENT_SECRET",
+    "ARM_CLIENT_SECRET",
+    "HF_TOKEN",
+    "HUGGING_FACE_HUB_TOKEN",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "STRIPE_API_KEY",
+    "SENDGRID_API_KEY",
+    "SLACK_BOT_TOKEN",
+    "SLACK_TOKEN",
+    "TWILIO_AUTH_TOKEN",
+    "DOCKER_PASSWORD",
+    "PYPI_PASSWORD",
+    "TWINE_PASSWORD",
+    "SECRET_KEY",
+    "API_KEY",
+    "API_TOKEN",
+    "ACCESS_TOKEN",
+    "AUTH_TOKEN",
+    "SESSION_TOKEN",
+    "SECRET",
+    "TOKEN",
+    "PASSWORD",
+    "PASSWD",
+})
+# Looked up often, but not credentials. Never treat these as env secrets.
+_NON_SECRET_ENV = frozenset({
+    "SSH_AUTH_SOCK",
+    "AWS_DEFAULT_REGION",
+    "AWS_REGION",
+    "AWS_DEFAULT_OUTPUT",
+    "AWS_PROFILE",
+    "AWS_ACCOUNT_ID",
+    "AWS_SDK_LOAD_CONFIG",
+})
 PROBE_ENV = {
     "CI", "GITHUB_ACTIONS", "GITLAB_CI", "TRAVIS", "JENKINS_URL",
     "BUILDKITE", "CIRCLECI", "CONTAINER", "KUBERNETES_SERVICE_HOST",
@@ -42,20 +92,53 @@ PROBE_PATH = ("/.dockerenv", "/proc/1/cgroup", "/proc/uptime", "/proc/self/cgrou
 SAFE_WRITE = re.compile(r"^(/tmp/|/var/tmp/|/w/site/|/pkg/|/w/[^/]+\.egg-info|~/\.cache/|.*/site-packages/)")
 
 
+def _join_literal_match(match: re.Match[str]) -> str:
+    left = match.group("left")
+    right = match.group("right")
+    sep = "/" if match.group("op") == "/" else ""
+    quote = left[0]
+    return quote + left[1:-1] + sep + right[1:-1] + quote
+
+
+def normalize_decoded_snippet(snippet: str) -> str:
+    """Reassemble split string literals so denylist markers are contiguous."""
+    text = _GETATTR_ENVIRON_RE.sub("os.environ", snippet)
+    for _ in range(32):
+        updated = _LITERAL_JOIN_RE.sub(_join_literal_match, text)
+        if updated == text:
+            return text
+        text = updated
+    return text
+
+
+def _env_name_is_secret(name: str) -> bool:
+    """True for a curated secret name, a *_SECRET* name, or a *_TOKEN suffix."""
+    upper = name.strip().upper()
+    if not upper or upper in PROBE_ENV or upper in _NON_SECRET_ENV:
+        return False
+    if upper in _CURATED_SECRET_ENV:
+        return True
+    if "_SECRET" in upper:
+        return True
+    return upper.endswith("_TOKEN")
+
+
 def snippet_mentions_env_secret(snippet: str) -> bool:
-    """True when a decoded snippet reads a secret env name, not a loose substring."""
-    for match in _ENV_LOOKUP_RE.finditer(snippet):
-        name = ""
-        for group in (2, 4, 6):
-            if match.group(group):
-                name = match.group(group)
-                break
-        if name.upper() not in PROBE_ENV and SECRET_ENV.search(name):
-            return True
-    for match in _SECRET_NAME_TOKEN_RE.finditer(snippet):
-        if match.group(0) not in PROBE_ENV:
+    """True when a decoded snippet reads a real secret env name, not a loose token."""
+    normalized = normalize_decoded_snippet(snippet)
+    for match in _ENV_LOOKUP_RE.finditer(normalized):
+        name = match.group("idx") or match.group("get") or match.group("getenv") or ""
+        if _env_name_is_secret(name):
             return True
     return False
+
+
+def snippet_has_denylisted_secret(snippet: str) -> bool:
+    """True when a decoded snippet touches a sensitive path or reads a real secret env name."""
+    normalized = normalize_decoded_snippet(snippet)
+    if SENSITIVE_PATH.search(normalized):
+        return True
+    return snippet_mentions_env_secret(normalized)
 
 
 def _home(p: str) -> str:
