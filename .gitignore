@@ -4,6 +4,8 @@ samples/
 *.zip
 *.tar.gz
 *.whl
+*.mov
+*.mp4
 # python
 .venv/
 venv/
