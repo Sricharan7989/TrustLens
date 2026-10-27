@@ -1,0 +1,215 @@
+version: 1
+packages:
+- id: requests
+  path: data/clean/requests/2.34.2/src/requests-2.34.2
+  label: clean
+  category: top_pypi
+  claim: Python HTTP for Humans.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control requests 2.34.2 (sha256: f288924cae4e2946...)'
+- id: paramiko
+  path: data/clean/paramiko/5.1.0/src
+  label: clean
+  category: top_pypi
+  claim: SSH2 protocol library
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control paramiko 5.1.0 (sha256: d9fe6d67a9d0bbf3...)'
+- id: gitpython
+  path: data/clean/GitPython/3.2.1/src/gitpython-3.2.1
+  label: clean
+  category: top_pypi
+  claim: GitPython is a Python library used to interact with Git repositories
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control GitPython 3.2.1 (sha256: 0f1229ec5c057bda...)'
+- id: docker
+  path: data/clean/docker/7.2.0/src/docker-7.2.0
+  label: clean
+  category: top_pypi
+  claim: A Python library for the Docker Engine API.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control docker 7.2.0 (sha256: cebb93773d334f77...)'
+- id: six
+  path: data/clean/six/1.17.0/src/six-1.17.0
+  label: clean
+  category: top_pypi
+  claim: Python 2 and 3 compatibility utilities
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control six 1.17.0 (sha256: ff70335d468e7eb6...)'
+- id: idna
+  path: data/clean/idna/3.20/src/idna-3.20
+  label: clean
+  category: top_pypi
+  claim: Internationalized Domain Names in Applications (IDNA)
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control idna 3.20 (sha256: a7db850025b95ded...)'
+- id: colorama
+  path: data/clean/colorama/0.4.6/src/colorama-0.4.6
+  label: clean
+  category: top_pypi
+  claim: Cross-platform colored terminal text.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control colorama 0.4.6 (sha256: 08695f5cb7ed6e05...)'
+- id: python-slugify
+  path: data/clean/python-slugify/9.1.3/src/python_slugify-9.1.3
+  label: clean
+  category: top_pypi
+  claim: A Python slugify application that also handles Unicode
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control python-slugify 9.1.3 (sha256: 90e997f2e0987239...)'
+- id: screeninfo
+  path: data/clean/screeninfo/0.8.1/src/screeninfo-0.8.1
+  label: clean
+  category: top_pypi
+  claim: Fetch location and size of physical screens.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control screeninfo 0.8.1 (sha256: 9983076bcc7e3440...)'
+- id: autopep8
+  path: data/clean/autopep8/2.3.2/src/autopep8-2.3.2
+  label: clean
+  category: top_pypi
+  claim: A tool that automatically formats Python code to conform to the PEP 8 style
+    guide
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control autopep8 2.3.2 (sha256: 89440a4f969197b6...)'
+- id: pyproj
+  path: data/clean/pyproj/3.8.0/src/pyproj-3.8.0
+  label: clean
+  category: top_pypi
+  claim: Python interface to PROJ (cartographic projections and coordinate transformations
+    library)
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control pyproj 3.8.0 (sha256: efa59725bba68bf9...)'
+- id: types-tabulate
+  path: data/clean/types-tabulate/0.10.0.20261006/src/types_tabulate-0.10.0.20261006
+  label: clean
+  category: top_pypi
+  claim: Typing stubs for tabulate
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control types-tabulate 0.10.0.20261006 (sha256: 505bb455e337e85f...)'
+- id: loguru
+  path: data/clean/loguru/0.7.3/src/loguru-0.7.3
+  label: clean
+  category: top_pypi
+  claim: Python logging made (stupidly) simple
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control loguru 0.7.3 (sha256: 19480589e77d47b8...)'
+- id: schema
+  path: data/clean/schema/0.7.8/src/schema-0.7.8
+  label: clean
+  category: top_pypi
+  claim: Simple data validation library
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control schema 0.7.8 (sha256: e86cc08edd6fe6e2...)'
+- id: thefuzz
+  path: data/clean/thefuzz/0.22.1/src/thefuzz-0.22.1
+  label: clean
+  category: top_pypi
+  claim: Fuzzy string matching in python
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control thefuzz 0.22.1 (sha256: 7138039a7ecf540d...)'
+- id: pytest-django
+  path: data/clean/pytest-django/4.14.0/src/pytest_django-4.14.0
+  label: clean
+  category: top_pypi
+  claim: A Django plugin for pytest.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control pytest-django 4.14.0 (sha256: 26787dd3f422cfba...)'
+- id: sphinxcontrib-devhelp
+  path: data/clean/sphinxcontrib-devhelp/2.0.0/src/sphinxcontrib_devhelp-2.0.0
+  label: clean
+  category: top_pypi
+  claim: sphinxcontrib-devhelp is a sphinx extension which outputs Devhelp documents
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control sphinxcontrib-devhelp 2.0.0 (sha256: 411f5d96d445d1d7...)'
+- id: pytest-cov
+  path: data/clean/pytest-cov/7.1.0/src/pytest_cov-7.1.0
+  label: clean
+  category: top_pypi
+  claim: Pytest plugin for measuring coverage.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control pytest-cov 7.1.0 (sha256: 30674f2b5f6351aa...)'
+- id: tree-sitter-javascript
+  path: data/clean/tree-sitter-javascript/0.25.0/src/tree_sitter_javascript-0.25.0
+  label: clean
+  category: top_pypi
+  claim: JavaScript grammar for tree-sitter
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control tree-sitter-javascript 0.25.0 (sha256: 329b5414874f0588...)'
+- id: func-timeout
+  path: data/clean/func-timeout/4.3.5/src/func_timeout-4.3.5
+  label: clean
+  category: top_pypi
+  claim: Python module which allows you to specify timeouts when calling any existing
+    function. Also provides support for stoppable-threads
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control func-timeout 4.3.5 (sha256: 74cd3c428ec94f4e...)'
+- id: std-uritemplate
+  path: data/clean/std-uritemplate/2.0.12/src/std_uritemplate-2.0.12
+  label: clean
+  category: top_pypi
+  claim: std-uritemplate implementation for Python
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control std-uritemplate 2.0.12 (sha256: c245e6d9c6804e43...)'
+- id: aioboto3
+  path: data/clean/aioboto3/15.5.0/src/aioboto3-15.5.0
+  label: clean
+  category: top_pypi
+  claim: Async boto3 wrapper
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control aioboto3 15.5.0 (sha256: ea8d8787d3155948...)'
+- id: azure-mgmt-cosmosdb
+  path: data/clean/azure-mgmt-cosmosdb/10.0.0/src/azure_mgmt_cosmosdb-10.0.0
+  label: clean
+  category: top_pypi
+  claim: Microsoft Azure Cosmosdb Management Client Library for Python
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control azure-mgmt-cosmosdb 10.0.0 (sha256: f9f5e9cbc984ad3c...)'
+- id: minio
+  path: data/clean/minio/7.2.20/src/minio-7.2.20
+  label: clean
+  category: top_pypi
+  claim: MinIO Python SDK for Amazon S3 Compatible Cloud Storage
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control minio 7.2.20 (sha256: 95898b7a023fbbfd...)'
+- id: google-auth-oauthlib
+  path: data/clean/google-auth-oauthlib/1.5.0/src/google_auth_oauthlib-1.5.0
+  label: clean
+  category: top_pypi
+  claim: Google Authentication Library
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control google-auth-oauthlib 1.5.0 (sha256: b351107c7dd9017f...)'
+- id: hatch-vcs
+  path: data/clean/hatch-vcs/0.5.0/src/hatch_vcs-0.5.0
+  label: clean
+  category: top_pypi
+  claim: Hatch plugin for versioning with your preferred VCS
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control hatch-vcs 0.5.0 (sha256: 0395fa1269403402...)'
+- id: databricks-sql-connector
+  path: data/clean/databricks-sql-connector/4.8.0/src/databricks_sql_connector-4.8.0
+  label: clean
+  category: top_pypi
+  claim: Databricks SQL Connector for Python
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control databricks-sql-connector 4.8.0 (sha256: 82dafb2f92308651...)'
+- id: wsproto
+  path: data/clean/wsproto/1.3.2/src/wsproto-1.3.2
+  label: clean
+  category: top_pypi
+  claim: Pure-Python WebSocket protocol implementation
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control wsproto 1.3.2 (sha256: b86885dcf294e152...)'
+- id: pyroaring
+  path: data/clean/pyroaring/1.2.0/src/pyroaring-1.2.0
+  label: clean
+  category: top_pypi
+  claim: Library for handling efficiently sorted integer sets.
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control pyroaring 1.2.0 (sha256: e33bf8fc8d8aad73...)'
+- id: jsondiff
+  path: data/clean/jsondiff/2.2.1/src/jsondiff-2.2.1
+  label: clean
+  category: top_pypi
+  claim: Diff JSON and JSON-like structures in Python
+  expected_verdict: BENIGN-CONSISTENT
+  notes: 'Top-PyPI clean control jsondiff 2.2.1 (sha256: 658d162c8a86ba86...)'

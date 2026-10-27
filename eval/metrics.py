@@ -1,4 +1,4 @@
-"""Dev C: metrics. Pure functions, unit-tested (tests/bench/test_metrics.py)."""
+"""Dev C: metrics. Pure functions, unit-tested (tests/bench/test_bench.py)."""
 from __future__ import annotations
 
 import math
@@ -20,23 +20,69 @@ def _div(a: float, b: float) -> float | None:
     return round(a / b, 4) if b else None
 
 
-def confusion(rows: list[dict]) -> dict:
+def confusion(rows: list[dict], available: bool = True) -> dict:
     """rows: {label: 'malicious'|'clean', flagged: bool|None (None = inconclusive/unavailable), trigger, gate, runtime_s}."""
-    tp = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is True)
-    fn = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is not True)
-    fp = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is True)
-    tn = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is not True)
-    inc = sum(1 for r in rows if r["flagged"] is None)
-    prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
-    f1 = round(2 * prec * rec / (prec + rec), 4) if prec and rec else (0.0 if prec is not None and rec is not None else None)
-    by = defaultdict(lambda: [0, 0])
+    by = defaultdict(lambda: [0, 0, 0])  # [detected, total, evaluated_count]
     for r in rows:
         if r["label"] == "malicious":
             key = f'{r.get("trigger")}|{r.get("gate")}'
             by[key][1] += 1
-            by[key][0] += r["flagged"] is True
+            if available and r.get("flagged") is not None:
+                by[key][2] += 1
+            if available and r.get("flagged") is True:
+                by[key][0] += 1
+
+    if not available:
+        return {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "inconclusive": 0,
+            "precision": None,
+            "recall": None,
+            "f1": None,
+            "fp_rate": None,
+            "fp_rate_wilson95": None,
+            "median_runtime_s": None,
+            "recall_by_trigger_gate": {
+                k: {"detected": 0, "decided": 0, "inconclusive": v[1], "total": v[1], "recall": None}
+                for k, v in sorted(by.items())
+            },
+        }
+
+    tp = sum(1 for r in rows if r["label"] == "malicious" and r.get("flagged") is True)
+    fn = sum(1 for r in rows if r["label"] == "malicious" and r.get("flagged") is False)
+    fp = sum(1 for r in rows if r["label"] == "clean" and r.get("flagged") is True)
+    tn = sum(1 for r in rows if r["label"] == "clean" and r.get("flagged") is False)
+    inc = sum(1 for r in rows if r.get("flagged") is None)
+    prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
+    f1 = round(2 * prec * rec / (prec + rec), 4) if prec and rec else (0.0 if prec is not None and rec is not None else None)
     rts = [r["runtime_s"] for r in rows if r.get("runtime_s") is not None]
-    return {"tp": tp, "fp": fp, "fn": fn, "tn": tn, "inconclusive": inc, "precision": prec, "recall": rec, "f1": f1,
-            "fp_rate": _div(fp, fp + tn), "fp_rate_wilson95": wilson(fp, fp + tn),
-            "median_runtime_s": round(statistics.median(rts), 2) if rts else None,
-            "recall_by_trigger_gate": {k: {"detected": v[0], "total": v[1], "recall": _div(v[0], v[1])} for k, v in sorted(by.items())}}
+
+    recall_by_gate = {}
+    for k, v in sorted(by.items()):
+        detected, total, decided = v[0], v[1], v[2]
+        rec_val = _div(detected, decided) if decided > 0 else None
+        recall_by_gate[k] = {
+            "detected": detected,
+            "decided": decided,
+            "inconclusive": total - decided,
+            "total": total,
+            "recall": rec_val,
+        }
+
+    return {
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "tn": tn,
+        "inconclusive": inc,
+        "precision": prec,
+        "recall": rec,
+        "f1": f1,
+        "fp_rate": _div(fp, fp + tn),
+        "fp_rate_wilson95": wilson(fp, fp + tn),
+        "median_runtime_s": round(statistics.median(rts), 2) if rts else None,
+        "recall_by_trigger_gate": recall_by_gate,
+    }

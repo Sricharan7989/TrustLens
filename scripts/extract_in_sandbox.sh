@@ -1,12 +1,50 @@
 #!/usr/bin/env bash
-# Dev C. Extract a password-protected malware zip INSIDE a no-network bwrap sandbox. Never extract on the host.
-# Usage: scripts/extract_in_sandbox.sh <file.zip> <out_dir>      (password 'infected' = Datadog dataset convention)
+# Dev C. Extract zip, tar.gz, or whl INSIDE a no-network bwrap sandbox.
+# Data filter (bench/tools/archive_filter.py): no symlinks, no absolute paths, no '..'.
+# Never extracts on the host. The destination directory is created only after the sandbox exits 0.
+# Encrypted zip members try password 'infected' (Datadog convention).
+# Usage: scripts/extract_in_sandbox.sh <archive> <out_dir>
 set -euo pipefail
-Z="$(realpath "$1")"; OUT="$(realpath -m "$2")"; mkdir -p "$OUT"
+if [[ $# -ne 2 ]]; then
+  echo "usage: scripts/extract_in_sandbox.sh <archive> <out_dir>" >&2
+  exit 2
+fi
 command -v bwrap >/dev/null || { echo "bwrap missing: run scripts/check_env.sh"; exit 2; }
-command -v unzip >/dev/null || { echo "unzip missing"; exit 2; }
-bwrap --ro-bind /usr /usr --symlink usr/lib /lib --symlink usr/lib64 /lib64 --symlink usr/bin /bin --proc /proc --dev /dev --tmpfs /tmp \
-  --ro-bind "$Z" /in.zip --bind "$OUT" /out --unshare-all --die-with-parent --clearenv --setenv PATH /usr/bin:/bin \
-  unzip -o -q -P infected /in.zip -d /out
-# files are data only; TrustLens will execute them inside ITS sandbox, never here
-ls "$OUT"
+Z="$(realpath "$1")"
+OUT="$(realpath -m "$2")"
+if [[ -z "$OUT" || "$OUT" == "/" ]]; then
+  echo "refusing destination: $OUT" >&2
+  exit 2
+fi
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FILTER="$ROOT/bench/tools/archive_filter.py"
+[[ -f "$FILTER" ]] || { echo "archive filter missing: $FILTER" >&2; exit 2; }
+[[ -f "$Z" ]] || { echo "archive missing: $Z" >&2; exit 2; }
+base="$(basename -- "$Z")"
+case "$base" in
+  *$'\n'*|*'/'*|'' ) echo "refusing archive name" >&2; exit 2;;
+esac
+work="$(mktemp -d "${TMPDIR:-/tmp}/trustlens-extract.XXXXXX")"
+cleanup() { rm -rf "$work"; }
+trap cleanup EXIT
+bwrap --ro-bind /usr /usr --symlink usr/lib /lib --symlink usr/lib64 /lib64 --symlink usr/bin /bin \
+  --proc /proc --dev /dev --tmpfs /tmp \
+  --ro-bind "$FILTER" /filter.py \
+  --ro-bind "$Z" "/in/${base}" \
+  --bind "$work" /out \
+  --unshare-all --die-with-parent --clearenv \
+  --setenv PATH /usr/bin:/bin \
+  --setenv PYTHONDONTWRITEBYTECODE 1 \
+  python3 /filter.py "/in/${base}" /out
+mkdir -p "$(dirname "$OUT")"
+if [[ -e "$OUT" && ! -d "$OUT" ]]; then
+  echo "destination exists and is not a directory: $OUT" >&2
+  exit 2
+fi
+if [[ -d "$OUT" ]]; then
+  shopt -s dotglob nullglob
+  mv "$work"/* "$OUT"/
+else
+  mv "$work" "$OUT"
+  trap - EXIT
+fi

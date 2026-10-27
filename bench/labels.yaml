@@ -1,5 +1,5 @@
 # PS1-Bench ground truth. OWNER: Dev C. Validated by schemas/bench_labels.schema.json (make audit).
-# Starter set (4). Dev C grows this to 8-10 planted malicious toys (trigger x gate x obfuscation) + 15-20 clean controls (see prompts/PROMPT_DEV_C.md).
+# Planted malicious toys (10) covering trigger x gate x obfuscation + clean controls and noisy-benign packages (16).
 # Every planted package is SYNTHETIC; network targets are RFC 5737 TEST-NET addresses or *.invalid.
 version: 1
 packages:
@@ -7,6 +7,42 @@ packages:
      claim: "string utility that turns titles into URL slugs", expected_signals: [canary_access, canary_in_bytes, network_unclaimed], notes: "setup.py reads fake ssh key + AWS env, tries HTTP exfil"}
   - {id: delayed_slug, path: bench/packages/malicious/delayed_slug, label: malicious, category: planted, trigger: call, gate: ci, obfuscation: base64, expected_verdict: MALICIOUS-EVIDENT,
      claim: "string utility that turns titles into URL slugs", expected_signals: [decoded_exec, env_differential, network_unclaimed], notes: "fires only when CI is set, in slugify()"}
+  - {id: pth_hook, path: bench/packages/malicious/pth_hook, label: malicious, category: planted, trigger: pth, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "helper library providing logging and configuration bootstrap", expected_signals: [startup_hook, canary_access, network_unclaimed], notes: "ships a .pth startup file reading ~/.ssh/id_rsa and dialing 198.51.100.8 on fresh interpreter start"}
+  - {id: import_exfil, path: bench/packages/malicious/import_exfil, label: malicious, category: planted, trigger: import, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "fast text formatting and template substitution utilities", expected_signals: [canary_access, canary_in_bytes, network_unclaimed], notes: "reads ~/.aws/credentials during module import and exfiltrates to 198.51.100.9"}
+  - {id: time_gate, path: bench/packages/malicious/time_gate, label: malicious, category: planted, trigger: call, gate: time, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "date and timestamp formatting utilities", expected_signals: [env_differential, network_unclaimed], notes: "gate opens 2026-11-09; connects to 198.51.100.40 only under clock+30d variant"}
+  - {id: host_gate, path: bench/packages/malicious/host_gate, label: malicious, category: planted, trigger: call, gate: os, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "mathematical matrix and vector operations and math calculator", expected_signals: [env_differential, network_unclaimed], notes: "checks socket.gethostname() against dev laptop camouflage; exfiltrates to 198.51.100.21 on CI/cloud"}
+  - {id: cli_payload, path: bench/packages/malicious/cli_payload, label: malicious, category: planted, trigger: cli, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "command-line file compression and archive helper", expected_signals: [canary_access, network_unclaimed], notes: "console_scripts entry point reads ~/.ssh/id_rsa and contacts 198.51.100.11 when executed"}
+  - {id: staged_dropper, path: bench/packages/malicious/staged_dropper, label: malicious, category: planted, trigger: call, gate: none, obfuscation: none, expected_verdict: SUSPICIOUS,
+     claim: "lightweight HTTP asset downloader and cache manager that downloads files", expected_signals: [download_exec], notes: "fetches second-stage python script from http://payload.invalid/stage.py and executes it via exec(); claims downloader so network is licensed, single strong signal download_exec yields SUSPICIOUS"}
+  - {id: env_harvester, path: bench/packages/malicious/env_harvester, label: malicious, category: planted, trigger: call, gate: none, obfuscation: none, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "environment configuration parser and validator", expected_signals: [canary_access, network_unclaimed], notes: "dumps os.environ looking for tokens and attempts DNS lookup exfil to exfil.invalid"}
+  - {id: obfuscated_xor, path: bench/packages/malicious/obfuscated_xor, label: malicious, category: planted, trigger: call, gate: none, obfuscation: xor, expected_verdict: MALICIOUS-EVIDENT,
+     claim: "string cipher and token generator", expected_signals: [decoded_exec, network_unclaimed], notes: "payload decoded via chr() and XOR key before dynamic compile/exec to contact 198.51.100.33"}
   - {id: clean_slug, path: bench/packages/clean/clean_slug, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that turns titles into URL slugs"}
   - {id: rest_wrapper, path: bench/packages/clean/rest_wrapper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "REST API client; optional API_TOKEN env var",
      notes: "legit network + env read: must PASS (claim-aware)"}
+  - {id: cli_runner, path: bench/packages/clean/cli_runner, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "command line wrapper around git and shell tools",
+     notes: "legitimate subprocess in call and cli phase: licensed by cli_tool intent"}
+  - {id: file_fetcher, path: bench/packages/clean/file_fetcher, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "downloader and api client that downloads files to local cache",
+     notes: "legitimate network + cache write: licensed by downloader intent"}
+  - {id: env_config, path: bench/packages/clean/env_config, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "config loader and environment variable configuration parser",
+     notes: "legitimate env read: licensed by config_loader intent"}
+  - {id: ssh_helper, path: bench/packages/clean/ssh_helper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "ssh client helper for ssh keys and server configuration",
+     notes: "legitimate ~/.ssh/config read: licensed by ssh_tool intent"}
+  - {id: sys_monitor, path: bench/packages/clean/sys_monitor, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "system information and hardware info inspection library",
+     notes: "legitimate platform and process inspection: licensed by system_info intent"}
+  - {id: native_shim, path: bench/packages/clean/native_shim, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "bindings for native libraries and c extension routines",
+     notes: "legitimate ctypes standard library call: licensed by native_ext intent"}
+  - {id: math_lib, path: bench/packages/clean/math_lib, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "pure Python math calculator and vector computation library"}
+  - {id: color_text, path: bench/packages/clean/color_text, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "ANSI color text formatter and terminal string styling"}
+  - {id: json_parser, path: bench/packages/clean/json_parser, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "lightweight JSON parser and text validator"}
+  - {id: case_converter, path: bench/packages/clean/case_converter, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "string utility that converts case between naming styles"}
+  - {id: date_calc, path: bench/packages/clean/date_calc, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "date calculator and calendar duration arithmetic library"}
+  - {id: uuid_helper, path: bench/packages/clean/uuid_helper, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "deterministic UUID text formatter and identifier helper"}
+  - {id: hash_util, path: bench/packages/clean/hash_util, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "cryptographic checksum calculator and string digest utility"}
+  - {id: markdown_strip, path: bench/packages/clean/markdown_strip, label: clean, category: clean_control, expected_verdict: BENIGN-CONSISTENT, claim: "text formatter that strips markdown syntax into plaintext"}
