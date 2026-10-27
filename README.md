@@ -74,7 +74,7 @@ jobs:
 | Part | Status |
 |---|---|
 | Contracts, schemas, fixtures, tests, audit | real |
-| Sandbox live runner (bwrap, canaries, dev/ci, `setup.py egg_info`, import-all, call-all, audit hook, env wrapper) | **v0 real**; real `pip install`+`.pth` diff, fresh-startup, strace, clock+30d, CLI trigger, sinkhole: Dev A tasks |
+| Sandbox live runner (bwrap, canaries, dev/ci, `setup.py egg_info`, import-all, call-all, audit hook, env wrapper, real `pip install` + `.pth` diff, fresh-startup, strace, clock+30d, CLI trigger, loopback sinkhole) | **implemented** — see `docs/SANDBOX.md` (Docker fallback is implemented, not executed on the sandbox VM) |
 | Claims extractor, normalizer, rules, verdict ladder | **v0 real** (keyword intents, 10 rules) — Dev B extends |
 | Report (HTML/JSON/text/SARIF), CLI orchestrator, Web UI | **v2.0 real** (interactive timeline filters, evidence chains, web UI console, SARIF 2.1.0) — Dev D |
 | PS1-Bench | 4 starter packages — Dev C grows to 8–10 malicious + 15–20 clean |

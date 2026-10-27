@@ -7,24 +7,21 @@ All dynamic text MUST pass through esc() (package READMEs, payloads, and metadat
 """
 from __future__ import annotations
 
-import re
 from html import escape
 
-_CANARY_RE = re.compile(r"TLCANARY[A-Za-z0-9]+")
+from trustlens.report.redact import (
+    detail_tooltip,
+    evidence_preview,
+    has_canary_in_bytes,
+    redact_text,
+)
 
 
-def redact_canaries(s: str) -> str:
-    """Redact canary token bytes (replace TLCANARY... with [canary])."""
-    if not isinstance(s, str):
-        s = str(s)
-    return _CANARY_RE.sub("[canary]", s)
-
-
-def esc(val: object) -> str:
-    """Strict HTML escaping for untrusted attacker-controlled inputs, with canary token bytes redacted."""
+def esc(val: object, *, urls: bool = False) -> str:
+    """HTML-escape untrusted text, strip ESC/CSI/C1, and redact canary token bytes."""
     if val is None:
         return ""
-    return escape(redact_canaries(str(val)), quote=True)
+    return escape(redact_text(val, urls=urls), quote=True)
 
 
 CSS = """
@@ -512,6 +509,7 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
     summary = verdict.get("summary", "")
     findings = verdict.get("findings") or []
     signals = verdict.get("independent_signals") or []
+    summary_urls = any(has_canary_in_bytes(f) for f in findings)
 
     is_stub = False
     if fingerprint and fingerprint.get("run", {}).get("stub"):
@@ -576,7 +574,7 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
     h.append("</div>")
 
     # Summary Sentence
-    h.append(f"<div class='summary-box {esc(action)}'><strong>Summary:</strong> {esc(summary)}</div>")
+    h.append(f"<div class='summary-box {esc(action)}'><strong>Summary:</strong> {esc(summary, urls=summary_urls)}</div>")
     h.append("</div>")  # end card
 
     # Claims vs Capabilities Panel
@@ -610,9 +608,13 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
     else:
         for f in findings:
             sev = esc(f.get("severity", "medium").lower())
+            flagged = has_canary_in_bytes(f)
             h.append(f"<div class='finding-card {sev}'>")
             h.append("<div class='finding-head'>")
-            h.append(f"<div class='finding-title'><span>[{esc(f.get('severity', '').upper())}]</span> {esc(f.get('title', ''))}</div>")
+            h.append(
+                f"<div class='finding-title'><span>[{esc(f.get('severity', '').upper())}]</span> "
+                f"{esc(f.get('title', ''), urls=flagged)}</div>"
+            )
             h.append("<div class='finding-pills'>")
             h.append(f"<span class='pill severity-{sev}'>{esc(f.get('rule', ''))}</span>")
             h.append(f"<span class='pill'>{esc(f.get('signal_class', ''))}</span>")
@@ -635,20 +637,16 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
                 h.append(f"<div class='chain-node'><span class='node-label'>2. Observed</span><span class='node-val'>{ev_str}</span></div>")
 
                 for ev in evidence_items:
-                    det = ev.get("detail", {})
-                    if det.get("canary_in_bytes"):
-                        raw_val = det.get("path") or det.get("name") or det.get("dest") or "[url redacted]"
-                    else:
-                        raw_val = det.get("path") or det.get("url") or det.get("name") or det.get("dest") or det
-                    det_preview = esc(str(raw_val)[:140])
-                    canary_txt = " [CANARY IN PAYLOAD]" if det.get("canary_in_bytes") else ""
+                    det = ev.get("detail") or {}
+                    det_preview = esc(evidence_preview(det)[:140])
+                    canary_txt = " [CANARY IN PAYLOAD]" if isinstance(det, dict) and det.get("canary_in_bytes") else ""
                     h.append("<div class='chain-arrow'>&darr;</div>")
                     h.append(f"<div class='chain-node'><span class='node-label'>3. Evidence</span><span class='node-val'><code>{det_preview}{esc(canary_txt)}</code></span></div>")
 
             h.append("</div>")
 
             # Explanation
-            h.append(f"<div class='finding-desc'>{esc(f.get('explanation', ''))}</div>")
+            h.append(f"<div class='finding-desc'>{esc(f.get('explanation', ''), urls=flagged)}</div>")
             h.append("</div>")  # end finding-card
     h.append("</div>")  # end findings card
 
@@ -695,14 +693,17 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
                     for ev in ph_events:
                         dot_cls = "dot-succeeded" if ev.get("outcome") == "succeeded" and ev.get("canary_hit") else ("dot-blocked" if ev.get("outcome") == "blocked" else "dot-clean")
                         d = ev.get("detail", {})
-                        if d.get("canary_in_bytes"):
-                            snip = str(d.get("path") or d.get("dest") or "[url redacted]")[:40]
-                            title_txt = str({k: ("[url redacted]" if k == "url" else v) for k, v in d.items()})
+                        flagged_ev = bool(isinstance(d, dict) and d.get("canary_in_bytes"))
+                        if flagged_ev:
+                            snip = str(d.get("path") or d.get("name") or "[url redacted]")[:40]
                         else:
                             snip = str(d.get("path") or d.get("url") or d.get("dest") or ev.get("capability") or "")[:40]
-                            title_txt = str(d)
+                        title_txt = detail_tooltip(d)
                         canary_tag = " [canary]" if ev.get("canary_hit") else ""
-                        h.append(f"<span class='event-dot {dot_cls}' title='{esc(title_txt)}'>{esc(ev.get('capability', ''))}: {esc(snip)}{esc(canary_tag)}</span>")
+                        h.append(
+                            f"<span class='event-dot {dot_cls}' title='{esc(title_txt)}'>"
+                            f"{esc(ev.get('capability', ''))}: {esc(snip, urls=flagged_ev)}{esc(canary_tag)}</span>"
+                        )
                     h.append("</div>")
             h.append("</div></div>")
         h.append("</div>")
@@ -712,10 +713,10 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
         h.append("<table><tr><th>#</th><th>Profile</th><th>Phase</th><th>Capability</th><th>Detail</th><th>Outcome</th><th>Canaries</th></tr>")
         for e in events:
             d = e.get("detail", {})
-            if d.get("canary_in_bytes"):
-                txt = str(d.get("path") or d.get("name") or d.get("dest") or d.get("host") or "[url redacted]")[:100]
-            else:
-                txt = str(d.get("path") or d.get("name") or d.get("dest") or d.get("host") or d.get("url") or d.get("decoded_snippet") or d)[:100]
+            flagged_ev = bool(isinstance(d, dict) and d.get("canary_in_bytes"))
+            txt = evidence_preview(d)[:100] if flagged_ev else str(
+                d.get("path") or d.get("name") or d.get("dest") or d.get("host") or d.get("url") or d.get("decoded_snippet") or d
+            )[:100]
             outc = esc(e.get("outcome", ""))
             canary_str = esc(", ".join(e.get("canary_ids", [])))
             norm_phase = "startup" if e.get("phase") == "fresh_startup" else e.get("phase", "")
@@ -723,7 +724,7 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
                 f"<tr class='timeline-row' data-profile='{esc(e.get('profile'))}' data-phase='{esc(norm_phase)}'>"
                 f"<td>{esc(e.get('seq'))}</td><td><code>{esc(e.get('profile'))}</code></td>"
                 f"<td>{esc(e.get('phase'))}</td><td><code>{esc(e.get('capability'))}</code></td>"
-                f"<td><code>{esc(txt)}</code></td><td>{outc}</td><td>{canary_str}</td></tr>"
+                f"<td><code>{esc(txt, urls=flagged_ev)}</code></td><td>{outc}</td><td>{canary_str}</td></tr>"
             )
         h.append("</table></details>")
         h.append("</div>")
@@ -835,7 +836,10 @@ def render_comparison_html(
             h.append("<ul>")
             for f in findings:
                 sev = esc(f.get("severity", "medium").upper())
-                h.append(f"<li><strong>[{sev}]</strong> {esc(f.get('title', ''))} (rule <code>{esc(f.get('rule', ''))}</code>)</li>")
+                h.append(
+                    f"<li><strong>[{sev}]</strong> {esc(f.get('title', ''), urls=has_canary_in_bytes(f))} "
+                    f"(rule <code>{esc(f.get('rule', ''))}</code>)</li>"
+                )
             h.append("</ul>")
         else:
             h.append("<p style='color: var(--pass); margin-top: 0.5rem;'>&check; No contradiction findings detected.</p>")
@@ -848,7 +852,6 @@ def render_comparison_html(
     h.append("</div>")  # end comp-grid
     h.append("<div class='footer'><p>TrustLens AI &middot; Proof-based dependency provenance.</p></div>")
     h.append("</div></body></html>")
-    return "\n".join(h)
     return "\n".join(h)
 
 
@@ -931,8 +934,12 @@ def render_diff_html(v1: dict, fp1: dict, v2: dict, fp2: dict) -> str:
         for f in new_findings:
             sev = esc(f.get("severity", "medium").lower())
             h.append(f"<div class='finding-card {sev}' style='margin-bottom: 1rem;'>")
-            h.append(f"<strong>[{esc(f.get('severity', '').upper())}] {esc(f.get('title'))}</strong> &middot; rule <code>{esc(f.get('rule'))}</code>")
-            h.append(f"<p style='margin-top: 0.4rem; color: #cbd5e1;'>{esc(f.get('explanation'))}</p></div>")
+            flagged = has_canary_in_bytes(f)
+            h.append(
+                f"<strong>[{esc(f.get('severity', '').upper())}] {esc(f.get('title'), urls=flagged)}</strong> "
+                f"&middot; rule <code>{esc(f.get('rule'))}</code>"
+            )
+            h.append(f"<p style='margin-top: 0.4rem; color: #cbd5e1;'>{esc(f.get('explanation'), urls=flagged)}</p></div>")
     h.append("</div>")
 
     h.append("<div class='footer'><p>TrustLens AI &middot; Version Differential Provenance.</p></div>")

@@ -82,7 +82,7 @@
   * **Malicious Packages Tested:** 2/2 detected (2/2 on tested variants).
   * **Clean Controls Tested:** 2/2 passed without false alarms.
   * **False-Positive Rate:** FP 0/2 with Wilson 95% CI [0.0, 0.6576].
-  * **Median Runtime:** 0.01s per fixture replay (baselines not run).
+  * **Median Runtime:** 0.12s median for a CLI fixture scan of the four starter packages (measured; baselines not run).
   * **Honest Footnote:** Datasets are used exclusively for calibration and testing, never for model training.
 
 ---
@@ -99,7 +99,7 @@
 | **Abstention Policy (Coverage Block)** | Yes (`INCONCLUSIVE`) | No (silent pass) | No | No |
 | **CI / Code Scanning Output** | Native SARIF 2.1.0 + HTML | GitHub Action (SARIF) | Text output | JSON |
 
-*Footnote:* GuardDog and PipCanary evaluated using pinned public versions. Packj comparison based on published specifications (no AGPL code included).
+*Footnote:* GuardDog and PipCanary columns are from published descriptions; those baselines were not run. Packj comparison is based on published specifications (no AGPL code included).
 
 ---
 

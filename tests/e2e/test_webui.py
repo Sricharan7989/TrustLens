@@ -149,6 +149,47 @@ def test_webui_rejects_path_traversal(webui_server):
         assert "Forbidden" in err_body["error"]
 
 
+def _multipart(filename: str, payload: bytes = b"not-a-package") -> tuple[bytes, str]:
+    boundary = "----WebKitFormBoundaryDot"
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        f"Content-Type: application/octet-stream\r\n\r\n"
+    ).encode("latin1") + payload + f"\r\n--{boundary}--\r\n".encode("latin1")
+    return body, boundary
+
+
+def test_webui_rejects_dotdot_upload_filename(webui_server):
+    """Upload filenames '.' and '..' are rejected with JSON 400 before anything is written."""
+    for name in ("..", "."):
+        body, boundary = _multipart(name)
+        req = urllib.request.Request(
+            f"{webui_server}/api/upload",
+            data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            method="POST",
+        )
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(req, timeout=10)
+        assert exc_info.value.code == 400
+        err_body = json.loads(exc_info.value.read().decode("utf-8"))
+        assert "error" in err_body
+
+
+def test_webui_allows_ipv6_loopback_host(webui_server):
+    """Host ``[::1]:port`` is loopback. Do not split the header on the first colon."""
+    host_port = webui_server.removeprefix("http://").split(":")
+    conn = http.client.HTTPConnection(host_port[0], int(host_port[1]))
+    conn.putrequest("GET", "/api/status", skip_host=True)
+    conn.putheader("Host", f"[::1]:{host_port[1]}")
+    conn.endheaders()
+    resp = conn.getresponse()
+    body = resp.read()
+    assert resp.status == 200
+    assert b"bwrap_ok" in body
+    conn.close()
+
+
 def test_webui_rejects_negative_content_length(webui_server):
     """Safety: Content-Length < 0 must be rejected with HTTP 400 immediately."""
     host_port = webui_server.removeprefix("http://").split(":")

@@ -1,5 +1,6 @@
 """Dev D. End-to-end through the real CLI (fixture runner => deterministic, no sandbox needed)."""
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -358,11 +359,81 @@ def test_hostile_package_name_sanitized(tmp_path):
     assert "\x1b" not in r.stdout
     assert "<script>" not in r.stdout
 
-    # report.html must have the escaped script and no TLCANARY
-    html = (out / "report.html").read_text(encoding="utf-8")
+    # report.html must have the escaped script, no TLCANARY, and no raw ESC/CSI byte
+    html_bytes = (out / "report.html").read_bytes()
+    html = html_bytes.decode("utf-8")
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "TLCANARY" not in html
+    assert b"\x1b" not in html_bytes
+
+
+def _assert_canary_report_clean(html: str, text: str, sarif: str) -> None:
+    """Rendered reports must not leak canary token bytes or exfil URLs."""
+    for label, body in (("html", html), ("text", text), ("sarif", sarif)):
+        assert "TLCANARY" not in body, label
+        assert "http://" not in body, label
+
+
+def test_canary_urls_redacted_evil_slug_and_shapes(tmp_path):
+    """evil_slug and canary_shapes html/text/sarif drop TLCANARY and http:// when canary bytes were seen.
+
+    ssh_key (a canary id, not a token) stays in the evil_slug report.
+    """
+    out = tmp_path / "evil"
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "scan",
+            str(ROOT / "bench/packages/malicious/evil_slug"),
+            "--runner",
+            "fixture",
+            "--offline",
+            "--format",
+            "text",
+            "--out",
+            str(out),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert r.returncode == 20, r.stdout + r.stderr
+    html = (out / "report.html").read_text(encoding="utf-8")
+    sarif = (out / "report.sarif").read_text(encoding="utf-8")
+    _assert_canary_report_clean(html, r.stdout, sarif)
+    assert "ssh_key" in html
+    assert "ssh_key" in sarif
+    assert "[url redacted]" in html
+    assert "[url redacted]" in sarif
+
+    from trustlens.claims import extract_claims, read_package_info
+    from trustlens.engine import evaluate
+    from trustlens.fingerprint import build_fingerprint
+    from trustlens.report import render_html, render_sarif, render_text
+
+    pkg = ROOT / "tests/sandbox/data/canary_shapes"
+    recorded = ROOT / "tests/sandbox/recorded/canary_shapes"
+    meta = json.loads((recorded / "run_meta.json").read_text(encoding="utf-8"))
+    claims = extract_claims(str(pkg))
+    fp = build_fingerprint(str(recorded / "raw_events.jsonl"), meta, read_package_info(str(pkg)))
+    assert any(ev.get("detail", {}).get("canary_in_bytes") for ev in fp["events"])
+    verdict = evaluate(fp, claims)
+    shape_html = render_html(verdict, fp, claims)
+    shape_text = render_text(verdict)
+    shape_sarif = render_sarif(verdict, fp, claims)
+    _assert_canary_report_clean(shape_html, shape_text, shape_sarif)
+    assert "aws_secret_env" in shape_html
+    assert "evil.invalid" not in shape_html
+    assert "krgegqkoifjfsqkxknjukq2sivkektswgrrggytdha4wgmzxmm4a" not in shape_html
+    for title in re.findall(r"title='([^']*)'", shape_html):
+        if "canary_in_bytes" in title:
+            assert "198.51.100.30" not in title
+            assert "evil.invalid" not in title
+            assert "http://" not in title
 
 
 def test_no_color_emits_no_ansi(monkeypatch):

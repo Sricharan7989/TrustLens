@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 
+from trustlens.report.redact import has_canary_in_bytes, redact_text, redact_tree
+
 
 def render_sarif(verdict: dict, fingerprint: dict | None = None, claims: dict | None = None) -> str:
     """Generate SARIF 2.1.0 JSON representation from verdict findings."""
@@ -25,21 +27,27 @@ def render_sarif(verdict: dict, fingerprint: dict | None = None, claims: dict | 
 
     for f in findings:
         rule_id = f.get("rule", "TL000")
+        flagged = has_canary_in_bytes(f)
+        title = redact_text(f.get("title", rule_id), urls=flagged)
+        explanation = redact_text(f.get("explanation", ""), urls=flagged)
         if rule_id not in rules_dict:
             rules_dict[rule_id] = {
                 "id": rule_id,
-                "name": f.get("title", rule_id),
-                "shortDescription": {"text": f.get("title", rule_id)},
-                "fullDescription": {"text": f.get("explanation", "")},
+                "name": title,
+                "shortDescription": {"text": title},
+                "fullDescription": {"text": explanation},
                 "defaultConfiguration": {
-                    "level": level_map.get(f.get("severity", "medium").lower(), "warning")
+                    "level": level_map.get(str(f.get("severity", "medium")).lower(), "warning")
                 },
-                "properties": {
-                    "capability": f.get("capability"),
-                    "signal_class": f.get("signal_class"),
-                    "canary_hit": f.get("canary_hit", False),
-                    "env_differential": f.get("env_differential", False),
-                },
+                "properties": redact_tree(
+                    {
+                        "capability": f.get("capability"),
+                        "signal_class": f.get("signal_class"),
+                        "canary_hit": f.get("canary_hit", False),
+                        "env_differential": f.get("env_differential", False),
+                    },
+                    urls=flagged,
+                ),
             }
 
         locations = []
@@ -69,11 +77,19 @@ def render_sarif(verdict: dict, fingerprint: dict | None = None, claims: dict | 
         results.append(
             {
                 "ruleId": rule_id,
-                "level": level_map.get(f.get("severity", "medium").lower(), "warning"),
+                "level": level_map.get(str(f.get("severity", "medium")).lower(), "warning"),
                 "message": {
-                    "text": f"{f.get('title')}: {f.get('explanation')}"
+                    "text": redact_text(f"{f.get('title')}: {f.get('explanation')}", urls=flagged)
                 },
                 "locations": locations,
+                "properties": redact_tree(
+                    {
+                        "capability": f.get("capability"),
+                        "signal_class": f.get("signal_class"),
+                        "canary_hit": bool(f.get("canary_hit", False)),
+                    },
+                    urls=flagged,
+                ),
             }
         )
 

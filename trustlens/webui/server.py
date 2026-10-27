@@ -23,6 +23,35 @@ from trustlens.sandbox.env_check import check_env
 
 MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
 scan_lock = threading.Lock()
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
+
+
+def host_is_loopback(host_header: str) -> bool:
+    """True for a loopback Host. ``[::1]:port`` is parsed as a bracketed IPv6 literal, not split on the first colon."""
+    value = (host_header or "").strip().lower()
+    if not value:
+        return False
+    if value.startswith("["):
+        end = value.find("]")
+        if end < 0:
+            return False
+        name = value[: end + 1]
+        rest = value[end + 1 :]
+        if rest and not re.fullmatch(r":\d+", rest):
+            return False
+        return name in _LOOPBACK_HOSTS
+    if value.count(":") == 1:
+        name, port = value.rsplit(":", 1)
+        if port.isdigit():
+            value = name
+    return value in _LOOPBACK_HOSTS
+
+
+def _rejected_upload_name(raw_fn: str) -> bool:
+    """True when the upload basename is ``.`` or ``..`` (pathlib collapses ``.`` to an empty name)."""
+    if raw_fn in {".", ".."}:
+        return True
+    return Path(raw_fn).name in {".", ".."}
 
 DEMO_PACKAGES = [
     {"id": "evil_slug", "name": "evil-slug (malicious / install-time exfil)", "path": "bench/packages/malicious/evil_slug"},
@@ -323,8 +352,7 @@ HTML_PAGE = """<!doctype html>
 
 class TrustLensWebHandler(BaseHTTPRequestHandler):
     def _validate_host(self) -> bool:
-        host = self.headers.get("Host", "").split(":")[0].strip().lower()
-        if host not in ("127.0.0.1", "localhost", "[::1]"):
+        if not host_is_loopback(self.headers.get("Host", "")):
             self.send_error(HTTPStatus.FORBIDDEN, "Forbidden: Web UI binds exclusively to loopback (127.0.0.1).")
             return False
         return True
@@ -466,35 +494,53 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
             filename = None
             profiles = ["dev", "ci"]
 
-            for part in msg.iter_parts():
-                cdisp = part.get("Content-Disposition", "")
-                if 'name="profiles"' in cdisp:
-                    prof_val = part.get_content().strip()
-                    if prof_val:
-                        profiles = [p.strip() for p in prof_val.split(",") if p.strip()]
-                elif 'name="file"' in cdisp or part.get_filename():
-                    raw_fn = part.get_filename() or "uploaded_package.whl"
-                    # Sanitize filename: strip path traversal and characters illegal on Windows/POSIX (<>:"/\|?*)
-                    clean_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', Path(raw_fn).name)
-                    filename = clean_name or "uploaded_package.whl"
-                    file_bytes = part.get_payload(decode=True)
+            try:
+                for part in msg.iter_parts():
+                    cdisp = part.get("Content-Disposition", "")
+                    if 'name="profiles"' in cdisp:
+                        prof_val = part.get_content().strip()
+                        if prof_val:
+                            profiles = [p.strip() for p in prof_val.split(",") if p.strip()]
+                    elif 'name="file"' in cdisp or part.get_filename():
+                        raw_fn = part.get_filename() or "uploaded_package.whl"
+                        if _rejected_upload_name(raw_fn):
+                            self._send_json(
+                                {"error": "rejected upload filename '.' or '..'"},
+                                HTTPStatus.BAD_REQUEST,
+                            )
+                            return
+                        # Sanitize filename: strip path traversal and characters illegal on Windows/POSIX (<>:"/\|?*)
+                        clean_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', Path(raw_fn).name)
+                        if _rejected_upload_name(clean_name):
+                            self._send_json(
+                                {"error": "rejected upload filename '.' or '..'"},
+                                HTTPStatus.BAD_REQUEST,
+                            )
+                            return
+                        filename = clean_name or "uploaded_package.whl"
+                        file_bytes = part.get_payload(decode=True)
 
-            if not file_bytes or not filename:
-                self._send_json({"error": "No file uploaded in form field 'file'"}, HTTPStatus.BAD_REQUEST)
-                return
+                if not file_bytes or not filename:
+                    self._send_json({"error": "No file uploaded in form field 'file'"}, HTTPStatus.BAD_REQUEST)
+                    return
 
-            with tempfile.TemporaryDirectory(prefix="trustlens_upload_") as tmp_dir:
-                tmp_file = Path(tmp_dir) / filename
-                tmp_file.write_bytes(file_bytes)
-                out_dir = ROOT / "reports/webui/uploads" / filename
+                with tempfile.TemporaryDirectory(prefix="trustlens_upload_") as tmp_dir:
+                    tmp_file = Path(tmp_dir) / filename
+                    if _rejected_upload_name(tmp_file.name) or Path(tmp_dir).resolve() not in tmp_file.resolve().parents:
+                        self._send_json(
+                            {"error": "rejected upload filename '.' or '..'"},
+                            HTTPStatus.BAD_REQUEST,
+                        )
+                        return
+                    tmp_file.write_bytes(file_bytes)
+                    out_dir = ROOT / "reports/webui/uploads" / filename
 
-                with scan_lock:
-                    try:
+                    with scan_lock:
                         res = scan(str(tmp_file), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
                         report_html = (Path(res["out_dir"]) / "report.html").read_text(encoding="utf-8")
                         self._send_json({"verdict": res["verdict"], "report_html": report_html})
-                    except Exception as e:
-                        self._send_json({"error": f"Scan failed: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            except Exception as e:
+                self._send_json({"error": f"Scan failed: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
