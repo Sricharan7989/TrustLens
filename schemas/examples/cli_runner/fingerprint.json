@@ -1,0 +1,596 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "cli-runner",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "61e73d36334f9b184804f146571664d003cf78e69f3859c7d05ad80e753e25f9",
+  "path": "bench/packages/clean/cli_runner"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:19.992689+00:00",
+  "duration_s": 5.47,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "cli_runner-0.1.dist-info/entry_points.txt",
+    "cmd": "clirun=cli_runner.cli:main"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "cli_runner-0.1.dist-info/entry_points.txt",
+    "line": null
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "Hello World"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "call"
+    ],
+    "via": "subprocess.Popen",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev3",
+   "seq": 110,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "Hello World"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "call"
+    ],
+    "via": "subprocess.Popen",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev5",
+   "seq": 113,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "echo",
+     "hello"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 114,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "--help"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 115,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "echo",
+     "hello"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 116,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "--help"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 223,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "cli_runner-0.1.dist-info/entry_points.txt",
+    "cmd": "clirun=cli_runner.cli:main"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "cli_runner-0.1.dist-info/entry_points.txt",
+    "line": null
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 224,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "Hello World"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 225,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "call"
+    ],
+    "via": "subprocess.Popen",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev12",
+   "seq": 227,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "Hello World"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev13",
+   "seq": 228,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "call"
+    ],
+    "via": "subprocess.Popen",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev14",
+   "seq": 230,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "echo",
+     "hello"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev15",
+   "seq": 231,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "--help"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev16",
+   "seq": 232,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "echo",
+     "hello"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev17",
+   "seq": 233,
+   "phase": "cli",
+   "trigger": "cli:clirun",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "subprocess",
+   "detail": {
+    "argv": [
+     "--help"
+    ],
+    "via": "subprocess.Popen"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_runner/__init__.py",
+    "line": 5,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "cli:clirun",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "modules failed to import: cli_runner.cli:main: FileNotFoundError"
+  ],
+  "whitelisted_or_dropped_events": 216
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY42c22da11d20"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSf8ce11ed77ec"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC5afc37e8ce86"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS5e04a92c84e5"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG57604c988c48"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVc37c863241ae"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV77d4481667d3"
+  }
+ ],
+ "capability_summary": {
+  "install_hook": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "subprocess": {
+   "phases": [
+    "call",
+    "cli"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 16,
+   "canary_hit": false
+  }
+ }
+}

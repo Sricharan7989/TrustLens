@@ -1,0 +1,228 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "sys-monitor",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "d5a62fd2eb9c74215ee2bb320dedb9054bdb122624b1e1e2726968b8b9e5f9e3",
+  "path": "bench/packages/clean/sys_monitor"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:41.392174+00:00",
+  "duration_s": 4.89,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 214,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 215,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYbbc3592ddab9"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS03e03558ccd9"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCd71b564077ec"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS42c080dfa8d2"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGc6c34c59d054"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVa21e86b04ab5"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVfb19d9afb560"
+  }
+ ],
+ "capability_summary": {
+  "sandbox_probe": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 4,
+   "canary_hit": false
+  }
+ }
+}

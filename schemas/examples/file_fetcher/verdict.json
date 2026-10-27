@@ -1,0 +1,62 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "file-fetcher",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0de801be009f2a3af34700f2aff4bb14deca965f56d9b3944c3cf995e008d811",
+  "path": "bench/packages/clean/file_fetcher"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "high",
+ "summary": "file-fetcher: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "http_client",
+   "downloader"
+  ],
+  "claimed_capabilities": [
+   "fs_write_outside_pkg",
+   "network"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

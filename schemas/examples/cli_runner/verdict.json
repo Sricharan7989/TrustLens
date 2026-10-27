@@ -1,0 +1,62 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "cli-runner",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "61e73d36334f9b184804f146571664d003cf78e69f3859c7d05ad80e753e25f9",
+  "path": "bench/packages/clean/cli_runner"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "high",
+ "summary": "cli-runner: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "cli:clirun",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "modules failed to import: cli_runner.cli:main: FileNotFoundError"
+  ],
+  "whitelisted_or_dropped_events": 216
+ },
+ "claims_summary": {
+  "intents": [
+   "cli_tool"
+  ],
+  "claimed_capabilities": [
+   "subprocess"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

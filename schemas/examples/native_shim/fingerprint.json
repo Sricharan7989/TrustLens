@@ -1,0 +1,275 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "native-shim",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "ed141c24587b9258dbc549ee29d2832297c3e2aba9cffe08abd0977d3ad3c082",
+  "path": "bench/packages/clean/native_shim"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:46.644082+00:00",
+  "duration_s": 6.96,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "native_code",
+   "detail": {
+    "path": "None"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "native_code",
+   "detail": {
+    "path": "None",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev2",
+   "seq": 109,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "native_code",
+   "detail": {
+    "path": "None",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev3",
+   "seq": 217,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "native_code",
+   "detail": {
+    "path": "None"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 218,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "native_code",
+   "detail": {
+    "path": "None",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev5",
+   "seq": 220,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "native_code",
+   "detail": {
+    "path": "None",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/native_shim/__init__.py",
+    "line": 1,
+    "layer": "audit"
+   },
+   "count": 2
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 216
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY1654784c4bcc"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSc689ae4e6939"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC60c91eac8c47"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS9c1a1891c560"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG04d08e31da03"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV881bc0799a3e"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV242c39dc230d"
+  }
+ ],
+ "capability_summary": {
+  "native_code": {
+   "phases": [
+    "call",
+    "import"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 6,
+   "canary_hit": false
+  }
+ }
+}

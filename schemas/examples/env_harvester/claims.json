@@ -1,0 +1,38 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "env-harvester",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c84ff501f74099fa60011f8af6df638ff3451e6bd2370b325f69f61071a9e7a0",
+  "path": "bench/packages/malicious/env_harvester"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "Environment configuration parser and schema validator.",
+   "source": "readme"
+  },
+  {
+   "intent": "config_loader",
+   "confidence": 0.7,
+   "quote": "Environment configuration parser and schema validator.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "env_secrets",
+   "basis": "intent_prior",
+   "quote": "Environment configuration parser and schema validator.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

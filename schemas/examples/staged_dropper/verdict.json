@@ -1,0 +1,184 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "staged-dropper",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c644eebd900d8f576cf34b12406d6b141e6d326ee493b623a95d4d7ae9843389",
+  "path": "bench/packages/malicious/staged_dropper"
+ },
+ "verdict": "SUSPICIOUS",
+ "action": "REVIEW",
+ "score": 5.4,
+ "confidence": "medium",
+ "summary": "staged-dropper: unexplained behaviour found (dropper); review before use.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "download_exec",
+   "title": "Downloaded or written file executed (dropper lineage)",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "download_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "dropper",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Lightweight HTTP asset downloader and cache manager for Python",
+    "source": "readme"
+   },
+   "events": [
+    "ev4",
+    "ev5",
+    "ev12",
+    "ev13",
+    "ev18",
+    "ev19",
+    "ev26",
+    "ev27"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev4",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+      "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+      "source_kind": "compile",
+      "lineage": "download_exec"
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+      "lineage": "download_exec"
+     }
+    },
+    {
+     "event_id": "ev12",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+      "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+      "source_kind": "compile",
+      "lineage": "download_exec"
+     }
+    },
+    {
+     "event_id": "ev13",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+      "lineage": "download_exec"
+     }
+    },
+    {
+     "event_id": "ev18",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+      "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+      "source_kind": "compile",
+      "lineage": "download_exec"
+     }
+    },
+    {
+     "event_id": "ev19",
+     "file": "/w/installed/staged_dropper/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+      "lineage": "download_exec"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abLightweight HTTP asset downloader and cache manager for Python\u00bb (readme); during call under dev it wrote then executed stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n at __init__.py:8. Outcome: succeeded. Dropper lineage: written file subsequently executed: ."
+  }
+ ],
+ "independent_signals": [
+  "dropper"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "downloader"
+  ],
+  "claimed_capabilities": [
+   "fs_write_outside_pkg",
+   "network"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

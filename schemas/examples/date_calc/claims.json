@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "date-calc",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0e654b8d3be612d1efc74f253d7e0d27ff6958e86b21b5ac0077a2457480c6b7",
+  "path": "bench/packages/clean/date_calc"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "A date calculator and calendar duration arithmetic library.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

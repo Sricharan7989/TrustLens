@@ -1,0 +1,170 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "env-config",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "a9d0e92c9e46bdc8ea9bd4036cbded171736a3da2411446751f7e590036a7777",
+  "path": "bench/packages/clean/env_config"
+ },
+ "verdict": "SUSPICIOUS",
+ "action": "REVIEW",
+ "score": 6.0,
+ "confidence": "medium",
+ "summary": "env-config: unexplained behaviour found (low-confidence mismatch); review before use.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "capability_not_claimed",
+   "title": "env_secrets observed but not claimed",
+   "severity": "medium",
+   "score": 6.0,
+   "capability": "env_secrets",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "mismatch_other",
+   "claim": {
+    "status": "claimed",
+    "quote": "A lightweight config loader and environment variable configuration parser.",
+    "source": "readme"
+   },
+   "events": [
+    "ev0",
+    "ev1",
+    "ev2",
+    "ev3",
+    "ev4",
+    "ev5",
+    "ev6",
+    "ev7"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev1",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "GITHUB_TOKEN",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev3",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "GITHUB_TOKEN",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY",
+      "count": 2
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/env_config/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "GITHUB_TOKEN",
+      "count": 2
+     }
+    }
+   ],
+   "explanation": "The README says \u00abA lightweight config loader and environment variable configuration parser.\u00bb (readme); during call under dev it read the secret-looking environment variable AWS_SECRET_ACCESS_KEY at __init__.py:10 and the fake secret aws_secret_env appeared in AWS_SECRET_ACCESS_KEY. Outcome: succeeded."
+  }
+ ],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 3,
+  "callables_exercised": 3,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 228
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util",
+   "config_loader"
+  ],
+  "claimed_capabilities": [
+   "env_secrets"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

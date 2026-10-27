@@ -94,6 +94,10 @@
      },
      "notes": {
       "type": "string"
+     },
+     "known_issue": {
+      "type": "string",
+      "description": "Optional. Why the current engine does not reach expected_verdict. expected_verdict stays the ground truth; audit_contracts reports the package as KNOWN instead of failing, and the eval still counts the miss or false positive."
      }
     }
    }

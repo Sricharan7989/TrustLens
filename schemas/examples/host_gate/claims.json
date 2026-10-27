@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "host-gate",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "a24ce8fab0ab7551cd6c4be98cfcf5a49751d0e2d4680fc4765da355ac44744d",
+  "path": "bench/packages/malicious/host_gate"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "Mathematical matrix and vector manipulation algorithms and math calculator.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

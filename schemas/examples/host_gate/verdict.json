@@ -1,0 +1,325 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "host-gate",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "a24ce8fab0ab7551cd6c4be98cfcf5a49751d0e2d4680fc4765da355ac44744d",
+  "path": "bench/packages/malicious/host_gate"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 7.8,
+ "confidence": "medium",
+ "summary": "host-gate: behaviour contradicts its claims. Independent signals: env_differential, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f1",
+   "rule": "env_differential",
+   "title": "network only appears under some environment profiles/variants",
+   "severity": "low",
+   "score": 3.6,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": true,
+   "canary_hit": false,
+   "signal_class": "env_differential",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Mathematical matrix and vector manipulation algorithms and math calculator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev3",
+    "ev4",
+    "ev5",
+    "ev7",
+    "ev8",
+    "ev9"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev3",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.21/host",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.21",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.21:80",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev7",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.21/host",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.21",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev9",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.21:80",
+      "count": 3
+     }
+    }
+   ],
+   "explanation": "The README says \u00abMathematical matrix and vector manipulation algorithms and math calculator.\u00bb (readme); during call under ci it attempted network access to http://198.51.100.21/host at __init__.py:10. Outcome: blocked. Seen conditionally under profile(s) ci (gated from dev): execution behaviour is gated on the environment."
+  },
+  {
+   "id": "f0",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Mathematical matrix and vector manipulation algorithms and math calculator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev3",
+    "ev4",
+    "ev5",
+    "ev7",
+    "ev8",
+    "ev9"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev3",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.21/host",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.21",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.21:80",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev7",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.21/host",
+      "method": "GET",
+      "data_head": "",
+      "headers": "",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.21",
+      "count": 3
+     }
+    },
+    {
+     "event_id": "ev9",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 10,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.21:80",
+      "count": 3
+     }
+    }
+   ],
+   "explanation": "The README says \u00abMathematical matrix and vector manipulation algorithms and math calculator.\u00bb (readme); during call under ci it attempted network access to http://198.51.100.21/host at __init__.py:10. Outcome: blocked."
+  },
+  {
+   "id": "f2",
+   "rule": "sandbox_probe",
+   "title": "Package inspects whether it is being watched",
+   "severity": "low",
+   "score": 1.8,
+   "capability": "sandbox_probe",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "sandbox_probe",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Mathematical matrix and vector manipulation algorithms and math calculator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev0"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/installed/host_gate/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "HOSTNAME",
+      "via": "gethostname",
+      "count": 3
+     }
+    }
+   ],
+   "explanation": "The README says \u00abMathematical matrix and vector manipulation algorithms and math calculator.\u00bb (readme); during call under dev it probed its environment via HOSTNAME at __init__.py:8. Outcome: succeeded."
+  }
+ ],
+ "independent_signals": [
+  "env_differential",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 232
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

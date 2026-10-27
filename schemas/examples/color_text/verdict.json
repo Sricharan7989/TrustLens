@@ -1,0 +1,58 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "color-text",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "4c629d532692f581bed0a0c1abdd5f23dfb8a2cae730030db697e8bec28183dd",
+  "path": "bench/packages/clean/color_text"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "high",
+ "summary": "color-text: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

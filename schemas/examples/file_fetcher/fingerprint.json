@@ -1,0 +1,404 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "file-fetcher",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0de801be009f2a3af34700f2aff4bb14deca965f56d9b3944c3cf995e008d811",
+  "path": "bench/packages/clean/file_fetcher"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:25.824678+00:00",
+  "duration_s": 4.53,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://192.0.2.50/cache.bin",
+    "method": "GET",
+    "data_head": "",
+    "headers": "User-agent: file-fetcher/0.1"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "192.0.2.50"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "192.0.2.50:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 109,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://192.0.2.50/cache.bin",
+    "method": "GET",
+    "data_head": "",
+    "headers": "User-agent: file-fetcher/0.1"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 110,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "192.0.2.50"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "192.0.2.50:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 218,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://192.0.2.50/cache.bin",
+    "method": "GET",
+    "data_head": "",
+    "headers": "User-agent: file-fetcher/0.1"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 219,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "192.0.2.50"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 220,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "192.0.2.50:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 221,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://192.0.2.50/cache.bin",
+    "method": "GET",
+    "data_head": "",
+    "headers": "User-agent: file-fetcher/0.1"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 222,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "192.0.2.50"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 223,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "192.0.2.50:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/file_fetcher/__init__.py",
+    "line": 11,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYc22abdb21e35"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS3f141f9d50d1"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC0aecef1e91e6"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS0469c68a888c"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGd5f51ca48ffb"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVd5911cdf5a3b"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVd740c87bc87b"
+  }
+ ],
+ "capability_summary": {
+  "network": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 12,
+   "canary_hit": false
+  }
+ }
+}

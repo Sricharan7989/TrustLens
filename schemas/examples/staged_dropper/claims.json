@@ -1,0 +1,42 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "staged-dropper",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c644eebd900d8f576cf34b12406d6b141e6d326ee493b623a95d4d7ae9843389",
+  "path": "bench/packages/malicious/staged_dropper"
+ },
+ "intents": [
+  {
+   "intent": "downloader",
+   "confidence": 0.7,
+   "quote": "Lightweight HTTP asset downloader and cache manager for Python",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "Lightweight HTTP asset downloader and cache manager for Python",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "fs_write_outside_pkg",
+   "basis": "intent_prior",
+   "quote": "Lightweight HTTP asset downloader and cache manager for Python",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

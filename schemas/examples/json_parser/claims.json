@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "json-parser",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "edf674b4a3273bb184e1f7be7e4a3ef0741d26db0002b3c4ac4e43d447855e0c",
+  "path": "bench/packages/clean/json_parser"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "Parses text strings and formats dictionary trees.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

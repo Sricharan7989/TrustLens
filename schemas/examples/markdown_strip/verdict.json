@@ -1,0 +1,58 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "markdown-strip",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "e24eef36a78c7e2528fbb375d2638409b07966ccf43e4e71bbc83dc59bc0da74",
+  "path": "bench/packages/clean/markdown_strip"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "high",
+ "summary": "markdown-strip: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 212
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util"
+  ],
+  "claimed_capabilities": [],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

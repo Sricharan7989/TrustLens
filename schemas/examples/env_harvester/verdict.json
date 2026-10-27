@@ -1,0 +1,238 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "env-harvester",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "c84ff501f74099fa60011f8af6df638ff3451e6bd2370b325f69f61071a9e7a0",
+  "path": "bench/packages/malicious/env_harvester"
+ },
+ "verdict": "MALICIOUS-EVIDENT",
+ "action": "BLOCK",
+ "score": 15.6,
+ "confidence": "high",
+ "summary": "env-harvester: behaviour contradicts its claims. Independent signals: canary_access, canary_in_bytes, network_unclaimed.",
+ "findings": [
+  {
+   "id": "f0",
+   "rule": "canary_read_then_network",
+   "title": "Fake secret read, then network attempt",
+   "severity": "medium",
+   "score": 6.0,
+   "capability": "env_secrets",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_access",
+   "claim": {
+    "status": "claimed",
+    "quote": "Environment configuration parser and schema validator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev0",
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev0",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 8,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "succeeded",
+     "detail": {
+      "name": "AWS_SECRET_ACCESS_KEY"
+     }
+    },
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    }
+   ],
+   "explanation": "The README says \u00abEnvironment configuration parser and schema validator.\u00bb (readme); during call under dev it read the secret-looking environment variable AWS_SECRET_ACCESS_KEY at __init__.py:8 and the fake secret aws_secret_env appeared in AWS_SECRET_ACCESS_KEY. Outcome: succeeded. Then call-phase network attempt to AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid followed. Canary(ies): aws_secret_env."
+  },
+  {
+   "id": "f1",
+   "rule": "canary_in_outgoing_bytes",
+   "title": "Fake secret content found inside an outgoing request",
+   "severity": "medium",
+   "score": 4.8,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "canary_in_bytes",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Environment configuration parser and schema validator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev2"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    }
+   ],
+   "explanation": "The README says \u00abEnvironment configuration parser and schema validator.\u00bb (readme); during call under dev it attempted network access to AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid at __init__.py:14 and the fake secret aws_secret_env appeared in AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid. Outcome: blocked. The request carried canary token(s): aws_secret_env."
+  },
+  {
+   "id": "f2",
+   "rule": "network_unclaimed",
+   "title": "Network access in call phase not licensed by the package's claims",
+   "severity": "medium",
+   "score": 4.8,
+   "capability": "network",
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "env_differential": false,
+   "canary_hit": true,
+   "signal_class": "network_unclaimed",
+   "claim": {
+    "status": "not_claimed",
+    "quote": "Environment configuration parser and schema validator.",
+    "source": "readme"
+   },
+   "events": [
+    "ev2",
+    "ev5",
+    "ev8",
+    "ev11"
+   ],
+   "evidence": [
+    {
+     "event_id": "ev2",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    },
+    {
+     "event_id": "ev5",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "dev",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    },
+    {
+     "event_id": "ev8",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    },
+    {
+     "event_id": "ev11",
+     "file": "/w/installed/env_harvester/__init__.py",
+     "line": 14,
+     "phase": "call",
+     "profile": "ci",
+     "outcome": "blocked",
+     "detail": {
+      "host": "AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid",
+      "canary_in_bytes": true
+     }
+    }
+   ],
+   "explanation": "The README says \u00abEnvironment configuration parser and schema validator.\u00bb (readme); during call under dev it attempted network access to AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid at __init__.py:14 and the fake secret aws_secret_env appeared in AWS_SECRET_ACCESS_KEY_TLCANARYAWSSECRETENVe98b62d15c58.exfil.invalid. Outcome: blocked."
+  }
+ ],
+ "independent_signals": [
+  "canary_access",
+  "canary_in_bytes",
+  "network_unclaimed"
+ ],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 216
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util",
+   "config_loader"
+  ],
+  "claimed_capabilities": [
+   "env_secrets"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

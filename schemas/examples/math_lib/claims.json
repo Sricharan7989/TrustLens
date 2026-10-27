@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "math-lib",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "67cddd17df3f4a4cf634cf0c85da26a84fee0d2e5d841ddf4339d779cd120542",
+  "path": "bench/packages/clean/math_lib"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "A pure Python math calculator and matrix math computation utility.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

@@ -1,0 +1,58 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "pth-hook",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "6061408095863d486971227432dc4d2b0cb4fc5f3fee43c00d9f3988980a40f0",
+  "path": "bench/packages/malicious/pth_hook"
+ },
+ "intents": [
+  {
+   "intent": "downloader",
+   "confidence": 0.7,
+   "quote": "A lightweight logging helper and configuration bootstrap library for Python applications.",
+   "source": "readme"
+  },
+  {
+   "intent": "config_loader",
+   "confidence": 0.7,
+   "quote": "A lightweight logging helper and configuration bootstrap library for Python applications.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "A lightweight logging helper and configuration bootstrap library for Python applications.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "fs_write_outside_pkg",
+   "basis": "intent_prior",
+   "quote": "A lightweight logging helper and configuration bootstrap library for Python applications.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "env_secrets",
+   "basis": "intent_prior",
+   "quote": "A lightweight logging helper and configuration bootstrap library for Python applications.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

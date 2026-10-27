@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "obfuscated-xor",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "d3a1ac6bbb9528c1446c8dbb38e9dfa1190b19e2cd9d0cb72c0b9b4c1e50881d",
+  "path": "bench/packages/malicious/obfuscated_xor"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "String cipher and unique token generator utilities.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

@@ -1,0 +1,63 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "native-shim",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "ed141c24587b9258dbc549ee29d2832297c3e2aba9cffe08abd0977d3ad3c082",
+  "path": "bench/packages/clean/native_shim"
+ },
+ "verdict": "BENIGN-CONSISTENT",
+ "action": "PASS",
+ "score": 0,
+ "confidence": "high",
+ "summary": "native-shim: all observed behaviour is consistent with its stated purpose, within the coverage listed below.",
+ "findings": [],
+ "independent_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 216
+ },
+ "claims_summary": {
+  "intents": [
+   "string_util",
+   "cli_tool",
+   "native_ext"
+  ],
+  "claimed_capabilities": [
+   "native_code",
+   "subprocess"
+  ],
+  "unknown_intent": false
+ },
+ "dependency_attribution": {}
+}

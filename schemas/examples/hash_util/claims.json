@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "hash-util",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "9874426721adc274c83bdeb96981149baf402aba36a57f0cb338c9846482e7e9",
+  "path": "bench/packages/clean/hash_util"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "Cryptographic checksum calculator and string digest utility.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}
