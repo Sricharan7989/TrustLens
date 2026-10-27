@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -26,7 +27,20 @@ def run(pkg_dir: str | Path, timeout_s: int = 180) -> dict:
           - runtime_s: float | None
           - error: str | None
     """
-    exe = shutil.which("packj")
+    exe = None
+    bin_dir = Path(sys.executable).parent
+    for cand in (bin_dir / "packj", bin_dir / "packj.exe"):
+        if cand.is_file():
+            exe = str(cand)
+            break
+    if not exe:
+        root = Path(__file__).resolve().parents[2]
+        for cand in (root / ".venv" / "bin" / "packj", root / ".venv" / "Scripts" / "packj.exe", root / ".venv" / "Scripts" / "packj"):
+            if cand.is_file():
+                exe = str(cand)
+                break
+    if not exe:
+        exe = shutil.which("packj")
     if not exe:
         return {
             "available": False,

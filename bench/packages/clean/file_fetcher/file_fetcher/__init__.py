@@ -2,7 +2,7 @@ import os
 import urllib.request
 
 
-def download_file(url: str, dest_dir: str = "~/.cache/fetcher") -> str:
+def download_file(url: str = "http://192.0.2.50/cache.bin", dest_dir: str = "~/.cache/fetcher") -> str:
     path = os.path.expanduser(dest_dir)
     os.makedirs(path, exist_ok=True)
     target = os.path.join(path, "download.bin")

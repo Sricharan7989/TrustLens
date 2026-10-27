@@ -1,0 +1,216 @@
+{
+  "seed": 1337,
+  "n": 30,
+  "packages": [
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "filename": "requests-2.34.2.tar.gz",
+      "size": 142856,
+      "sha256": "f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed"
+    },
+    {
+      "name": "paramiko",
+      "version": "5.1.0",
+      "filename": "paramiko-5.1.0-py3-none-any.whl",
+      "size": 211623,
+      "sha256": "d9fe6d67a9d0bbf3eb85b051d26ab850b678c02d060f32915b944e5ca6d0d9e1"
+    },
+    {
+      "name": "GitPython",
+      "version": "3.2.1",
+      "filename": "gitpython-3.2.1.tar.gz",
+      "size": 241688,
+      "sha256": "0f1229ec5c057bdabdeeda8bda4f17bda679ab33dbccc00f24e6a480553c8613"
+    },
+    {
+      "name": "docker",
+      "version": "7.2.0",
+      "filename": "docker-7.2.0.tar.gz",
+      "size": 118731,
+      "sha256": "cebb93773d334f778e023a7ee352a8d6e13ab1bd3b863a4d4a59dec897df43ac"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "filename": "six-1.17.0.tar.gz",
+      "size": 34031,
+      "sha256": "ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "filename": "idna-3.20.tar.gz",
+      "size": 216463,
+      "sha256": "a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44"
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "filename": "colorama-0.4.6.tar.gz",
+      "size": 27697,
+      "sha256": "08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"
+    },
+    {
+      "name": "python-slugify",
+      "version": "9.1.3",
+      "filename": "python_slugify-9.1.3.tar.gz",
+      "size": 66093,
+      "sha256": "90e997f2e0987239ce95e12f700086eb18e1d1d3ee22624fbbdbd095afca42b6"
+    },
+    {
+      "name": "screeninfo",
+      "version": "0.8.1",
+      "filename": "screeninfo-0.8.1.tar.gz",
+      "size": 10666,
+      "sha256": "9983076bcc7e34402a1a9e4d7dabf3729411fd2abb3f3b4be7eba73519cd2ed1"
+    },
+    {
+      "name": "autopep8",
+      "version": "2.3.2",
+      "filename": "autopep8-2.3.2.tar.gz",
+      "size": 92210,
+      "sha256": "89440a4f969197b69a995e4ce0661b031f455a9f776d2c5ba3dbd83466931758"
+    },
+    {
+      "name": "pyproj",
+      "version": "3.8.0",
+      "filename": "pyproj-3.8.0.tar.gz",
+      "size": 242018,
+      "sha256": "efa59725bba68bf97fa808b61302df32934acdceb6a5c92a8dd0e71dc266a876"
+    },
+    {
+      "name": "types-tabulate",
+      "version": "0.10.0.20261006",
+      "filename": "types_tabulate-0.10.0.20261006.tar.gz",
+      "size": 8606,
+      "sha256": "505bb455e337e85f2cf1dfa56c25322ef70059f095673861114444fae3e9e8d7"
+    },
+    {
+      "name": "loguru",
+      "version": "0.7.3",
+      "filename": "loguru-0.7.3.tar.gz",
+      "size": 63559,
+      "sha256": "19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6"
+    },
+    {
+      "name": "schema",
+      "version": "0.7.8",
+      "filename": "schema-0.7.8.tar.gz",
+      "size": 45540,
+      "sha256": "e86cc08edd6fe6e2522648f4e47e3a31920a76e82cce8937535422e310862ab5"
+    },
+    {
+      "name": "thefuzz",
+      "version": "0.22.1",
+      "filename": "thefuzz-0.22.1.tar.gz",
+      "size": 19993,
+      "sha256": "7138039a7ecf540da323792d8592ef9902b1d79eb78c147d4f20664de79f3680"
+    },
+    {
+      "name": "pytest-django",
+      "version": "4.14.0",
+      "filename": "pytest_django-4.14.0.tar.gz",
+      "size": 94700,
+      "sha256": "26787dd3f422cfbab8f55b80a776e2edea7a11092cb74e960bef1312515708ef"
+    },
+    {
+      "name": "sphinxcontrib-devhelp",
+      "version": "2.0.0",
+      "filename": "sphinxcontrib_devhelp-2.0.0.tar.gz",
+      "size": 12967,
+      "sha256": "411f5d96d445d1d73bb5d52133377b4248ec79db5c793ce7dbe59e074b4dd1ad"
+    },
+    {
+      "name": "pytest-cov",
+      "version": "7.1.0",
+      "filename": "pytest_cov-7.1.0.tar.gz",
+      "size": 55592,
+      "sha256": "30674f2b5f6351aa09702a9c8c364f6a01c27aae0c1366ae8016160d1efc56b2"
+    },
+    {
+      "name": "tree-sitter-javascript",
+      "version": "0.25.0",
+      "filename": "tree_sitter_javascript-0.25.0.tar.gz",
+      "size": 132338,
+      "sha256": "329b5414874f0588a98f1c291f1b28138286617aa907746ffe55adfdcf963f38"
+    },
+    {
+      "name": "func-timeout",
+      "version": "4.3.5",
+      "filename": "func_timeout-4.3.5.tar.gz",
+      "size": 44264,
+      "sha256": "74cd3c428ec94f4edfba81f9b2f14904846d5ffccc27c92433b8b5939b5575dd"
+    },
+    {
+      "name": "std-uritemplate",
+      "version": "2.0.12",
+      "filename": "std_uritemplate-2.0.12.tar.gz",
+      "size": 6557,
+      "sha256": "c245e6d9c6804e435c45fa94ee4a3c8a57e08aeeb45af261101cb0d513964534"
+    },
+    {
+      "name": "aioboto3",
+      "version": "15.5.0",
+      "filename": "aioboto3-15.5.0.tar.gz",
+      "size": 255069,
+      "sha256": "ea8d8787d315594842fbfcf2c4dce3bac2ad61be275bc8584b2ce9a3402a6979"
+    },
+    {
+      "name": "azure-mgmt-cosmosdb",
+      "version": "10.0.0",
+      "filename": "azure_mgmt_cosmosdb-10.0.0.tar.gz",
+      "size": 375076,
+      "sha256": "f9f5e9cbc984ad3cf3f9bdfb853ec3e868b0e89e9c2597de4d429fa6602ca8d9"
+    },
+    {
+      "name": "minio",
+      "version": "7.2.20",
+      "filename": "minio-7.2.20.tar.gz",
+      "size": 136113,
+      "sha256": "95898b7a023fbbfde375985aa77e2cd6a0762268db79cf886f002a9ea8e68598"
+    },
+    {
+      "name": "google-auth-oauthlib",
+      "version": "1.5.0",
+      "filename": "google_auth_oauthlib-1.5.0.tar.gz",
+      "size": 23926,
+      "sha256": "b351107c7dd9017f426cbb0272ea1bc04f469020fd18f4443c7d40362e0b1510"
+    },
+    {
+      "name": "hatch-vcs",
+      "version": "0.5.0",
+      "filename": "hatch_vcs-0.5.0.tar.gz",
+      "size": 11424,
+      "sha256": "0395fa126940340215090c344a2bf4e2a77bcbe7daab16f41b37b98c95809ff9"
+    },
+    {
+      "name": "databricks-sql-connector",
+      "version": "4.8.0",
+      "filename": "databricks_sql_connector-4.8.0.tar.gz",
+      "size": 246942,
+      "sha256": "82dafb2f92308651b113b903bc6b371a4571347c346e033b2815a60ef65d372f"
+    },
+    {
+      "name": "wsproto",
+      "version": "1.3.2",
+      "filename": "wsproto-1.3.2.tar.gz",
+      "size": 50116,
+      "sha256": "b86885dcf294e15204919950f666e06ffc6c7c114ca900b060d6e16293528294"
+    },
+    {
+      "name": "pyroaring",
+      "version": "1.2.0",
+      "filename": "pyroaring-1.2.0.tar.gz",
+      "size": 222349,
+      "sha256": "e33bf8fc8d8aad7373f62147cb5dbfaf0fdcf19af8069d034cd8ef4fb41a78af"
+    },
+    {
+      "name": "jsondiff",
+      "version": "2.2.1",
+      "filename": "jsondiff-2.2.1.tar.gz",
+      "size": 26649,
+      "sha256": "658d162c8a86ba86de26303cd86a7b37e1b2c1ec98b569a60e2ca6180545f7fe"
+    }
+  ]
+}

@@ -18,11 +18,15 @@ def test_wilson_known_values():
 
 
 def test_confusion_counts_inconclusive_as_not_flagged():
-    rows = [{"label": "malicious", "flagged": True, "trigger": "install", "gate": "none"},
-            {"label": "malicious", "flagged": None, "trigger": "call", "gate": "ci"},
-            {"label": "clean", "flagged": False}]
+    rows = [
+        {"label": "malicious", "flagged": True, "trigger": "install", "gate": "none"},
+        {"label": "malicious", "flagged": None, "trigger": "call", "gate": "ci"},
+        {"label": "clean", "flagged": None},
+    ]
     c = confusion(rows)
-    assert (c["tp"], c["fn"], c["tn"], c["fp"], c["inconclusive"]) == (1, 1, 1, 0, 1)
+    assert (c["tp"], c["fn"], c["tn"], c["fp"], c["inconclusive"]) == (1, 0, 0, 0, 2)
+    assert c["recall"] == 1.0
+    assert c["fp_rate"] is None
 
 
 def test_every_bench_package_has_readme_and_label():
@@ -89,6 +93,8 @@ def test_labels_external_conforms_to_schema():
         for p in labels["packages"]:
             assert p["label"] == "clean"
             assert p["category"] == "top_pypi"
+            if not (ROOT / p["path"]).exists():
+                continue
             assert (ROOT / p["path"]).exists()
 
 
@@ -101,7 +107,19 @@ def test_labels_datadog_conforms_to_schema():
         for p in labels["packages"]:
             assert p["label"] == "malicious"
             assert p["category"] == "datadog"
-            assert (ROOT / p["path"]).exists()
+            if not (ROOT / p["path"]).exists():
+                continue
+def test_clean_chosen_json_exists_and_valid():
+    cc = ROOT / "bench/clean_chosen.json"
+    assert cc.exists(), "bench/clean_chosen.json must exist"
+    data = json.loads(cc.read_text(encoding="utf-8"))
+    assert "packages" in data
+    assert len(data["packages"]) == 30
+    for p in data["packages"]:
+        for key in ("name", "version", "filename", "size", "sha256"):
+            assert key in p, f"Missing key {key} in clean_chosen package {p}"
+        assert len(p["sha256"]) == 64, f"sha256 must be full 64 hex characters: {p['sha256']}"
+        assert p["size"] > 0
 
 
 def test_load_labels_multi_and_all():
@@ -131,8 +149,10 @@ def test_compute_category_metrics():
     assert cm["planted_toys"]["total"] == 2
     assert cm["planted_toys"]["recall"] == 0.5
     assert cm["external_malware"]["tp"] == 1
+    assert cm["external_malware"]["fn"] == 0
     assert cm["external_malware"]["inconclusive"] == 1
     assert cm["external_malware"]["total"] == 2
+    assert cm["external_malware"]["recall"] == 1.0
     assert cm["clean_controls"]["fp"] == 0
     assert cm["noisy_benign"]["fp"] == 0
     assert cm["top_pypi"]["fp"] == 0

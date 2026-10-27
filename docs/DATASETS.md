@@ -222,6 +222,14 @@ Comprehensive visualization and sensitivity analysis combining detection rule co
   - Tracks $\Delta \text{TPR}$ and $\Delta \text{FPR}$ to verify that the default operating point is robust and does not sit on an unstable decision boundary.
   - Logs any packages that transition verdicts across the $\pm 20\%$ window.
 
+## Live Sandbox Invariants & Known Baseline Calibration Notes
 
+### 1. Canary Environment & `ssh_helper` (`~/.ssh/config`)
+- **Observed Behavior:** `ssh_helper` attempts to open and parse `~/.ssh/config` inside a `try/except` block with no `os.path.exists()` guard.
+- **Canary World Finding:** In live sandbox runs, `ssh_helper`'s fingerprint remains empty because Dev A's sandbox canary provisioning generates `.ssh/id_rsa` and `.ssh/known_hosts`, but the canary world has no `~/.ssh/config`.
+- **Architectural Decision:** We document this gap (ask Dev A to provision `~/.ssh/config` in `CANARY_DEFS` if canary coverage on SSH configs is desired). `ssh_helper` deliberately does **not** switch to reading `id_rsa`, as doing so would trigger `canary_access` alerts and violate the requirement that clean packages maintain a `BENIGN-CONSISTENT` verdict.
 
-
+### 2. Pre-Dev-B Engine Attribution Noise (`cli_runner`, `hash_util`)
+- **Observed Behavior:** On the pre-Dev-B engine, live dynamic scans mark clean packages `cli_runner` and `hash_util` as `SUSPICIOUS`.
+- **Root Cause Analysis:** The sandbox baseline's inspection scripts execute utility pipelines (specifically `cut -c1` and `cut -c2-` during shell command execution). On the pre-Dev-B engine, these sandbox overhead processes are incorrectly attributed to the package under analysis rather than filtered as toolchain/runner baseline activity.
+- **Ground-Truth Invariant:** In accordance with project integrity constraints, the expected verdict for both `cli_runner` and `hash_util` remains strictly `BENIGN-CONSISTENT` in `bench/labels.yaml`. We never relabel clean packages to SUSPICIOUS to match temporary engine calibration artifacts.

@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -30,7 +31,20 @@ def run(pkg_dir: str | Path, timeout_s: int = 300) -> dict:
           - runtime_s: float | None
           - error: str | None
     """
-    exe = shutil.which("pipcanary")
+    exe = None
+    bin_dir = Path(sys.executable).parent
+    for cand in (bin_dir / "pipcanary", bin_dir / "pipcanary.exe"):
+        if cand.is_file():
+            exe = str(cand)
+            break
+    if not exe:
+        root = Path(__file__).resolve().parents[2]
+        for cand in (root / ".venv" / "bin" / "pipcanary", root / ".venv" / "Scripts" / "pipcanary.exe", root / ".venv" / "Scripts" / "pipcanary"):
+            if cand.is_file():
+                exe = str(cand)
+                break
+    if not exe:
+        exe = shutil.which("pipcanary")
     if not exe or not shutil.which("strace") or not shutil.which("bwrap"):
         return {
             "available": False,

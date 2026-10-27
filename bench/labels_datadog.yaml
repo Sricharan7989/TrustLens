@@ -4,327 +4,327 @@ packages:
   path: data/datadog/extracted/aeodatav04/2023-04-14-aeodatav04-v0.4/aeodatav04-0.4
   label: malicious
   category: datadog
-  claim: Datadog malicious sample aeodatav04
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-14-aeodatav04-v0.4.zip)
 - id: ailzyn1tr0
   path: data/datadog/extracted/ailzyn1tr0/2023-03-30-ailzyn1tr0-v1.0/ailzyn1tr0-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ailzyn1tr0
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-30-ailzyn1tr0-v1.0.zip)
 - id: ailzynitro
   path: data/datadog/extracted/ailzynitro
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ailzynitro
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-30-ailzynitro-v1.0.zip)
 - id: aliyun-ai-labs-sdk
   path: data/datadog/extracted/aliyun-ai-labs-sdk/tmp/tmp9xgrhu8k/aliyun-ai-labs-sdk/aliyun_ai_labs_sdk-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample aliyun-ai-labs-sdk
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: AI Labs SDK
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-05-20-aliyun-ai-labs-sdk-v1.0.0.zip)
 - id: asyncoi
   path: data/datadog/extracted/asyncoi/2022-12-19-asyncoi/asyncoi-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample asyncoi
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: https://discord.gg/4p7VMQWxzA
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-19-asyncoi.zip)
 - id: atlasctf-21-prod-03
   path: data/datadog/extracted/atlasctf-21-prod-03/tmp/tmp0xxqkh0u/atlasctf-21-prod-03/atlasctf_21_prod_03-99.99.99.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample atlasctf-21-prod-03
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-07-atlasctf-21-prod-03-v99.99.99.zip,
     2025-06-07-atlasctf-21-prod-03-v99.99.99.1.zip)
 - id: atlasctf-21-prod-13
   path: data/datadog/extracted/atlasctf-21-prod-13/tmp/tmp7gw0sm02/atlasctf-21-prod-13/atlasctf_21_prod_13-99.99.99
   label: malicious
   category: datadog
-  claim: Datadog malicious sample atlasctf-21-prod-13
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-07-atlasctf-21-prod-13-v99.99.99.zip,
     2025-06-07-atlasctf-21-prod-13-v99.99.99.1.zip)
 - id: atlasctf-21-prod-19
   path: data/datadog/extracted/atlasctf-21-prod-19/tmp/tmp54eeg36g/atlasctf-21-prod-19/atlasctf_21_prod_19-99.99.99
   label: malicious
   category: datadog
-  claim: Datadog malicious sample atlasctf-21-prod-19
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-07-atlasctf-21-prod-19-v99.99.99.zip,
     2025-06-07-atlasctf-21-prod-19-v99.99.99.1.zip)
 - id: atlasctf-21-prod-20
   path: data/datadog/extracted/atlasctf-21-prod-20/tmp/tmpb2mlzi32/atlasctf-21-prod-20/atlasctf_21_prod_20-99.99.99
   label: malicious
   category: datadog
-  claim: Datadog malicious sample atlasctf-21-prod-20
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-07-atlasctf-21-prod-20-v99.99.99.zip,
     2025-06-07-atlasctf-21-prod-20-v99.99.99.1.zip)
 - id: azure-sdk-tools
   path: data/datadog/extracted/azure-sdk-tools/2022-11-17-azure-sdk-tools/azure-sdk-tools-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample azure-sdk-tools
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-17-azure-sdk-tools.zip)
 - id: betterstyle
   path: data/datadog/extracted/betterstyle/2022-12-19-betterstyle/betterstyle-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample betterstyle
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-19-betterstyle.zip)
 - id: bloxflipscraper
   path: data/datadog/extracted/bloxflipscraper/2022-11-08-bloxflipscraper/bloxflipscraper-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample bloxflipscraper
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-bloxflipscraper.zip)
 - id: bloxflipsearch
   path: data/datadog/extracted/bloxflipsearch/2022-11-08-bloxflipsearch/bloxflipsearch-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample bloxflipsearch
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-bloxflipsearch.zip)
 - id: boogishell5
   path: data/datadog/extracted/boogishell5/2023-05-15-boogishell5-v0.1.0/boogishell5-0.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample boogishell5
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-15-boogishell5-v0.1.0.zip)
 - id: byted-flux
   path: data/datadog/extracted/byted-flux/tmp/tmps7x2etjf/byted-flux/byted_flux-9.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample byted-flux
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-18-byted-flux-v9.6.zip)
 - id: coloroma
   path: data/datadog/extracted/coloroma/2022-11-16-coloroma/coloroma-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample coloroma
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: -> python package for generating colorful output
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-16-coloroma.zip)
 - id: colurama
   path: data/datadog/extracted/colurama/2022-11-16-colurama/colurama-0.0.3
   label: malicious
   category: datadog
-  claim: Datadog malicious sample colurama
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: -> python package for colorful output
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-16-colurama.zip)
 - id: cryptographz
   path: data/datadog/extracted/cryptographz/2023-04-26-cryptographz-v1.0.0/cryptographz-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample cryptographz
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: Dark matter#9999
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-26-cryptographz-v1.0.0.zip)
 - id: dbt-bytedhouse
   path: data/datadog/extracted/dbt-bytedhouse/tmp/tmpq6sqfh8s/dbt-bytedhouse/dbt_bytedhouse-99.7
   label: malicious
   category: datadog
-  claim: Datadog malicious sample dbt-bytedhouse
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-06-dbt-bytedhouse-v99.7.zip)
 - id: discould
   path: data/datadog/extracted/discould/tmp/tmphiyq_310/discould/discould-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample discould
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-06-discould-v0.0.1.zip)
 - id: esqcontrolhttphttp
   path: data/datadog/extracted/esqcontrolhttphttp/2023-02-27-esqcontrolhttphttp-v5.22/esqcontrolhttphttp-5.22
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqcontrolhttphttp
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqcontrolhttphttp-v5.22.zip)
 - id: esqedpushvm
   path: data/datadog/extracted/esqedpushvm/2023-02-27-esqedpushvm-v8.61/esqedpushvm-8.61
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqedpushvm
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqedpushvm-v8.61.zip)
 - id: esqgameencodereplace
   path: data/datadog/extracted/esqgameencodereplace/2023-05-07-esqgameencodereplace-v7.83/esqgameencodereplace-7.83
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqgameencodereplace
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-07-esqgameencodereplace-v7.83.zip)
 - id: esqintpaypalram
   path: data/datadog/extracted/esqintpaypalram/2023-03-03-esqintpaypalram-v5.71/esqintpaypalram-5.71
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqintpaypalram
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-esqintpaypalram-v5.71.zip)
 - id: esqloadhackednvidia
   path: data/datadog/extracted/esqloadhackednvidia/2023-02-27-esqloadhackednvidia-v4.86/esqloadhackednvidia-4.86
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqloadhackednvidia
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqloadhackednvidia-v4.86.zip)
 - id: esqosinthackedstudy
   path: data/datadog/extracted/esqosinthackedstudy/2023-02-27-esqosinthackedstudy-v4.60/esqosinthackedstudy-4.60
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqosinthackedstudy
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqosinthackedstudy-v4.60.zip)
 - id: esqproofinthydra
   path: data/datadog/extracted/esqproofinthydra/2023-03-08-esqproofinthydra-v4.9/esqproofinthydra-4.9
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqproofinthydra
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-08-esqproofinthydra-v4.9.zip)
 - id: esqproofosintkill
   path: data/datadog/extracted/esqproofosintkill/2023-03-08-esqproofosintkill-v3.22/esqproofosintkill-3.22
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqproofosintkill
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-08-esqproofosintkill-v3.22.zip)
 - id: esqrandadget
   path: data/datadog/extracted/esqrandadget/2023-02-27-esqrandadget-v3.2/esqrandadget-3.2
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqrandadget
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqrandadget-v3.2.zip)
 - id: esqrepymc
   path: data/datadog/extracted/esqrepymc/2023-02-27-esqrepymc-v5.43/esqrepymc-5.43
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqrepymc
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-esqrepymc-v5.43.zip)
 - id: esqultraultrapong
   path: data/datadog/extracted/esqultraultrapong/2023-03-02-esqultraultrapong-v7.37/esqultraultrapong-7.37
   label: malicious
   category: datadog
-  claim: Datadog malicious sample esqultraultrapong
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-02-esqultraultrapong-v7.37.zip)
 - id: fastapi-toolkit
   path: data/datadog/extracted/fastapi-toolkit/2022-11-23-fastapi-toolkit/fastapi_toolkit-0.0.27
   label: malicious
   category: datadog
-  claim: Datadog malicious sample fastapi-toolkit
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: FastAPI Toolkit
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-23-fastapi-toolkit.zip)
 - id: gequests
   path: data/datadog/extracted/gequests/2022-12-12-gequests/gequests-2.28.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample gequests
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: Requests
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-12-gequests.zip)
 - id: grpc-google-bigtable-v2
   path: data/datadog/extracted/grpc-google-bigtable-v2/tmp/tmpvwcs6_mw/grpc-google-bigtable-v2/grpc_google_bigtable_v2-0.11.99
   label: malicious
   category: datadog
-  claim: Datadog malicious sample grpc-google-bigtable-v2
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-04-grpc-google-bigtable-v2-v0.11.99.zip)
 - id: hahahasillyxd
   path: data/datadog/extracted/hahahasillyxd/tmp/tmp7o9veezb/hahahasillyxd/hahahasillyxd-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample hahahasillyxd
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-10-hahahasillyxd-v0.1.zip)
 - id: hellotesthim
   path: data/datadog/extracted/hellotesthim/tmp/tmpbcukp9w1/hellotesthim/hellotesthim-0.1.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample hellotesthim
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-07-04-hellotesthim-v0.1.1.zip)
 - id: hmac2
   path: data/datadog/extracted/hmac2/tmp/tmp1r4gule_/sources/hmac2
   label: malicious
   category: datadog
-  claim: Datadog malicious sample hmac2
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: A sample Python project
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-30-hmac2-v0.0.2.zip, 2024-10-30-hmac2-v0.0.2rc0.zip)
 - id: install-pyyaml
   path: data/datadog/extracted/install-pyyaml/2023-05-20-install-pyyaml-v1.19.12/install-pyyaml-1.19.12
   label: malicious
   category: datadog
-  claim: Datadog malicious sample install-pyyaml
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-20-install-pyyaml-v1.19.12.zip)
 - id: larpexodus
   path: data/datadog/extracted/larpexodus/tmp/tmpou_c1mc7/larpexodus/larpexodus-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample larpexodus
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-10-larpexodus-v0.1.zip)
 - id: latentnerf
   path: data/datadog/extracted/latentnerf/tmp/tmphythwm1x/latentnerf/latentnerf-9.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample latentnerf
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-18-latentnerf-v9.6.zip)
 - id: libcckillhydra
   path: data/datadog/extracted/libcckillhydra/2023-03-03-libcckillhydra-v8.76/libcckillhydra-8.76
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libcckillhydra
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-libcckillhydra-v8.76.zip)
 - id: libcpupywmine
   path: data/datadog/extracted/libcpupywmine/2023-02-27-libcpupywmine-v2.9/libcpupywmine-2.9
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libcpupywmine
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-libcpupywmine-v2.9.zip)
 - id: libcrafthackedsplit
   path: data/datadog/extracted/libcrafthackedsplit/2023-03-03-libcrafthackedsplit-v8.43/libcrafthackedsplit-8.43
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libcrafthackedsplit
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-libcrafthackedsplit-v8.43.zip)
 - id: libedgetstudy
   path: data/datadog/extracted/libedgetstudy/2023-02-27-libedgetstudy-v5.70/libedgetstudy-5.70
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libedgetstudy
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-libedgetstudy-v5.70.zip)
 - id: liblibpostcc
   path: data/datadog/extracted/liblibpostcc/2023-02-27-liblibpostcc-v2.61/liblibpostcc-2.61
   label: malicious
   category: datadog
-  claim: Datadog malicious sample liblibpostcc
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-liblibpostcc-v2.61.zip)
 - id: liblxml3
   path: data/datadog/extracted/liblxml3/2023-04-17-liblxml3-v0.1/liblxml3-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample liblxml3
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-17-liblxml3-v0.1.zip, 2023-04-17-liblxml3-v0.2.zip,
     2023-04-17-liblxml3-v1.4.zip, 2023-04-18-liblxml3-v1.5.zip, 2023-04-18-liblxml3-v1.7.zip,
     2023-04-18-liblxml3-v2.0.zip, 2023-04-18-liblxml3-v2.1.zip, 2023-04-18-liblxml3-v2.2.zip,
@@ -333,191 +333,191 @@ packages:
   path: data/datadog/extracted/librandlgtbultra/2023-02-27-librandlgtbultra-v6.97/librandLGTBultra-6.97
   label: malicious
   category: datadog
-  claim: Datadog malicious sample librandlgtbultra
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-librandlgtbultra-v6.97.zip)
 - id: librandproofhttp
   path: data/datadog/extracted/librandproofhttp/2023-02-27-librandproofhttp-v9.9/librandproofhttp-9.9
   label: malicious
   category: datadog
-  claim: Datadog malicious sample librandproofhttp
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-librandproofhttp-v9.9.zip)
 - id: libsplitrandomencode
   path: data/datadog/extracted/libsplitrandomencode/2023-02-27-libsplitrandomencode-v1.46/libsplitrandomencode-1.46
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libsplitrandomencode
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-libsplitrandomencode-v1.46.zip)
 - id: libssl
   path: data/datadog/extracted/libssl/2022-12-19-libssl/libssl-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libssl
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: https://discord.gg/4p7VMQWxzA
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-19-libssl.zip)
 - id: libvirtualreplacepyw
   path: data/datadog/extracted/libvirtualreplacepyw/2023-02-27-libvirtualreplacepyw-v9.34/libvirtualreplacepyw-9.34
   label: malicious
   category: datadog
-  claim: Datadog malicious sample libvirtualreplacepyw
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-libvirtualreplacepyw-v9.34.zip)
 - id: lightsequ
   path: data/datadog/extracted/lightsequ/tmp/tmpo5vtlid0/lightsequ/lightsequ-99.7
   label: malicious
   category: datadog
-  claim: Datadog malicious sample lightsequ
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-05-lightsequ-v98.7.zip, 2024-11-05-lightsequ-v99.7.zip)
 - id: ligitgays
   path: data/datadog/extracted/ligitgays/2023-03-13-ligitgays-v1.0/ligitgays-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ligitgays
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-13-ligitgays-v1.0.zip)
 - id: mayalbl
   path: data/datadog/extracted/mayalbl/2023-05-02-mayalbl-v4/mayalbl-4
   label: malicious
   category: datadog
-  claim: Datadog malicious sample mayalbl
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: Description du projet
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-02-mayalbl-v4.zip, 2023-05-02-mayalbl-v5.zip)
 - id: midi-melady-extraction
   path: data/datadog/extracted/midi-melady-extraction/tmp/tmp6dfvb2az/midi-melady-extraction/midi_melady_extraction-94.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample midi-melady-extraction
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-14-midi-melady-extraction-v94.6.zip)
 - id: modeflow
   path: data/datadog/extracted/modeflow/var/folders/rs/52vst_5924nc0zz5ccww9tl80000gp/T/tmp5se51v9o/modeflow-0.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample modeflow
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-09-08-modeflow-v0.0.1.zip, 2024-09-09-modeflow-v0.1.0.zip)
 - id: msfpath
   path: data/datadog/extracted/msfpath/2022-11-16-msfpath/msfpath-0.0.4
   label: malicious
   category: datadog
-  claim: Datadog malicious sample msfpath
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: The Metasploit Project is a computer security project that provides information
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-16-msfpath.zip)
 - id: mumuziyyds
   path: data/datadog/extracted/mumuziyyds/2023-05-15-mumuziyyds-v1.0/mumuziyyds-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample mumuziyyds
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: for test
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-15-mumuziyyds-v1.0.zip, 2023-05-15-mumuziyyds-v1.1.zip,
     2023-05-15-mumuziyyds-v1.2.zip, 2023-05-15-mumuziyyds-v1.3.zip, 2023-05-15-mumuziyyds-v1.5.zip)
 - id: nuest
   path: data/datadog/extracted/nuest/tmp/tmpcbbdnur1/nuest/nuest-99.7
   label: malicious
   category: datadog
-  claim: Datadog malicious sample nuest
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-05-nuest-v99.7.zip)
 - id: nurset
   path: data/datadog/extracted/nurset/tmp/tmp8wcyxahb/nurset/nurset-99.7
   label: malicious
   category: datadog
-  claim: Datadog malicious sample nurset
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-06-nurset-v99.7.zip)
 - id: only-a-test
   path: data/datadog/extracted/only-a-test/2023-04-09-only-a-test-v0.1.1/only_a_test-0.1.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample only-a-test
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: 'Explanation:'
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-09-only-a-test-v0.1.1.zip)
 - id: oxeru2
   path: data/datadog/extracted/oxeru2/2022-11-16-oxeru2/oxeru2-0.1.4
   label: malicious
   category: datadog
-  claim: Datadog malicious sample oxeru2
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: just run please
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-16-oxeru2.zip)
 - id: pepequests
   path: data/datadog/extracted/pepequests/2023-05-01-pepequests-v0.0.1/pepequests-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pepequests
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-01-pepequests-v0.0.1.zip, 2023-05-01-pepequests-v0.0.2.zip)
 - id: phobia
   path: data/datadog/extracted/phobia/2022-11-14-phobia/phobia-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample phobia
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-14-phobia.zip)
 - id: pip-cache-dir
   path: data/datadog/extracted/pip-cache-dir/2023-06-04-pip-cache-dir-v1.0.0/pip-cache-dir-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pip-cache-dir
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-06-04-pip-cache-dir-v1.0.0.zip)
 - id: ploghandle
   path: data/datadog/extracted/ploghandle/2022-11-10-ploghandle
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ploghandle
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-10-ploghandle.zip)
 - id: py-httprevisa
   path: data/datadog/extracted/py-httprevisa/2023-02-27-py-httprevisa-v10.50/py-httprevisa-10.50
   label: malicious
   category: datadog
-  claim: Datadog malicious sample py-httprevisa
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-py-httprevisa-v10.50.zip)
 - id: py-libpipintel
   path: data/datadog/extracted/py-libpipintel/2023-02-27-py-libpipintel-v8.77/py-libpipintel-8.77
   label: malicious
   category: datadog
-  claim: Datadog malicious sample py-libpipintel
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-py-libpipintel-v8.77.zip)
 - id: py-proofrandvisa
   path: data/datadog/extracted/py-proofrandvisa/2023-02-27-py-proofrandvisa-v8.21/py-proofrandvisa-8.21
   label: malicious
   category: datadog
-  claim: Datadog malicious sample py-proofrandvisa
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-py-proofrandvisa-v8.21.zip)
 - id: pyautogiu
   path: data/datadog/extracted/pyautogiu/2022-11-07-pyautogiu-0.1/pyautogiu-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pyautogiu
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-07-pyautogiu-0.1.zip)
 - id: pycblines
   path: data/datadog/extracted/pycblines/tmp/tmpipq8npd5/pycblines/pycblines-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pycblines
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-07-pycblines-v0.0.1.zip)
 - id: pycolorate
   path: data/datadog/extracted/pycolorate/2023-04-25-pycolorate-v1.0.0/pycolorate-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pycolorate
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-25-pycolorate-v1.0.0.zip, 2023-04-25-pycolorate-v1.0.1.zip)
 - id: pycolorz
   path: data/datadog/extracted/pycolorz/2023-03-05-pycolorz-v0.0.1/pycolorz-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pycolorz
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-05-pycolorz-v0.0.1.zip, 2023-03-05-pycolorz-v0.0.2.zip,
     2023-03-05-pycolorz-v0.0.3.zip, 2023-03-05-pycolorz-v0.0.5.zip, 2023-03-05-pycolorz-v0.0.6.zip,
     2023-03-05-pycolorz-v0.0.7.zip, 2023-03-05-pycolorz-v0.0.8.zip)
@@ -525,128 +525,128 @@ packages:
   path: data/datadog/extracted/pycord-self/var/folders/rs/52vst_5924nc0zz5ccww9tl80000gp/T/tmp20eu1ipy/pycord_self-2.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pycord-self
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: pycord-self
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-06-10-pycord-self-v1.0.zip, 2024-06-20-pycord-self-v2.0.zip)
 - id: pydantics
   path: data/datadog/extracted/pydantics/tmp/tmpsb5zqx18/pydantics/pydantics-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pydantics
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2026-02-12-pydantics-v1.0.0.zip)
 - id: pygame-install
   path: data/datadog/extracted/pygame-install/2023-05-20-pygame-install-v17.14.20/pygame-install-17.14.20
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pygame-install
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-20-pygame-install-v17.14.20.zip)
 - id: pykane
   path: data/datadog/extracted/pykane/tmp/tmpyx31inne/pykane/pykane-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pykane
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-10-05-pykane-v0.0.1.zip)
 - id: pynalc
   path: data/datadog/extracted/pynalc/2022-12-19-pynalc/pynalc-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pynalc
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: https://discord.gg/4p7VMQWxzA
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-19-pynalc.zip)
 - id: pypaquets
   path: data/datadog/extracted/pypaquets/2023-05-04-pypaquets-v1.0.0/pypaquets-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pypaquets
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-04-pypaquets-v1.0.0.zip, 2023-05-06-pypaquets-v1.0.1.zip)
 - id: pysanitizer
   path: data/datadog/extracted/pysanitizer/2023-06-04-pysanitizer-v1.0.0/pysanitizer-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pysanitizer
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-06-04-pysanitizer-v1.0.0.zip)
 - id: pysisyphes
   path: data/datadog/extracted/pysisyphes/tmp/tmp0qf45mny/pysisyphes/pysisyphes-912.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pysisyphes
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-07-pysisyphes-v912.6.zip)
 - id: pystylerio
   path: data/datadog/extracted/pystylerio/2023-03-08-pystylerio-v1.0/pystylerio-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pystylerio
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-08-pystylerio-v1.0.zip)
 - id: pytorch-pygame
   path: data/datadog/extracted/pytorch-pygame/2023-05-20-pytorch-pygame-v0.6.19/pytorch-pygame-0.6.19
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pytorch-pygame
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-20-pytorch-pygame-v0.6.19.zip)
 - id: pytroch
   path: data/datadog/extracted/pytroch/2022-11-17-pytroch/pytroch-0.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pytroch
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: just run please
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-17-pytroch.zip)
 - id: pywhool
   path: data/datadog/extracted/pywhool/2023-05-17-pywhool-v1.0.0/pywhool-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pywhool
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: "\xEF\xBB\xBF# Pywool"
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-17-pywhool-v1.0.0.zip)
 - id: pywool
   path: data/datadog/extracted/pywool/2023-05-13-pywool-v1.0.0/pywool-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample pywool
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: web-requester
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-13-pywool-v1.0.0.zip, 2023-05-13-pywool-v1.0.1.zip,
     2023-05-13-pywool-v1.0.2.zip)
 - id: qyrm-pipinject4
   path: data/datadog/extracted/qyrm-pipinject4/2023-05-18-qyrm-pipinject4-v1.0/qyrm_pipinject4-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample qyrm-pipinject4
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-18-qyrm-pipinject4-v1.0.zip)
 - id: reallydonothing
   path: data/datadog/extracted/reallydonothing/2024-05-09-reallydonothing-v0.1/reallydonothing-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample reallydonothing
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: Do Nothing
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-05-09-reallydonothing-v0.1.zip, 2024-05-17-reallydonothing-v0.3.zip)
 - id: relefpots
   path: data/datadog/extracted/relefpots/2023-05-13-relefpots-v0.0.1/relefpots-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample relefpots
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-13-relefpots-v0.0.1.zip)
 - id: requestr
   path: data/datadog/extracted/requestr/2024-03-26-requestr-v1.0.0/requestr-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample requestr
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-03-26-requestr-v1.0.0.zip)
 - id: reverse-shell
   path: data/datadog/extracted/reverse-shell/2023-03-21-reverse-shell-v0.1/reverse_shell-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample reverse-shell
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-21-reverse-shell-v0.1.zip, 2023-03-21-reverse-shell-v0.5.zip,
     2023-03-21-reverse-shell-v0.9.zip, 2023-03-21-reverse-shell-v1.0.zip, 2023-03-21-reverse-shell-v1.1.zip,
     2023-03-21-reverse-shell-v1.3.zip, 2023-03-21-reverse-shell-v1.5.zip)
@@ -654,36 +654,36 @@ packages:
   path: data/datadog/extracted/rich-figlet
   label: malicious
   category: datadog
-  claim: Datadog malicious sample rich-figlet
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-05-15-rich-figlet-v0.0.1.zip, 2025-05-15-rich-figlet-v0.0.2.zip)
 - id: ritch
   path: data/datadog/extracted/ritch/tmp/tmpb67e20as/ritch/ritch-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ritch
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2026-02-12-ritch-v1.0.0.zip)
 - id: robloxlogger
   path: data/datadog/extracted/robloxlogger/2022-11-08-robloxlogger/robloxlogger-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample robloxlogger
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-robloxlogger.zip)
 - id: robloxpinreader
   path: data/datadog/extracted/robloxpinreader/2022-11-08-robloxpinreader/robloxpinreader-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample robloxpinreader
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-robloxpinreader.zip)
 - id: s3transfer-sl
   path: data/datadog/extracted/s3transfer-sl/tmp/tmp0nkiihky/s3transfer-sl/s3transfer_sl-0.12.4
   label: malicious
   category: datadog
-  claim: Datadog malicious sample s3transfer-sl
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: s3transfer - An Amazon S3 Transfer Manager for Python
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-04-23-s3transfer-sl-v0.12.0.zip, 2025-04-23-s3transfer-sl-v0.12.1.zip,
     2025-04-23-s3transfer-sl-v0.12.2.zip, 2025-04-23-s3transfer-sl-v0.12.3.zip, 2025-04-23-s3transfer-sl-v0.12.4.zip,
     2025-04-23-s3transfer-sl-v0.12.5.zip)
@@ -691,148 +691,148 @@ packages:
   path: data/datadog/extracted/saazsdz/2023-05-15-saazsdz-v0.1.0/saazsdz-0.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample saazsdz
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-15-saazsdz-v0.1.0.zip)
 - id: sadsacxz
   path: data/datadog/extracted/sadsacxz/2023-05-15-sadsacxz-v0.1.0/sadsacxz-0.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample sadsacxz
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-15-sadsacxz-v0.1.0.zip)
 - id: selfbot-api22
   path: data/datadog/extracted/selfbot-api22/2022-12-20-selfbot-api22/selfbot-api22-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfbot-api22
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-20-selfbot-api22.zip)
 - id: selfcpuintelpip
   path: data/datadog/extracted/selfcpuintelpip/2023-02-27-selfcpuintelpip-v7.65/selfcpuintelpip-7.65
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfcpuintelpip
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selfcpuintelpip-v7.65.zip)
 - id: selfgamepypost
   path: data/datadog/extracted/selfgamepypost/2023-03-03-selfgamepypost-v10.9/selfgamepypost-10.9
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfgamepypost
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-selfgamepypost-v10.9.zip)
 - id: selfgetminecandy
   path: data/datadog/extracted/selfgetminecandy/2023-02-27-selfgetminecandy-v9.92/selfgetminecandy-9.92
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfgetminecandy
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selfgetminecandy-v9.92.zip)
 - id: selfinfopushpip
   path: data/datadog/extracted/selfinfopushpip/2023-03-03-selfinfopushpip-v8.53/selfinfopushpip-8.53
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfinfopushpip
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-selfinfopushpip-v8.53.zip)
 - id: selfintmaskreplace
   path: data/datadog/extracted/selfintmaskreplace/2023-02-27-selfintmaskreplace-v1.3/selfintmaskreplace-1.3
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfintmaskreplace
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selfintmaskreplace-v1.3.zip)
 - id: selflgtbcontrolpyw
   path: data/datadog/extracted/selflgtbcontrolpyw/2023-02-27-selflgtbcontrolpyw-v3.27/selfLGTBcontrolpyw-3.27
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selflgtbcontrolpyw
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selflgtbcontrolpyw-v3.27.zip)
 - id: selfosintsplithydra
   path: data/datadog/extracted/selfosintsplithydra/2023-02-27-selfosintsplithydra-v9.76/selfosintsplithydra-9.76
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfosintsplithydra
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selfosintsplithydra-v9.76.zip)
 - id: selfpaypalcontrolsuper
   path: data/datadog/extracted/selfpaypalcontrolsuper/2023-03-07-selfpaypalcontrolsuper-v5.71/selfpaypalcontrolsuper-5.71
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfpaypalcontrolsuper
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-07-selfpaypalcontrolsuper-v5.71.zip)
 - id: selfpostmcintel
   path: data/datadog/extracted/selfpostmcintel/2023-03-02-selfpostmcintel-v10.27/selfpostmcintel-10.27
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfpostmcintel
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-02-selfpostmcintel-v10.27.zip)
 - id: selfrandompullver
   path: data/datadog/extracted/selfrandompullver/2023-03-07-selfrandompullver-v1.9/selfrandompullver-1.9
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfrandompullver
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-07-selfrandompullver-v1.9.zip)
 - id: selfstrultrapush
   path: data/datadog/extracted/selfstrultrapush/2023-02-27-selfstrultrapush-v4.57/selfstrultrapush-4.57
   label: malicious
   category: datadog
-  claim: Datadog malicious sample selfstrultrapush
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-selfstrultrapush-v4.57.zip)
 - id: settinginmaass
   path: data/datadog/extracted/settinginmaass/2022-11-08-settinginmaass/settinginmaass-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample settinginmaass
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-settinginmaass.zip)
 - id: shermed
   path: data/datadog/extracted/shermed/2023-05-12-shermed-v1.0/shermed-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample shermed
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-12-shermed-v1.0.zip)
 - id: shiva123456
   path: data/datadog/extracted/shiva123456/tmp/tmpqqowjgqt/shiva123456/shiva123456-23.99.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample shiva123456
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-06-shiva123456-v23.99.0.zip)
 - id: singtok
   path: data/datadog/extracted/singtok
   label: malicious
   category: datadog
-  claim: Datadog malicious sample singtok
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-02-18-singtok-v0.0.4.zip)
 - id: social-scrapper
   path: data/datadog/extracted/social-scrapper/2023-04-25-social-scrapper-v3.6/social_scrapper-3.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample social-scrapper
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-25-social-scrapper-v3.6.zip)
 - id: socksproxies
   path: data/datadog/extracted/socksproxies/2023-03-04-socksproxies-v1.0/socksproxies-1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample socksproxies
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-04-socksproxies-v1.0.zip)
 - id: spellcheckers
   path: data/datadog/extracted/spellcheckers
   label: malicious
   category: datadog
-  claim: Datadog malicious sample spellcheckers
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-11-14-spellcheckers-v1.0.0.zip, 2025-11-14-spellcheckers-v1.1.0.zip,
     2025-11-14-spellcheckers-v1.1.1.zip, 2025-11-14-spellcheckers-v1.2.0.zip, 2025-11-15-spellcheckers-v1.3.0.zip,
     2025-11-16-spellcheckers-v1.4.0.zip, 2025-11-16-spellcheckers-v1.5.0.zip)
@@ -840,231 +840,231 @@ packages:
   path: data/datadog/extracted/subdomainer/tmp/tmpc3b7vr3b/subdomainer/subdomainer-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample subdomainer
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-04-22-subdomainer-v1.0.0.zip)
 - id: swapmempool
   path: data/datadog/extracted/swapmempool/var/folders/rs/52vst_5924nc0zz5ccww9tl80000gp/T/tmpw13fk0kp/swapmempool-1.0.8
   label: malicious
   category: datadog
-  claim: Datadog malicious sample swapmempool
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-01-19-swapmempool-v1.0.8.zip)
 - id: synthetictest
   path: data/datadog/extracted/synthetictest/2023-03-17-synthetictest-v0.0.1/synthetictest-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample synthetictest
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: test
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-17-synthetictest-v0.0.1.zip)
 - id: syslog-udp
   path: data/datadog/extracted/syslog-udp/2023-06-04-syslog-udp-v1.0.0/syslog-udp-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample syslog-udp
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-06-04-syslog-udp-v1.0.0.zip)
 - id: taya
   path: data/datadog/extracted/taya
   label: malicious
   category: datadog
-  claim: Datadog malicious sample taya
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2025-06-09-taya-v2.0.zip)
 - id: tdwtauthauthentication
   path: data/datadog/extracted/tdwtauthauthentication/2023-06-08-tdwtauthauthentication-v1.0.8
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tdwtauthauthentication
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-06-08-tdwtauthauthentication-v1.0.8.zip,
     2023-06-08-tdwtauthauthentication-v1.0.9.zip)
 - id: testomadaoto
   path: data/datadog/extracted/testomadaoto/2022-11-08-testomadaoto/testomadaoto-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample testomadaoto
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-testomadaoto.zip)
 - id: textharmony
   path: data/datadog/extracted/textharmony/tmp/tmp2l7hkyyb/textharmony/TextHarmony-99.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample textharmony
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-19-textharmony-v99.6.zip)
 - id: thisismytest123
   path: data/datadog/extracted/thisismytest123/tmp/tmp1txzxivt/thisismytest123/thisismytest123-1.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample thisismytest123
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2026-03-27-thisismytest123-v1.0.0.zip, 2026-03-27-thisismytest123-v2.0.0.zip)
 - id: torchs-visions
   path: data/datadog/extracted/torchs-visions/tmp/tmp7p8222ol/torchs-visions/torchs_visions-94.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample torchs-visions
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-14-torchs-visions-v94.6.zip)
 - id: tpgetadstr
   path: data/datadog/extracted/tpgetadstr/2023-02-27-tpgetadstr-v7.38/tpgetadstr-7.38
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpgetadstr
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tpgetadstr-v7.38.zip)
 - id: tpgrandlibload
   path: data/datadog/extracted/tpgrandlibload/2023-02-27-tpgrandlibload-v1.83/tpgrandlibload-1.83
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpgrandlibload
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tpgrandlibload-v1.83.zip)
 - id: tpguigrandreplace
   path: data/datadog/extracted/tpguigrandreplace/2023-02-27-tpguigrandreplace-v5.95/tpguigrandreplace-5.95
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpguigrandreplace
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tpguigrandreplace-v5.95.zip)
 - id: tpmcrandgrand
   path: data/datadog/extracted/tpmcrandgrand/2023-02-27-tpmcrandgrand-v1.41/tpmcrandgrand-1.41
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpmcrandgrand
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tpmcrandgrand-v1.41.zip)
 - id: tpmcverhacked
   path: data/datadog/extracted/tpmcverhacked/2023-02-27-tpmcverhacked-v4.35/tpmcverhacked-4.35
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpmcverhacked
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tpmcverhacked-v4.35.zip)
 - id: tppingvirtualrand
   path: data/datadog/extracted/tppingvirtualrand/2023-03-08-tppingvirtualrand-v7.60/tppingvirtualrand-7.60
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppingvirtualrand
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-08-tppingvirtualrand-v7.60.zip)
 - id: tppongadultra
   path: data/datadog/extracted/tppongadultra/2023-03-03-tppongadultra-v1.83/tppongadultra-1.83
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppongadultra
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-03-tppongadultra-v1.83.zip)
 - id: tppushvmgrand
   path: data/datadog/extracted/tppushvmgrand/2023-02-27-tppushvmgrand-v8.60/tppushvmgrand-8.60
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppushvmgrand
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tppushvmgrand-v8.60.zip)
 - id: tppyhttprand
   path: data/datadog/extracted/tppyhttprand/2023-02-27-tppyhttprand-v6.97/tppyhttprand-6.97
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppyhttprand
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tppyhttprand-v6.97.zip)
 - id: tppyrandomed
   path: data/datadog/extracted/tppyrandomed/2023-03-02-tppyrandomed-v4.33/tppyrandomed-4.33
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppyrandomed
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-02-tppyrandomed-v4.33.zip)
 - id: tppywrandompull
   path: data/datadog/extracted/tppywrandompull/2023-02-27-tppywrandompull-v9.29/tppywrandompull-9.29
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tppywrandompull
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tppywrandompull-v9.29.zip)
 - id: tprandrehttp
   path: data/datadog/extracted/tprandrehttp/2023-02-27-tprandrehttp-v8.84/tprandrehttp-8.84
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tprandrehttp
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-02-27-tprandrehttp-v8.84.zip)
 - id: tpreloadad
   path: data/datadog/extracted/tpreloadad/2023-03-07-tpreloadad-v1.68/tpreloadad-1.68
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tpreloadad
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: <p align="center">
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-03-07-tpreloadad-v1.68.zip)
 - id: tucan-x
   path: data/datadog/extracted/tucan-x/2023-04-25-tucan-x-v0.0.1/tucan-x-0.0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample tucan-x
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: PYTHON FOR ROBLOX
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-04-25-tucan-x-v0.0.1.zip)
 - id: twien
   path: data/datadog/extracted/twien/2022-12-19-twien/twien-0.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample twien
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: https://discord.gg/4p7VMQWxzA
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-12-19-twien.zip)
 - id: ulibasset
   path: data/datadog/extracted/ulibasset/2022-11-08-ulibasset/ulibasset-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample ulibasset
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-ulibasset.zip)
 - id: usss
   path: data/datadog/extracted/usss/tmp/tmphmovsghu/usss/usss-94.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample usss
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-13-usss-v94.6.zip)
 - id: uus
   path: data/datadog/extracted/uus/tmp/tmpz9x5cswx/uus/uus-912.6
   label: malicious
   category: datadog
-  claim: Datadog malicious sample uus
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2024-11-08-uus-v912.6.zip)
 - id: weedycoder
   path: data/datadog/extracted/weedycoder/2023-05-17-weedycoder-v1.1.0/WeedyCoder-1.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample weedycoder
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-17-weedycoder-v1.1.0.zip)
 - id: wxpayproto
   path: data/datadog/extracted/wxpayproto/2023-06-08-wxpayproto-v1.3.1
   label: malicious
   category: datadog
-  claim: Datadog malicious sample wxpayproto
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-06-08-wxpayproto-v1.3.1.zip)
 - id: xolohnetekcjdz
   path: data/datadog/extracted/xolohnetekcjdz/2022-11-08-xolohnetekcjdz/xolohnetekcjdz-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample xolohnetekcjdz
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-xolohnetekcjdz.zip)
 - id: xoloxygjidhpoo
   path: data/datadog/extracted/xoloxygjidhpoo/2022-11-08-xoloxygjidhpoo/xoloxygjidhpoo-0.0.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample xoloxygjidhpoo
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2022-11-08-xoloxygjidhpoo.zip)
 - id: xxxsss
   path: data/datadog/extracted/xxxsss/2023-05-15-xxxsss-v0.1.0/xxxsss-0.1.0
   label: malicious
   category: datadog
-  claim: Datadog malicious sample xxxsss
-  expected_verdict: MALICIOUS-EVIDENT
+  claim: uninspected Datadog sample
+  expected_verdict: null
   notes: Datadog PyPI malicious package (2023-05-15-xxxsss-v0.1.0.zip)

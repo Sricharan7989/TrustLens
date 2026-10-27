@@ -14,7 +14,6 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-import zipfile
 from pathlib import Path
 
 import yaml
@@ -27,53 +26,40 @@ RAW = "https://raw.githubusercontent.com/DataDog/malicious-software-packages-dat
 REPO = "https://github.com/DataDog/malicious-software-packages-dataset.git"
 
 
-def safe_extract_zip(zip_path: Path, target_dir: Path) -> bool:
-    """Extract password-protected zip without executing any code. Uses extract_in_sandbox.sh if bwrap is available."""
+def safe_extract_zip(zip_path: Path, target_dir: Path) -> None:
+    """Extract password-protected zip inside sandbox. Exits non-zero if bwrap is missing or extraction fails."""
     target_dir.mkdir(parents=True, exist_ok=True)
     extract_sh = ROOT / "scripts" / "extract_in_sandbox.sh"
-    if shutil.which("bwrap") and extract_sh.exists():
-        try:
-            res = subprocess.run(["bash", str(extract_sh), str(zip_path), str(target_dir)], capture_output=True, text=True, check=False)
-            if res.returncode == 0:
-                return True
-        except Exception:
-            pass
-
-    try:
-        with zipfile.ZipFile(zip_path) as z:
-            z.setpassword(b"infected")
-            for member in z.infolist():
-                clean_name = member.filename.replace("\\", "/")
-                if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                    continue
-                z.extract(member, target_dir)
-        return True
-    except Exception as e:
-        print(f"Warning: failed extracting {zip_path.name}: {e}", file=sys.stderr)
-        return False
+    if not shutil.which("bwrap"):
+        sys.exit(f"Error: bwrap is missing; required to extract {zip_path.name}")
+    if not extract_sh.exists():
+        sys.exit(f"Error: {extract_sh} does not exist")
+    res = subprocess.run(["bash", str(extract_sh), str(zip_path), str(target_dir)], capture_output=True, text=True, check=False)
+    if res.returncode != 0:
+        sys.exit(f"Error: sandbox extraction of {zip_path.name} failed with code {res.returncode}: {res.stderr}")
 
 
 def find_pkg_root(target: Path, name: str) -> Path:
-    """Locate package root and ensure README.md exists for claim analysis."""
-    pkg_root = target
+    """Locate package root without modifying extracted tree."""
     for sub in sorted(target.rglob("*")):
         if sub.is_dir() and ((sub / "setup.py").exists() or (sub / "pyproject.toml").exists() or (sub / "PKG-INFO").exists()):
-            pkg_root = sub
-            break
+            return sub
+    return target
 
-    readme = pkg_root / "README.md"
-    if not readme.exists():
-        for alt_name in ("README.rst", "README.txt", "README"):
-            alt = pkg_root / alt_name
-            if alt.exists():
-                try:
-                    readme.write_text(alt.read_text(errors="replace"), encoding="utf-8")
-                    break
-                except Exception:
-                    pass
-        else:
-            readme.write_text(f"# {name}\n\nDatadog malicious sample {name}.\n", encoding="utf-8")
-    return pkg_root
+
+def get_readme_summary(pkg_root: Path) -> str:
+    """Read first descriptive line of README if present, otherwise 'uninspected Datadog sample'."""
+    for alt_name in ("README.md", "README.rst", "README.txt", "README"):
+        alt = pkg_root / alt_name
+        if alt.exists():
+            try:
+                for line in alt.read_text(errors="replace").splitlines():
+                    cleaned = line.strip().lstrip("#").strip()
+                    if cleaned and not cleaned.startswith("==") and not cleaned.startswith("--"):
+                        return cleaned[:120]
+            except Exception:
+                pass
+    return "uninspected Datadog sample"
 
 
 def main() -> int:
@@ -131,10 +117,12 @@ def main() -> int:
                 safe_extract_zip(z, target_dir)
 
         pkg_root = find_pkg_root(target_dir, pkg_name)
+        claim_summary = get_readme_summary(pkg_root)
         extracted_packages.append({
             "id": pkg_name.replace(".", "-").replace("_", "-").lower(),
             "name": pkg_name,
             "path": str(pkg_root.relative_to(ROOT)).replace("\\", "/"),
+            "claim": claim_summary,
             "zips": [z.name for z in zips],
         })
 
@@ -149,8 +137,8 @@ def main() -> int:
                 "path": p["path"],
                 "label": "malicious",
                 "category": "datadog",
-                "claim": f"Datadog malicious sample {p['name']}",
-                "expected_verdict": "MALICIOUS-EVIDENT",
+                "claim": p["claim"],
+                "expected_verdict": None,
                 "notes": f"Datadog PyPI malicious package ({', '.join(p['zips'])})",
             }
             for p in extracted_packages

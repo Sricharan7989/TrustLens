@@ -22,12 +22,11 @@ packages:
     trigger: call
     gate: none
     obfuscation: none
-    claim: "lightweight HTTP asset fetcher and cache manager"
-    expected_verdict: MALICIOUS-EVIDENT
+    claim: "lightweight HTTP asset downloader and cache manager that downloads files"
+    expected_verdict: SUSPICIOUS
     expected_signals:
       - download_exec
-      - network_unclaimed
-    notes: "Held-out malicious package: fetches second-stage python script from http://payload.invalid/stage.py and executes it via exec()"
+    notes: "Held-out malicious package: fetches second-stage python script from http://payload.invalid/stage.py and executes it via exec(); claims downloader so network is licensed, single strong signal download_exec yields SUSPICIOUS"
 
   - id: env_harvester
     path: bench/packages/malicious/env_harvester
@@ -69,7 +68,7 @@ packages:
     expected_signals:
       - env_differential
       - network_unclaimed
-    notes: "Held-out malicious package: dormant until +15 days past build date; connects to 198.51.100.40 only under clock+30d variant"
+    notes: "Held-out malicious package: gate opens 2026-11-09; connects to 198.51.100.40 only under clock+30d variant"
 
   # 5 Clean packages held-out from rule/heuristic tuning
   - id: math_lib

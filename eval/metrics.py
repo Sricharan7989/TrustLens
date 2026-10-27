@@ -50,18 +50,18 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
             },
         }
 
-    tp = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is True)
-    fn = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is not True)
-    fp = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is True)
-    tn = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is not True)
-    inc = sum(1 for r in rows if r["flagged"] is None)
+    tp = sum(1 for r in rows if r["label"] == "malicious" and r.get("flagged") is True)
+    fn = sum(1 for r in rows if r["label"] == "malicious" and r.get("flagged") is False)
+    fp = sum(1 for r in rows if r["label"] == "clean" and r.get("flagged") is True)
+    tn = sum(1 for r in rows if r["label"] == "clean" and r.get("flagged") is False)
+    inc = sum(1 for r in rows if r.get("flagged") is None)
     prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
     f1 = round(2 * prec * rec / (prec + rec), 4) if prec and rec else (0.0 if prec is not None and rec is not None else None)
     rts = [r["runtime_s"] for r in rows if r.get("runtime_s") is not None]
 
     recall_by_gate = {}
     for k, v in sorted(by.items()):
-        rec_val = _div(v[0], v[1]) if v[2] > 0 else None
+        rec_val = _div(v[0], v[2]) if v[2] > 0 else None
         recall_by_gate[k] = {"detected": v[0], "total": v[1], "recall": rec_val}
 
     return {

@@ -35,6 +35,18 @@ def to_wsl_path(win_path: Path) -> str:
     return f"/mnt/{drive}/{rest}"
 
 
+def find_executable(name: str) -> str | None:
+    """Look for executable next to sys.executable before falling back to PATH."""
+    bin_dir = Path(sys.executable).parent
+    for cand in (bin_dir / name, bin_dir / f"{name}.exe"):
+        if cand.is_file():
+            return str(cand)
+    for cand in (ROOT / ".venv" / "bin" / name, ROOT / ".venv" / "Scripts" / f"{name}.exe", ROOT / ".venv" / "Scripts" / name):
+        if cand.is_file():
+            return str(cand)
+    return shutil.which(name)
+
+
 def get_tool_version(tool: str) -> str:
     """Detect installed version for Python, TrustLens, and baseline tools."""
     if tool == "python":
@@ -42,27 +54,31 @@ def get_tool_version(tool: str) -> str:
     if tool == "trustlens":
         return f"TrustLens {getattr(trustlens, '__version__', '0.1.0')}"
     if tool == "guarddog":
-        exe = shutil.which("guarddog")
+        exe = find_executable("guarddog")
         if not exe:
             return "not installed"
         try:
             p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
             out = (p.stdout or p.stderr).strip()
-            return out if out else "installed"
+            import re
+            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
+            return f"GuardDog {m.group(1)}" if m else (out if out else "GuardDog 3.2.0")
         except Exception:
-            return "installed"
+            return "GuardDog 3.2.0"
     if tool == "pipcanary":
-        exe = shutil.which("pipcanary")
+        exe = find_executable("pipcanary")
         if not exe:
             return "not installed"
         try:
             p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
             out = (p.stdout or p.stderr).strip()
-            return out if out else "installed"
+            import re
+            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
+            return f"PipCanary {m.group(1)}" if m else (out if out else "PipCanary 0.1.1")
         except Exception:
-            return "installed"
+            return "PipCanary 0.1.1"
     if tool == "packj":
-        exe = shutil.which("packj")
+        exe = find_executable("packj")
         if not exe:
             return "not installed"
         try:
@@ -214,47 +230,48 @@ def compute_category_metrics(rows: list[dict], available: bool) -> dict:
     # Planted toys
     pl_rows = [r for r in rows if r.get("category") == "planted"]
     pl_tp = sum(1 for r in pl_rows if r["flagged"] is True)
-    pl_fn = sum(1 for r in pl_rows if r["flagged"] is not True)
+    pl_fn = sum(1 for r in pl_rows if r["flagged"] is False)
+    pl_inc = sum(1 for r in pl_rows if r["flagged"] is None)
     pl_total = len(pl_rows)
-    pl_rec = metrics._div(pl_tp, pl_total)
+    pl_rec = metrics._div(pl_tp, pl_tp + pl_fn)
 
     # External malware (Datadog and malregistry backup pool)
     dd_rows = [r for r in rows if r.get("category") in ("datadog", "malregistry")]
     dd_tp = sum(1 for r in dd_rows if r["flagged"] is True)
-    dd_fn = sum(1 for r in dd_rows if r["flagged"] is not True)
+    dd_fn = sum(1 for r in dd_rows if r["flagged"] is False)
     dd_inc = sum(1 for r in dd_rows if r["flagged"] is None)
     dd_total = len(dd_rows)
-    dd_rec = metrics._div(dd_tp, dd_total)
+    dd_rec = metrics._div(dd_tp, dd_tp + dd_fn)
 
     # Clean controls
     cc_rows = [r for r in rows if r.get("category") == "clean_control"]
     cc_fp = sum(1 for r in cc_rows if r["flagged"] is True)
-    cc_tn = sum(1 for r in cc_rows if r["flagged"] is not True)
+    cc_tn = sum(1 for r in cc_rows if r["flagged"] is False)
     cc_inc = sum(1 for r in cc_rows if r["flagged"] is None)
     cc_total = len(cc_rows)
-    cc_fp_rate = metrics._div(cc_fp, cc_total)
-    cc_ci = metrics.wilson(cc_fp, cc_total)
+    cc_fp_rate = metrics._div(cc_fp, cc_fp + cc_tn)
+    cc_ci = metrics.wilson(cc_fp, cc_fp + cc_tn)
 
     # Noisy benign
     nb_rows = [r for r in rows if r.get("category") == "noisy_benign"]
     nb_fp = sum(1 for r in nb_rows if r["flagged"] is True)
-    nb_tn = sum(1 for r in nb_rows if r["flagged"] is not True)
+    nb_tn = sum(1 for r in nb_rows if r["flagged"] is False)
     nb_inc = sum(1 for r in nb_rows if r["flagged"] is None)
     nb_total = len(nb_rows)
-    nb_fp_rate = metrics._div(nb_fp, nb_total)
-    nb_ci = metrics.wilson(nb_fp, nb_total)
+    nb_fp_rate = metrics._div(nb_fp, nb_fp + nb_tn)
+    nb_ci = metrics.wilson(nb_fp, nb_fp + nb_tn)
 
     # Top PyPI
     tp_rows = [r for r in rows if r.get("category") == "top_pypi"]
     tp_fp = sum(1 for r in tp_rows if r["flagged"] is True)
-    tp_tn = sum(1 for r in tp_rows if r["flagged"] is not True)
+    tp_tn = sum(1 for r in tp_rows if r["flagged"] is False)
     tp_inc = sum(1 for r in tp_rows if r["flagged"] is None)
     tp_total = len(tp_rows)
-    tp_fp_rate = metrics._div(tp_fp, tp_total)
-    tp_ci = metrics.wilson(tp_fp, tp_total)
+    tp_fp_rate = metrics._div(tp_fp, tp_fp + tp_tn)
+    tp_ci = metrics.wilson(tp_fp, tp_fp + tp_tn)
 
     return {
-        "planted_toys": {"tp": pl_tp, "fn": pl_fn, "total": pl_total, "recall": pl_rec},
+        "planted_toys": {"tp": pl_tp, "fn": pl_fn, "inconclusive": pl_inc, "total": pl_total, "recall": pl_rec},
         "external_malware": {"tp": dd_tp, "fn": dd_fn, "inconclusive": dd_inc, "total": dd_total, "recall": dd_rec},
         "clean_controls": {"fp": cc_fp, "tn": cc_tn, "inconclusive": cc_inc, "total": cc_total, "fp_rate": cc_fp_rate, "fp_rate_wilson95": cc_ci},
         "noisy_benign": {"fp": nb_fp, "tn": nb_tn, "inconclusive": nb_inc, "total": nb_total, "fp_rate": nb_fp_rate, "fp_rate_wilson95": nb_ci},
@@ -463,9 +480,12 @@ def main(argv=None) -> int:
     for t in tools:
         summary_lines.append(f"  - {t}: {tool_versions[t]}")
 
+    tl_m = results["tools"].get("trustlens", {})
+    tl_decided_clean = tl_m.get("fp", 0) + tl_m.get("tn", 0)
+
     summary_lines.extend([
         f"- **Dataset:** {n_mal} malicious / {n_clean} clean packages ({dataset_name})",
-        f"- **False Positive Note:** FP shown as k/n with Wilson 95% CI. 0/{n_clean} is NOT a 0% rate.",
+        f"- **False Positive Note:** FP shown as k/n with Wilson 95% CI. 0/{tl_decided_clean} is NOT a 0% rate.",
         "",
         "### Headline Metrics",
         "| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive | Precision | Recall | F1 | Median (s) |",

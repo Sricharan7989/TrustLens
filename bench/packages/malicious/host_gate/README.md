@@ -1,3 +1,3 @@
 # host-gate
 
-Mathematical matrix and vector manipulation algorithms.
+Mathematical matrix and vector manipulation algorithms and math calculator.
