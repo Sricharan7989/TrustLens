@@ -85,16 +85,24 @@ def safe_extract_archive(archive_path: Path, target_dir: Path) -> bool:
     return res.returncode == 0
 
 
-def find_pkg_root(target: Path, name: str) -> Path:
-    """Locate package root and ensure README.md exists for claim inspection."""
+def find_pkg_root(target: Path, name: str) -> Path | None:
+    """Locate a package root that already contains files.
+
+    An empty directory is not a package. This does not create ``README.md`` there.
+    """
+    if not target.is_dir():
+        return None
+    files = [p for p in target.rglob("*") if p.is_file() and not p.is_symlink()]
+    if not files:
+        return None
     pkg_root = target
     for sub in sorted(target.rglob("*")):
-        if sub.is_dir() and any((sub / f).exists() for f in ("setup.py", "pyproject.toml", "PKG-INFO")):
+        if sub.is_dir() and any((sub / f).is_file() for f in ("setup.py", "pyproject.toml", "PKG-INFO")):
             pkg_root = sub
             break
-
     readme = pkg_root / "README.md"
-    if not readme.exists():
+    has_other = any(p.is_file() and p.resolve() != readme.resolve() for p in pkg_root.rglob("*") if not p.is_symlink())
+    if has_other and not readme.exists():
         readme.write_text(
             f"# {name}\n\nMalicious package sample from pypi_malregistry (backup dataset).\n",
             encoding="utf-8",
@@ -143,9 +151,8 @@ def main(argv=None) -> int:
     subprocess.run(["git", "-C", str(MR_DIR), "sparse-checkout", "set", *chosen], check=True)
     subprocess.run(["git", "-C", str(MR_DIR), "-c", "core.protectNTFS=false", "checkout", "main"], check=True)
 
-    # Safe extract archives
+    # Safe extract archives. A failed extract does not create a label.
     labels_list: list[dict] = []
-    EXTRACTED_DIR.mkdir(parents=True, exist_ok=True)
 
     for pkg_name in chosen:
         pkg_dir = MR_DIR / pkg_name
@@ -155,10 +162,14 @@ def main(argv=None) -> int:
         archives = list(pkg_dir.rglob("*.tar.gz")) + list(pkg_dir.rglob("*.zip")) + list(pkg_dir.rglob("*.whl"))
         target_extract = EXTRACTED_DIR / pkg_name
         if archives:
+            labelled = False
             for arch in archives:
                 ver_dir = target_extract / arch.parent.name
-                safe_extract_archive(arch, ver_dir)
+                if not safe_extract_archive(arch, ver_dir):
+                    continue
                 root = find_pkg_root(ver_dir, pkg_name)
+                if root is None:
+                    continue
                 rel_path = root.relative_to(ROOT).as_posix()
                 labels_list.append({
                     "id": pkg_name,
@@ -169,10 +180,15 @@ def main(argv=None) -> int:
                     "expected_verdict": "MALICIOUS-EVIDENT",
                     "notes": f"pypi_malregistry sample {pkg_name} ({arch.name}); NO LICENSE, local only",
                 })
+                labelled = True
                 break
+            if not labelled:
+                continue
         else:
             # Already directory format
             root = find_pkg_root(pkg_dir, pkg_name)
+            if root is None:
+                continue
             rel_path = root.relative_to(ROOT).as_posix()
             labels_list.append({
                 "id": pkg_name,

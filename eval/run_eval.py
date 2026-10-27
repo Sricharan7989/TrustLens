@@ -2,7 +2,7 @@
 and write eval/results.json + eval/heatmap.html + eval/summary.md + eval/triage.md.
 
 python -m eval.run_eval --runner fixture|live [--tools trustlens,guarddog,pipcanary] [--policy review|block] [--jobs N] [--timeout S]
-TrustLens 'flagged' = verdict MALICIOUS-EVIDENT or SUSPICIOUS (policy review) / only MALICIOUS-EVIDENT (policy block); INCONCLUSIVE -> flagged None (counted separately).
+TrustLens 'flagged' under review is MALICIOUS-EVIDENT or SUSPICIOUS. Under block, only MALICIOUS-EVIDENT is flagged: SUSPICIOUS is not flagged (malicious counts as FN, clean as TN). INCONCLUSIVE is flagged None (abstain) under both policies and is not FN or TN.
 """
 from __future__ import annotations
 
@@ -99,10 +99,19 @@ def _fmt_rate(value: float | None, signed: bool = False) -> str:
 
 
 def tl_flagged(verdict: dict, policy: str):
+    """Map a TrustLens verdict to a confusion-matrix flag.
+
+    INCONCLUSIVE is an abstention (``None``) under review and block. It is not FN or TN.
+    Review flags MALICIOUS-EVIDENT and SUSPICIOUS.
+    Block flags only MALICIOUS-EVIDENT. SUSPICIOUS is not flagged (``False``): a malicious
+    SUSPICIOUS package counts as FN and a clean SUSPICIOUS package counts as TN.
+    """
     v = verdict["verdict"]
     if v == "INCONCLUSIVE":
         return None
-    return v == "MALICIOUS-EVIDENT" if policy == "block" else v in ("MALICIOUS-EVIDENT", "SUSPICIOUS")
+    if policy == "block":
+        return v == "MALICIOUS-EVIDENT"
+    return v in ("MALICIOUS-EVIDENT", "SUSPICIOUS")
 
 
 # Held-out slice (C9): 5 clean and 5 malicious ids from labels.yaml, reported as their own table.
@@ -312,19 +321,26 @@ def generate_triage_report(pk: list[dict], per_tool_results: dict[str, dict]) ->
         flagged = res.get("flagged")
 
         is_fp = (label == "clean" and flagged is True)
-        is_miss = (label == "malicious" and flagged is not True)
+        is_abstain = (label == "malicious" and flagged is None)
+        is_miss = (label == "malicious" and flagged is False)
 
         if is_fp:
             triage_count += 1
             lines.append(f"| {pkg_id} | {label} | {category} | trustlens | {verdict} | FALSE POSITIVE | *(a) or (b)* | Flagged clean package: review report.html |")
+        elif is_abstain:
+            triage_count += 1
+            lines.append(
+                f"| {pkg_id} | {label} | {category} | trustlens | {verdict} | ABSTAIN | "
+                "*(c) coverage thin / abstention* | flagged is None; not a miss and not a true negative |"
+            )
         elif is_miss:
             triage_count += 1
-            if verdict == "INCONCLUSIVE":
-                cls_str = "*(c) coverage thin / abstention*"
-                note = "Dynamic coverage insufficient or unexercised package (reported as INCONCLUSIVE)"
+            if verdict == "SUSPICIOUS":
+                cls_str = "*(d) engine detection gap*"
+                note = "SUSPICIOUS is not flagged under the block policy (counted as FN, not an abstention)"
             else:
                 cls_str = "*(d) engine detection gap*"
-                note = "Malicious package missed by detection engine (verdict: BENIGN-CONSISTENT)"
+                note = "Malicious package not flagged (verdict is not MALICIOUS-EVIDENT or SUSPICIOUS under the active policy)"
             lines.append(f"| {pkg_id} | {label} | {category} | trustlens | {verdict} | MISS | {cls_str} | {note} |")
 
     if triage_count == 0:
@@ -479,7 +495,7 @@ def main(argv=None) -> int:
         "",
         f"- **Date (UTC):** {now_utc}",
         f"- **Runner:** **{a.runner}** ({'stub fixtures replay; fast and deterministic, but NOT a live measurement. Run `make eval-live` for pitch numbers' if a.runner == 'fixture' else 'live bwrap sandbox execution'})",
-        f"- **Policy:** **{a.policy}** ({'SUSPICIOUS and MALICIOUS-EVIDENT flagged' if a.policy == 'review' else 'only MALICIOUS-EVIDENT flagged'}; INCONCLUSIVE counted separately)",
+        f"- **Policy:** **{a.policy}** ({'SUSPICIOUS and MALICIOUS-EVIDENT flagged; INCONCLUSIVE abstains (flagged None)' if a.policy == 'review' else 'block policy flags only MALICIOUS-EVIDENT; SUSPICIOUS is not flagged (FN if malicious, TN if clean); INCONCLUSIVE abstains (flagged None, not FN or TN)'})",
         f"- **Command:** `{cmd_str}`",
         f"- **Parallelism:** {workers} sandbox worker(s) (per-package timeout: {a.timeout}s)",
         "- **Tool Versions:**",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dev C: OSPtrack dataset fetch (CC-BY-4.0).
-# - data_metrics.csv (2.7 MB): attack type / trigger / obfuscation metadata for 20,269 packages.
+# - data_metrics.csv (2.7 MB): attack type / trigger / obfuscation metadata for 20,248 packages (6,683 PyPI + 13,565 npm).
 # - label_data_v2.csv (1.76 GB, md5 1d3aeaa9e1b338603c2f4ce8e6f5d68c): dynamic execution traces.
 set -euo pipefail
 cd "$(dirname "$0")/.."

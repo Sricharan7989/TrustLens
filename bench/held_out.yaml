@@ -1,6 +1,6 @@
 version: 1
 packages:
-  # 5 Malicious packages held-out from rule/heuristic tuning
+  # 5 malicious packages from labels.yaml, reported again as their own slice (not a withheld tuning set)
   - id: cli_payload
     path: bench/packages/malicious/cli_payload
     label: malicious
@@ -70,7 +70,7 @@ packages:
       - network_unclaimed
     notes: "Held-out malicious package: gate opens 2026-11-09; connects to 198.51.100.40 only under clock+30d variant"
 
-  # 5 Clean packages held-out from rule/heuristic tuning
+  # 5 clean packages from labels.yaml, reported again as their own slice (not a withheld tuning set)
   - id: math_lib
     path: bench/packages/clean/math_lib
     label: clean

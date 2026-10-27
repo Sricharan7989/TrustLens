@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -26,17 +27,20 @@ RAW = "https://raw.githubusercontent.com/DataDog/malicious-software-packages-dat
 REPO = "https://github.com/DataDog/malicious-software-packages-dataset.git"
 
 
-def safe_extract_zip(zip_path: Path, target_dir: Path) -> None:
-    """Extract password-protected zip inside sandbox. Exits non-zero if bwrap is missing or extraction fails."""
-    target_dir.mkdir(parents=True, exist_ok=True)
+_HTML_TAG = re.compile(r"<[^>]*>")
+
+
+def safe_extract_zip(zip_path: Path, target_dir: Path) -> bool:
+    """Extract a password-protected zip inside the sandbox.
+
+    Does not create ``target_dir``. Returns False when bwrap or the script is
+    missing or the sandbox exits non-zero.
+    """
     extract_sh = ROOT / "scripts" / "extract_in_sandbox.sh"
-    if not shutil.which("bwrap"):
-        sys.exit(f"Error: bwrap is missing; required to extract {zip_path.name}")
-    if not extract_sh.exists():
-        sys.exit(f"Error: {extract_sh} does not exist")
+    if not shutil.which("bwrap") or not extract_sh.is_file():
+        return False
     res = subprocess.run(["bash", str(extract_sh), str(zip_path), str(target_dir)], capture_output=True, text=True, check=False)
-    if res.returncode != 0:
-        sys.exit(f"Error: sandbox extraction of {zip_path.name} failed with code {res.returncode}: {res.stderr}")
+    return res.returncode == 0
 
 
 def find_pkg_root(target: Path, name: str) -> Path:
@@ -47,16 +51,29 @@ def find_pkg_root(target: Path, name: str) -> Path:
     return target
 
 
+def descriptive_claim_line(line: str) -> str | None:
+    """Return visible claim text, skipping blanks, rules, and HTML-only lines."""
+    raw = line.strip()
+    if not raw or raw.startswith(("==", "--", "<!--")):
+        return None
+    visible = _HTML_TAG.sub("", raw).replace("&nbsp;", " ").strip().lstrip("#").strip()
+    if not visible or visible.startswith(("==", "--")):
+        return None
+    if raw.startswith("<") and visible == raw:
+        return None
+    return visible[:120]
+
+
 def get_readme_summary(pkg_root: Path) -> str:
-    """Read first descriptive line of README if present, otherwise 'uninspected Datadog sample'."""
+    """Read first descriptive README line, otherwise 'uninspected Datadog sample'."""
     for alt_name in ("README.md", "README.rst", "README.txt", "README"):
         alt = pkg_root / alt_name
         if alt.exists():
             try:
                 for line in alt.read_text(errors="replace").splitlines():
-                    cleaned = line.strip().lstrip("#").strip()
-                    if cleaned and not cleaned.startswith("==") and not cleaned.startswith("--"):
-                        return cleaned[:120]
+                    claim = descriptive_claim_line(line)
+                    if claim:
+                        return claim
             except Exception:
                 pass
     return "uninspected Datadog sample"
@@ -97,9 +114,8 @@ def main(argv=None) -> int:
     (repo / ".git" / "info" / "sparse-checkout").write_text("\n".join(sparse_patterns) + "\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(repo), "checkout", "main"], check=True)
 
-    # Extract zips into data/datadog/extracted/<pkg_name>
+    # Extract zips into data/datadog/extracted/<pkg_name>. Dest is created only after a successful sandbox extract.
     extracted_base = dest / "extracted"
-    extracted_base.mkdir(parents=True, exist_ok=True)
     extracted_packages = []
 
     samples_dir = repo / "samples" / "pypi" / "malicious_intent"
@@ -111,10 +127,13 @@ def main(argv=None) -> int:
         if not zips:
             continue
         target_dir = extracted_base / pkg_name
-
-        if not target_dir.exists():
-            for z in zips:
-                safe_extract_zip(z, target_dir)
+        extracted = False
+        for z in zips:
+            if safe_extract_zip(z, target_dir):
+                extracted = True
+                break
+        if not extracted:
+            continue
 
         pkg_root = find_pkg_root(target_dir, pkg_name)
         claim_summary = get_readme_summary(pkg_root)

@@ -46,7 +46,8 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
             "fp_rate_wilson95": None,
             "median_runtime_s": None,
             "recall_by_trigger_gate": {
-                k: {"detected": 0, "total": v[1], "recall": None} for k, v in sorted(by.items())
+                k: {"detected": 0, "decided": 0, "inconclusive": v[1], "total": v[1], "recall": None}
+                for k, v in sorted(by.items())
             },
         }
 
@@ -61,8 +62,15 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
 
     recall_by_gate = {}
     for k, v in sorted(by.items()):
-        rec_val = _div(v[0], v[2]) if v[2] > 0 else None
-        recall_by_gate[k] = {"detected": v[0], "total": v[1], "recall": rec_val}
+        detected, total, decided = v[0], v[1], v[2]
+        rec_val = _div(detected, decided) if decided > 0 else None
+        recall_by_gate[k] = {
+            "detected": detected,
+            "decided": decided,
+            "inconclusive": total - decided,
+            "total": total,
+            "recall": rec_val,
+        }
 
     return {
         "tp": tp,

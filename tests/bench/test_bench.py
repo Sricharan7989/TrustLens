@@ -243,8 +243,12 @@ def test_noise_whitelist_loaded_by_normalizer():
     from trustlens.fingerprint.normalize import _load_whitelist
     rules = _load_whitelist()
     globs = {str(r.get("host_glob") or r.get("env_glob") or r.get("path_glob") or "") for r in rules}
-    assert "127.0.0.1*" in globs
-    assert "TEST_*" in globs
+    assert "127.0.0.1" in globs
+    assert "localhost" in globs
+    assert "PYTEST_CURRENT_TEST" in globs
+    assert "TOX_ENV_NAME" in globs
+    assert "127.0.0.1*" not in globs
+    assert "TEST_*" not in globs
     assert _BANNED_PROC_GLOBS.isdisjoint(globs)
 
 
@@ -488,6 +492,9 @@ def test_osptrack_metrics_analyzer_mock_and_real(tmp_path):
     assert "95.2" not in report
     assert "81.1" not in report
     assert "4/10" not in report
+    assert "27 PyPI" not in report
+    assert "(42 packages)" not in report
+    assert "283" not in report
 
 
 def test_osptrack_analyzer_missing_csv_prints_not_computed(tmp_path, capsys):
@@ -644,7 +651,7 @@ def test_heatmap_renders_all_three_sections():
     assert "id='rule-coverage'" in html
     assert "id='roc-sweep'" in html
     assert "<svg" in html
-    assert "ROC AUC =" in html
+    assert "AUC n/a (decided cases only)" in html or "ROC AUC =" in html
     assert "T=4.0" in html
     assert "Detection Rule Hits by Verdict Category" in html
 
@@ -760,6 +767,11 @@ def test_build_noise_whitelist_drops_unmatchable_proc_globs(tmp_path):
         if rule.get("path_glob"):
             globs.append(rule["path_glob"])
     assert _BANNED_PROC_GLOBS.isdisjoint(globs)
+    text = out.read_text(encoding="utf-8")
+    assert "127.0.0.1*" not in text
+    assert "localhost*" not in text
+    assert "TEST_*" not in text
+    assert "127.0.0.1" in text
 
 
 def _outside_snapshot(root: Path) -> dict[str, bytes | None]:
@@ -878,7 +890,209 @@ def test_safe_extract_archive_does_not_fall_back_on_host(monkeypatch, tmp_path):
     monkeypatch.setattr(mr.shutil, "which", lambda name, *_a, **_k: "/usr/bin/bwrap" if name == "bwrap" else None)
     monkeypatch.setattr(mr.subprocess, "run", lambda *_a, **_k: _Failed())
     assert mr.safe_extract_archive(archive, dest) is False
+    assert not dest.exists()
     assert not (dest / "ok.txt").exists()
+
+
+def test_roc_chart_omits_zero_threshold_and_does_not_shade_zero_width():
+    import re
+
+    from eval.heatmap import _generate_roc_svg
+    records = [
+        {"threshold": 0.0, "tpr": 1.0, "fpr": 1.0},
+        {"threshold": 4.0, "tpr": 1.0, "fpr": 0.0},
+        {"threshold": 8.0, "tpr": 1.0, "fpr": 0.0},
+    ]
+    svg = _generate_roc_svg(records, None, 4.0, decided_malicious=2, decided_clean=2)
+    assert "AUC n/a (decided cases only)" in svg
+    assert "<path " not in svg
+    assert "fill-opacity" not in svg
+    assert "FPR=1" not in svg
+
+    wide = [
+        {"threshold": 0.0, "tpr": 1.0, "fpr": 1.0},
+        {"threshold": 2.0, "tpr": 1.0, "fpr": 0.0},
+        {"threshold": 6.0, "tpr": 0.5, "fpr": 0.25},
+    ]
+    drawn = _generate_roc_svg(wide, 0.875, 4.0, decided_malicious=2, decided_clean=2)
+    path = re.search(r'<path d="([^"]+)"', drawn)
+    assert path is not None
+    xs = [float(v) for v in re.findall(r"[ML] ([\d.]+)", path.group(1))]
+    assert xs
+    assert max(xs) < 400
+
+
+def test_heatmap_abstained_trigger_is_not_labelled_not_run():
+    from eval.heatmap import render
+    html = render({
+        "dataset": "labels.yaml",
+        "n_malicious": 6,
+        "n_clean": 0,
+        "tools": {
+            "trustlens": {
+                "available": True,
+                "recall_by_trigger_gate": {
+                    "call|none": {"detected": 1, "decided": 1, "inconclusive": 5, "total": 6, "recall": 1.0},
+                },
+                "per_package": {},
+            },
+            "pipcanary": {"available": False, "recall_by_trigger_gate": {}},
+        },
+        "threshold_sweep": {
+            "auc": None,
+            "nominal_threshold": 4.0,
+            "sweep": [],
+            "sensitivity": {},
+            "inconclusive": 5,
+            "decided_malicious": 1,
+            "decided_clean": 0,
+        },
+        "rule_coverage": {"rule_summary": [], "package_matrix": []},
+    })
+    assert "1/1 (inconclusive 5)" in html
+    assert "(100%)" not in html
+    assert html.count(">not run</td>") == 1
+
+
+def test_trigger_recall_uses_decided_rows_plus_inconclusive():
+    rows = [
+        {"label": "malicious", "flagged": True, "trigger": "call", "gate": "none", "runtime_s": 0.01},
+        {"label": "malicious", "flagged": None, "trigger": "call", "gate": "none", "runtime_s": 0.01},
+        {"label": "malicious", "flagged": None, "trigger": "call", "gate": "none", "runtime_s": 0.01},
+    ]
+    cell = confusion(rows)["recall_by_trigger_gate"]["call|none"]
+    assert cell["detected"] == 1
+    assert cell["decided"] == 1
+    assert cell["inconclusive"] == 2
+    assert cell["total"] == 3
+    assert cell["recall"] == 1.0
+
+
+def test_triage_marks_inconclusive_malicious_as_abstain():
+    from eval.run_eval import generate_triage_report
+    pk = [
+        {"id": "toy", "label": "malicious", "category": "planted"},
+        {"id": "missed", "label": "malicious", "category": "planted"},
+    ]
+    per = {"trustlens": {
+        "toy": {"verdict": "INCONCLUSIVE", "flagged": None},
+        "missed": {"verdict": "BENIGN-CONSISTENT", "flagged": False},
+    }}
+    text = "\n".join(generate_triage_report(pk, per))
+    toy_line = next(line for line in text.splitlines() if line.startswith("| toy |"))
+    miss_line = next(line for line in text.splitlines() if line.startswith("| missed |"))
+    assert "ABSTAIN" in toy_line
+    assert "MISS" not in toy_line
+    assert "MISS" in miss_line
+
+
+def test_block_policy_suspicious_is_not_flagged_inconclusive_abstains():
+    from eval.run_eval import tl_flagged
+    assert tl_flagged({"verdict": "INCONCLUSIVE"}, "block") is None
+    assert tl_flagged({"verdict": "INCONCLUSIVE"}, "review") is None
+    assert tl_flagged({"verdict": "SUSPICIOUS"}, "block") is False
+    assert tl_flagged({"verdict": "SUSPICIOUS"}, "review") is True
+    assert tl_flagged({"verdict": "MALICIOUS-EVIDENT"}, "block") is True
+    assert tl_flagged({"verdict": "BENIGN-CONSISTENT"}, "block") is False
+    rows = [
+        {"label": "malicious", "flagged": tl_flagged({"verdict": "SUSPICIOUS"}, "block"), "trigger": "call", "gate": "none", "runtime_s": 0.1},
+        {"label": "malicious", "flagged": tl_flagged({"verdict": "INCONCLUSIVE"}, "block"), "trigger": "call", "gate": "none", "runtime_s": 0.1},
+        {"label": "clean", "flagged": tl_flagged({"verdict": "SUSPICIOUS"}, "block"), "trigger": None, "gate": None, "runtime_s": 0.1},
+        {"label": "clean", "flagged": tl_flagged({"verdict": "BENIGN-CONSISTENT"}, "block"), "trigger": None, "gate": None, "runtime_s": 0.1},
+    ]
+    got = confusion(rows)
+    assert (got["tp"], got["fn"], got["fp"], got["tn"], got["inconclusive"]) == (0, 1, 0, 2, 1)
+
+
+def test_whitelist_rejects_globs_that_match_adversarial_strings(tmp_path):
+    import fnmatch
+
+    from bench.tools.cross_check_whitelist import ADVERSARIAL_PROBES, cross_check
+    live = cross_check(ROOT / "bench/calibration/noise_whitelist.yaml")
+    assert live["is_safe"] is True
+    data = yaml.safe_load((ROOT / "bench/calibration/noise_whitelist.yaml").read_text(encoding="utf-8"))
+    for rule in data["rules"]:
+        glob = str(rule.get("host_glob") or rule.get("env_glob") or "")
+        for probe in ADVERSARIAL_PROBES:
+            assert fnmatch.fnmatch(probe, glob) is False
+    wide = tmp_path / "wide.yaml"
+    wide.write_text(
+        "rules:\n"
+        "- {capability: network, host_glob: '127.0.0.1*', reason: wide, source: seed}\n"
+        "- {capability: network, host_glob: 'localhost*', reason: wide, source: seed}\n"
+        "- {capability: env_secrets, env_glob: 'TEST_*', reason: wide, source: seed}\n",
+        encoding="utf-8",
+    )
+    bad = cross_check(wide)
+    assert bad["is_safe"] is False
+    matched = {v["matched_string"] for v in bad["violations"]}
+    for probe in ADVERSARIAL_PROBES:
+        assert probe in matched
+
+
+def test_find_pkg_root_does_not_seed_readme_in_empty_dir(tmp_path):
+    from bench.tools import sample_malregistry as mr
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert mr.find_pkg_root(empty, "evilpkg") is None
+    assert not (empty / "README.md").exists()
+
+
+def test_malregistry_does_not_label_when_extract_fails(tmp_path, monkeypatch):
+    from bench.tools import sample_malregistry as mr
+    mr_dir = tmp_path / "mr"
+    pkg = mr_dir / "evilpkg" / "1.0"
+    pkg.mkdir(parents=True)
+    (pkg / "evilpkg-1.0.tar.gz").write_bytes(b"not-an-archive")
+    monkeypatch.setattr(mr, "MR_DIR", mr_dir)
+    monkeypatch.setattr(mr, "EXTRACTED_DIR", tmp_path / "extracted")
+    monkeypatch.setattr(mr, "ensure_mr_clone", lambda: None)
+    monkeypatch.setattr(mr.subprocess, "run", lambda *_a, **_k: subprocess.CompletedProcess(args=[], returncode=0))
+    monkeypatch.setattr(mr, "safe_extract_archive", lambda *_a, **_k: False)
+    out = tmp_path / "labels.yaml"
+    assert mr.main(["--packages", "evilpkg", "--out-labels", str(out)]) == 0
+    assert not out.exists()
+    assert not (tmp_path / "extracted").exists()
+    assert not list(mr_dir.rglob("README.md"))
+
+
+def test_extract_script_does_not_create_dest_on_failure(tmp_path):
+    script = ROOT / "scripts" / "extract_in_sandbox.sh"
+    dest = tmp_path / "nested" / "out"
+    missing = tmp_path / "missing.zip"
+    proc = subprocess.run(["bash", str(script), str(missing), str(dest)], capture_output=True, text=True, check=False)
+    assert proc.returncode != 0
+    assert not dest.exists()
+    assert not dest.parent.exists() or not any(dest.parent.iterdir())
+
+
+def test_datadog_extract_failure_does_not_create_dest_or_keep_html_claim(tmp_path, monkeypatch):
+    from bench.tools.sample_datadog import descriptive_claim_line, get_readme_summary, safe_extract_zip
+    dest = tmp_path / "pkg"
+    monkeypatch.setattr("bench.tools.sample_datadog.shutil.which", lambda *_a, **_k: None)
+    assert safe_extract_zip(tmp_path / "a.zip", dest) is False
+    assert not dest.exists()
+    root = tmp_path / "readme"
+    root.mkdir()
+    (root / "README.md").write_text("<p align=\"center\">\n\nActual package purpose\n", encoding="utf-8")
+    assert get_readme_summary(root) == "Actual package purpose"
+    (root / "README.md").write_text("<p align=\"center\">\n<img src=\"x\">\n", encoding="utf-8")
+    assert get_readme_summary(root) == "uninspected Datadog sample"
+    assert descriptive_claim_line('<p align="center">') is None
+    labels = yaml.safe_load((ROOT / "bench/labels_datadog.yaml").read_text(encoding="utf-8"))
+    for pkg in labels["packages"]:
+        assert "<p align" not in pkg["claim"]
+        assert not str(pkg["claim"]).lstrip().startswith("<")
+
+
+def test_held_out_wording_is_a_reported_slice():
+    text = (ROOT / "bench/held_out.yaml").read_text(encoding="utf-8")
+    assert "held-out from rule/heuristic tuning" not in text
+    assert "not a withheld tuning set" in text
+    docs = (ROOT / "docs/DATASETS.md").read_text(encoding="utf-8")
+    assert "20,269" not in docs
+    assert "6,683 PyPI + 13,565 npm" in docs
+    assert "20,248" in docs
 
 
 

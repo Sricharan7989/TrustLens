@@ -132,20 +132,26 @@ def main(argv=None) -> int:
     calibrated_seeds = [
         {
             "capability": "network",
-            "host_glob": "127.0.0.1*",
-            "reason": "loopback socket communication used by local unit test servers and clients",
+            "host_glob": "127.0.0.1",
+            "reason": "exact loopback address used by local unit test servers and clients",
             "source": "seed",
         },
         {
             "capability": "network",
-            "host_glob": "localhost*",
-            "reason": "localhost hostname lookup used by local test servers",
+            "host_glob": "localhost",
+            "reason": "exact localhost hostname used by local test servers",
             "source": "seed",
         },
         {
             "capability": "env_secrets",
-            "env_glob": "TEST_*",
-            "reason": "test-runner configuration and dummy database passwords",
+            "env_glob": "PYTEST_CURRENT_TEST",
+            "reason": "pytest current-test name; does not match secret env names",
+            "source": "seed",
+        },
+        {
+            "capability": "env_secrets",
+            "env_glob": "TOX_ENV_NAME",
+            "reason": "tox environment name; does not match secret env names",
             "source": "seed",
         },
     ]

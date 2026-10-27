@@ -35,6 +35,9 @@ def analyze_metrics(csv_path: Path) -> dict:
     pypi_attacks = Counter(r.get("attack_type", "unknown") for r in pypi_rows)
     pypi_locations = Counter(r.get("location", "unknown") for r in pypi_rows)
 
+    def _blob(row: dict) -> str:
+        return " ".join(str(row.get(k) or "") for k in ("attack_type", "hide", "function", "trigger_mechanism")).lower()
+
     return {
         "total_rows": total_rows,
         "by_pkg_type": by_pkg_type,
@@ -44,6 +47,9 @@ def analyze_metrics(csv_path: Path) -> dict:
         "pypi_hides": pypi_hides,
         "pypi_attacks": pypi_attacks,
         "pypi_locations": pypi_locations,
+        "pypi_stego": sum(1 for r in pypi_rows if "steganograph" in _blob(r)),
+        "pypi_split": sum(1 for r in pypi_rows if "split" in _blob(r)),
+        "pypi_c2": sum(1 for r in pypi_rows if "c2" in _blob(r)),
     }
 
 
@@ -148,13 +154,13 @@ def generate_report(stats: dict) -> str:
         "   - *Empirical origin:* OSPTrack `uurllib3` pattern (accesses clipboard or crypto wallet locations).",
         "   - *Signals:* `file_read_sensitive`, `clipboard_access`.",
         "2. **`asset_stego`** (Attack: Dropper, Trigger: `install`, Obfuscation: `steganography`):",
-        "   - *Empirical origin:* OSPTrack packages using `steganography/obfuscation` (27 PyPI packages).",
+        f"   - *Empirical origin:* OSPTrack PyPI rows whose attack_type or hide mentions steganography ({stats.get('pypi_stego', 'not computed')} in this CSV).",
         "   - *Signals:* Reads binary trailer from asset PNG/data file, executes with `exec()`.",
         "3. **`split_payload`** (Attack: Exfiltration, Trigger: `import`, Obfuscation: `split`):",
-        "   - *Empirical origin:* OSPTrack `split payloads` (42 packages).",
+        f"   - *Empirical origin:* OSPTrack PyPI rows whose attack_type or hide mentions split ({stats.get('pypi_split', 'not computed')} in this CSV).",
         "   - *Signals:* Assembles base64 payload chunks from multiple package submodules before exfiltrating.",
         "4. **`atexit_beacon`** (Attack: C2 communication, Trigger: `call`, Gate: `none`):",
-        "   - *Empirical origin:* OSPTrack `C2 communication` (283 PyPI packages).",
+        f"   - *Empirical origin:* OSPTrack PyPI rows whose attack_type mentions C2 ({stats.get('pypi_c2', 'not computed')} in this CSV).",
         "   - *Signals:* Registers `atexit.register(...)` to connect to C2 address upon interpreter shutdown.",
     ])
     return "\n".join(lines) + "\n"

@@ -48,8 +48,36 @@ def _fmt_rate(value: float | None) -> str:
     return f"{value:.4f}"
 
 
-def _generate_roc_svg(sweep_records: list[dict], auc: float | None, nominal_t: float) -> str:
-    """Generate inline SVG for the ROC curve."""
+def _auc_plot_points(sweep_records: list[dict], decided_malicious: int | None, decided_clean: int | None) -> list[dict]:
+    """Points actually passed to ``compute_roc_auc`` (T > 0, both rates present, both classes decided)."""
+    if decided_malicious is not None and decided_clean is not None:
+        if decided_malicious < 1 or decided_clean < 1:
+            return []
+    return [
+        p for p in sweep_records
+        if p.get("threshold", 0) > 0 and p.get("fpr") is not None and p.get("tpr") is not None
+    ]
+
+
+def _fpr_width(pts: list[dict]) -> float:
+    if len(pts) < 2:
+        return 0.0
+    xs = [float(p["fpr"]) for p in pts]
+    return max(xs) - min(xs)
+
+
+def _generate_roc_svg(
+    sweep_records: list[dict],
+    auc: float | None,
+    nominal_t: float,
+    decided_malicious: int | None = None,
+    decided_clean: int | None = None,
+) -> str:
+    """Generate inline SVG for the ROC curve.
+
+    Draws only the points passed to the AUC integral. A zero FPR width is markers
+    only: no segment toward FPR 1 and no shaded area.
+    """
     # Plot geometry: width 520, height 400
     # Margins: left 60, right 30, top 30, bottom 60
     # Plot box: x: 60..480 (w=420), y: 30..350 (h=320)
@@ -86,18 +114,15 @@ def _generate_roc_svg(sweep_records: list[dict], auc: float | None, nominal_t: f
     svg.append(f'<line x1="{x0}" y1="{y0}" x2="{x0 + w_px}" y2="{30}" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4 4" />')
     svg.append(f'<text x="{x0 + w_px - 8}" y="45" font-size="10" fill="#9ca3af" text-anchor="end">Random Chance (AUC=0.5)</text>')
 
-    # Sort decided-case points. Rates are null when that class has no decided rows.
-    pts = [p for p in sweep_records if p.get("fpr") is not None and p.get("tpr") is not None]
-    pts = sorted(pts, key=lambda r: (r["fpr"], r["tpr"]))
+    # Same points compute_roc_auc integrates. T <= 0 is the (1, 1) corner and is omitted.
+    pts = sorted(_auc_plot_points(sweep_records, decided_malicious, decided_clean), key=lambda r: (r["fpr"], r["tpr"]))
     curve_coords = [(x0 + p["fpr"] * w_px, y0 - p["tpr"] * h_px) for p in pts]
+    width = _fpr_width(pts)
 
-    # Shaded Area under curve
-    if curve_coords:
-        poly_pts = [f"{x0},{y0}"] + [f"{x:.1f},{y:.1f}" for x, y in curve_coords] + [f"{curve_coords[-1][0]:.1f},{y0}"]
+    # Shade and stroke only when FPR actually moves. Do not extend the curve to FPR 1.
+    if width > 0 and len(curve_coords) > 1:
+        poly_pts = [f"{curve_coords[0][0]:.1f},{y0}"] + [f"{x:.1f},{y:.1f}" for x, y in curve_coords] + [f"{curve_coords[-1][0]:.1f},{y0}"]
         svg.append(f'<polygon points="{" ".join(poly_pts)}" fill="#2563eb" fill-opacity="0.12" />')
-
-    # ROC Line
-    if len(curve_coords) > 1:
         path_d = f"M {curve_coords[0][0]:.1f} {curve_coords[0][1]:.1f} " + " ".join(f"L {x:.1f} {y:.1f}" for x, y in curve_coords[1:])
         svg.append(f'<path d="{path_d}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" />')
 
@@ -121,9 +146,11 @@ def _generate_roc_svg(sweep_records: list[dict], auc: float | None, nominal_t: f
         svg.append(f'<rect x="{op_x + 35:.1f}" y="{op_y - 45:.1f}" width="130" height="22" rx="4" fill="#fef2f2" stroke="#fca5a5" stroke-width="1" />')
         svg.append(f'<text x="{op_x + 40:.1f}" y="{op_y - 30:.1f}" font-size="11" font-weight="700" fill="#991b1b">T={nominal_t} (weights.yaml)</text>')
 
-    # AUC badge in top right
-    svg.append(f'<rect x="{x0 + w_px - 110}" y="35" width="105" height="26" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />')
-    svg.append(f'<text x="{x0 + w_px - 58}" y="52" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">ROC AUC = {_fmt_auc(auc)}</text>')
+    # AUC badge. A null integral is not drawn as 1.0.
+    auc_text = "AUC n/a (decided cases only)" if auc is None else f"ROC AUC = {_fmt_auc(auc)}"
+    badge_w = 220 if auc is None else 120
+    svg.append(f'<rect x="{x0 + w_px - badge_w}" y="35" width="{badge_w}" height="26" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />')
+    svg.append(f'<text x="{x0 + w_px - badge_w / 2}" y="52" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">{auc_text}</text>')
 
     svg.append('</svg>')
     return "".join(svg)
@@ -198,28 +225,37 @@ def render(results: dict) -> str:
         for t_data in tools.values():
             avail = t_data.get("available", True)
             c = t_data.get("recall_by_trigger_gate", {}).get(k)
-            if not avail or not c or c.get("recall") is None:
+            if not avail:
                 h.append("<td style='background:#f3f4f6;color:#6b7280;font-style:italic;'>not run</td>")
+            elif not c:
+                h.append("<td>-</td>")
             else:
-                r = c["recall"]
-                det, tot = c["detected"], c["total"]
-                if tot == 0:
-                    h.append("<td>-</td>")
-                elif r >= 1.0:
-                    h.append(f"<td style='background:#dcfce7;color:#166534;font-weight:700;'>{det}/{tot} (100%)</td>")
-                elif r > 0.0:
-                    pct = int(r * 100)
-                    h.append(f"<td style='background:#fef3c7;color:#92400e;font-weight:700;'>{det}/{tot} ({pct}%)</td>")
+                det = int(c.get("detected") or 0)
+                decided = c.get("decided")
+                if decided is None:
+                    decided = det if c.get("recall") is not None else 0
+                inc = c.get("inconclusive")
+                if inc is None:
+                    inc = max(int(c.get("total") or 0) - int(decided), 0)
+                label = f"{det}/{int(decided)} (inconclusive {int(inc)})" if int(decided) > 0 else f"- (inconclusive {int(inc)})"
+                recall = c.get("recall")
+                if int(decided) <= 0 or recall is None:
+                    style = "background:#f3f4f6;color:#4b5563;"
+                elif recall >= 1.0 and int(inc) == 0:
+                    style = "background:#dcfce7;color:#166534;font-weight:700;"
+                elif recall > 0.0:
+                    style = "background:#fef3c7;color:#92400e;font-weight:700;"
                 else:
-                    h.append(f"<td style='background:#fee2e2;color:#991b1b;font-weight:600;'>{det}/{tot} (0%)</td>")
+                    style = "background:#fee2e2;color:#991b1b;font-weight:600;"
+                h.append(f"<td style='{style}'>{label}</td>")
         h.append("</tr>")
 
     h.append("</table>")
     h.append("<div class='legend'>")
-    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#dcfce7;'></div> High Recall (100%)</div>")
-    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#fef3c7;'></div> Partial Recall</div>")
-    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#fee2e2;'></div> Zero Recall</div>")
-    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#f3f4f6;'></div> Not Run / Inconclusive</div>")
+    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#dcfce7;'></div> Decided recall complete</div>")
+    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#fef3c7;'></div> Partial decided recall</div>")
+    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#fee2e2;'></div> Zero decided recall</div>")
+    h.append("<div class='legend-item'><div class='legend-swatch' style='background:#f3f4f6;'></div> Abstain or tool not run</div>")
     h.append("</div>")
 
     # SECTION 2: VERDICT X RULE COVERAGE HEATMAP
@@ -290,8 +326,15 @@ def render(results: dict) -> str:
     # Column 1: Inline SVG ROC Curve
     h.append("<div class='roc-container'>")
     h.append("<h3 style='margin-top:0;'>Empirical ROC Curve</h3>")
-    h.append(_generate_roc_svg(sweep_records, auc_val, nominal_t))
-    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve (decided cases only; inconclusive: {sweep_data.get('inconclusive', 'n/a')}): <strong>ROC AUC = {_fmt_auc(auc_val)}</strong></p>")
+    h.append(_generate_roc_svg(
+        sweep_records,
+        auc_val,
+        nominal_t,
+        sweep_data.get("decided_malicious"),
+        sweep_data.get("decided_clean"),
+    ))
+    auc_caption = "AUC n/a (decided cases only)" if auc_val is None else f"ROC AUC = {_fmt_auc(auc_val)}"
+    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve (decided cases only; inconclusive: {sweep_data.get('inconclusive', 'n/a')}): <strong>{auc_caption}</strong></p>")
     h.append("</div>")
 
     # Column 2: Sensitivity Summary

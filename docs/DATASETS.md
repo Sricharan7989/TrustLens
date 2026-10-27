@@ -115,10 +115,10 @@ Evaluated via `python -m eval.run_eval --labels bench/held_out.yaml` or as part 
 
 ## OSPTrack Dataset & Empirical Toy Planning (C10)
 
-OSPTrack (Zenodo record 21853840, CC-BY-4.0) provides empirical metadata and execution traces across 20,269 open-source supply chain attacks.
+OSPTrack (Zenodo record 21853840, CC-BY-4.0) provides empirical metadata and execution traces. The cited PyPI and npm counts sum to 20,248 packages.
 
 ### 1. Dataset Components
-- **`data_metrics.csv` (2.7 MB):** Classification metadata for 20,269 malicious packages (6,683 PyPI, 13,565 npm) covering attack objectives, trigger mechanisms, and obfuscation methods.
+- **`data_metrics.csv` (2.7 MB):** Classification metadata for 20,248 malicious packages (6,683 PyPI + 13,565 npm) covering attack objectives, trigger mechanisms, and obfuscation methods.
 - **`label_data_v2.csv` (1.76 GB):** Dynamic trace execution records across 18 columns (`import_Files`, `import_Sockets`, `import_Commands`, `import_DNS`, `install_*`, `Label`). MD5 verified against `1d3aeaa9e1b338603c2f4ce8e6f5d68c`.
 - **Fetch script:** `bash scripts/fetch_osptrack.sh` (`--metrics-only`, `--check-only`, or full download).
 
@@ -141,7 +141,7 @@ Planned expansion toys:
 
 ### 4. Benign-Trace Whitelist Cross-Check
 Verified via `python bench/tools/cross_check_whitelist.py`:
-- Seed rules in `bench/calibration/noise_whitelist.yaml` (`source: seed`, no prevalence) were cross-checked against benign trace schemas. Subprocess `path_glob` rules are not emitted: `proc.spawn` records argv, not a path. Prevalence is stored only when `build_noise_whitelist.py` computes it from a CSV.
+- Seed rules in `bench/calibration/noise_whitelist.yaml` (`source: seed`, no prevalence) use the exact hosts `127.0.0.1` and `localhost` and the env names `PYTEST_CURRENT_TEST` and `TOX_ENV_NAME`. They are fnmatch patterns, so a trailing `*` is not used. Subprocess `path_glob` rules are not emitted: `proc.spawn` records argv, not a path. Prevalence is stored only when `build_noise_whitelist.py` computes it from a CSV.
 - **AUDIT §6 Invariant Verified:** Zero whitelist rules match canary tokens, SSH/AWS/npm credential files, RFC 5737 targets, or `.invalid` test domains.
 
 ## Malregistry Backup Dataset (C11)
