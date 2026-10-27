@@ -1,0 +1,5032 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "sys-monitor",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "d5a62fd2eb9c74215ee2bb320dedb9054bdb122624b1e1e2726968b8b9e5f9e3",
+  "path": "bench/packages/clean/sys_monitor"
+ },
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:56:41.392174+00:00",
+  "duration_s": 4.89,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "events": [
+  {
+   "id": "ev0",
+   "seq": 0,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "59092b5b3846cb446a74b908be01130ae3f735039834f2b7cb703afdc76938bb",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(name={self.name!r}, default={self.default!r}, validator={self.validator!r}, repr={self.repr!r}, eq={self.eq!r}, eq_ke",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev1",
+   "seq": 1,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev2",
+   "seq": 2,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "038b458dbb4f3656b06d905f58ef189866225745617d0de72606cb089576741b",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.name,\n        self.default,\n        self.validator,\n        self.repr,\n        self.eq,\n        self.eq_key,\n        self.order,\n        self.order_key,\n        self.hash,\n        self.init,\n        self.metadata,\n        self.type,\n        self.converter,\n        self.kw_only,\n        self.on_setattr,\n        self.alias,\n    ) == (\n        other.name,\n        other.def",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev3",
+   "seq": 3,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev4",
+   "seq": 4,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9489baa4233ff891257ad9dd6d72771a7d752bee2079531203679012161ad96e",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                244280646098143120,\n                self.name,\n                self.default,\n                self.validator,\n                self.repr,\n                self.eq,\n                self.eq_key,\n                self.order,\n                self.order_key,\n                self.hash,\n                self.init,\n                self.type,\n                self.converter,\n                self.kw_only,\n                self.on_setattr,\n                ",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev5",
+   "seq": 5,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev6",
+   "seq": 6,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "1e70decc93d8aa151afe330ca1f4615a01ed0a5069304683f97a55378c29994a",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(counter={self.counter!r}, _default={self._default!r}, repr={self.repr!r}, eq={self.eq!r}, order={self.order!r}, hash=",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev7",
+   "seq": 7,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make._CountingAttr>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev8",
+   "seq": 8,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f10dcf5f352e9c9eb76dbae8f2a361595051ffb4e47768b3745eae1a2e4cd72c",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.counter,\n        self._default,\n        self.repr,\n        self.eq,\n        self.order,\n        self.hash,\n        self.init,\n        self.on_setattr,\n        self.alias,\n        self.metadata,\n    ) == (\n        other.counter,\n        other._default,\n        other.repr,\n        other.eq,\n        other.order,\n        other.hash,\n        other.init,\n        other.on_seta",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev9",
+   "seq": 9,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make._CountingAttr>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev10",
+   "seq": 10,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "138eb9b4147140b0bd9a5e040ae66cd79906f05156f96445c7e446c0e9cef3f6",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(factory={self.factory!r}, takes_self={self.takes_self!r})'\n  finally:\n    already_repring.remove(id(self))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev11",
+   "seq": 11,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev12",
+   "seq": 12,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "bcf00ec6435d462f50431fd60e5a8f4283a62ad9a90571a058b32802ed3ff264",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.factory,\n        self.takes_self,\n    ) == (\n        other.factory,\n        other.takes_self,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev13",
+   "seq": 13,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev14",
+   "seq": 14,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3a17801af79099835507af9d56d8a69c2d87692ed70fbc3ac546c42fa0c72b6d",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -7656828178117586004,\n                self.factory,\n                self.takes_self,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev15",
+   "seq": 15,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev16",
+   "seq": 16,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "017407e6c7f3ed55fc77d21fbc8ea20d66f9c795bb5904488688a90525d6c277",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(_validators={self._validators!r})'\n  finally:\n    already_repring.remove(id(self))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev17",
+   "seq": 17,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev18",
+   "seq": 18,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "2020e5f46e9739eb1fd18b05f00b60a071aa0eeebf347913cf00e715c5cbd4e1",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self._validators,\n    ) == (\n        other._validators,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev19",
+   "seq": 19,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev20",
+   "seq": 20,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "882b69c321b5676e19751289b241ac530dccf9d17a97e815f4198ae680d89625",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                5683242079785927111,\n                self._validators,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev21",
+   "seq": 21,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev22",
+   "seq": 22,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9bf9ffd7101aac425a902cfd11633f709d96592202caf2f8fc94df727d8d0b9a",
+    "decoded_snippet": "def __init__(self, validators):\n    self._validators = validators\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev23",
+   "seq": 23,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev24",
+   "seq": 24,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "4631f253ca7c6bf16dc5c3ef2775fef43ba813c8ff550799f42a5b7e7b21747e",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.type,\n    ) == (\n        other.type,\n    )",
+    "source_kind": "compile",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev25",
+   "seq": 25,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev26",
+   "seq": 26,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "af5bae0efc391c20d056e72f732ff557e6f44eb50204cbd9649e78b8f7c29d0c",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                1930663987414321970,\n                self.type,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev27",
+   "seq": 27,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev28",
+   "seq": 28,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3efdeb7faf9096d6cba346c62de32ca97283fbc0e7c7a8f84f0c4204d060a5d2",
+    "decoded_snippet": "def __init__(self, type):\n    self.type = type\n",
+    "source_kind": "compile",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev29",
+   "seq": 29,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev30",
+   "seq": 30,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "ce7131d040367fd11f7c326906e541e9a17f8efb2d21e4b00a5361e75bc22695",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.pattern,\n        self.match_func,\n    ) == (\n        other.pattern,\n        other.match_func,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev31",
+   "seq": 31,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev32",
+   "seq": 32,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "10fd4242731b7ce455c7027782d30982bff503d99071f8c7f1c5a511c47bcd91",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                7645024732219191416,\n                self.pattern,\n                self.match_func,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev33",
+   "seq": 33,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev34",
+   "seq": 34,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c533074bec14acb10ffc76470a177c959cc42bd805d3b658e2d2fc69b2875dc2",
+    "decoded_snippet": "def __init__(self, pattern, match_func):\n    _setattr = _cached_setattr_get(self)\n    _setattr('pattern', pattern)\n    _setattr('match_func', match_func)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev35",
+   "seq": 35,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev36",
+   "seq": 36,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "23e151028688fd0339d862755509e6ef7fb7dac47764ce5ee27ae4b2e6256834",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.interface,\n    ) == (\n        other.interface,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev37",
+   "seq": 37,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev38",
+   "seq": 38,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "8469ce945c6dda8cd9610f5c298a12c48c042d65eaee6031d9cdaa6af036d747",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                3542974726663606093,\n                self.interface,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev39",
+   "seq": 39,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev40",
+   "seq": 40,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "69339cfd24438b7910ed1588c6784a575061e4ebf21e1497ec15f3d9c74b374a",
+    "decoded_snippet": "def __init__(self, interface):\n    self.interface = interface\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev41",
+   "seq": 41,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev42",
+   "seq": 42,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a392873e8ce2889634f6a3aef132ad844d5705625c3fe2797aeb3b4ce049f7c1",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.validator,\n    ) == (\n        other.validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev43",
+   "seq": 43,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev44",
+   "seq": 44,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "578fe4c74789de1c2ed610c16c3fd4561a3c2b9f2b3bd80811967f75e342bf3f",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                7207969981529076118,\n                self.validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev45",
+   "seq": 45,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev46",
+   "seq": 46,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "98d677153650089ad5c0d0e25cf0962403b4ce2bb9541decc4698246633b0258",
+    "decoded_snippet": "def __init__(self, validator):\n    self.validator = validator\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev47",
+   "seq": 47,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev48",
+   "seq": 48,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9513384a50af6f69c398bafea93143af261607ba6cc4178953813089df335236",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.options,\n    ) == (\n        other.options,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev49",
+   "seq": 49,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev50",
+   "seq": 50,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "1543610f24b0e6ae3855e432ffc7aed825f422b64d7665d35d98b5b975024c05",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                306342018227140523,\n                self.options,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev51",
+   "seq": 51,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev52",
+   "seq": 52,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3f2af37f9e4e4910b1ba85c0ab773671de97be3adf6a428a86ccdd2baef7c09b",
+    "decoded_snippet": "def __init__(self, options):\n    self.options = options\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev53",
+   "seq": 53,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev54",
+   "seq": 54,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6ca494b3f0cfebd3b378380b5ff6438e5cb7e1927d4924069f652b3228ed2c8a",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return True",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev55",
+   "seq": 55,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev56",
+   "seq": 56,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "7519fb4e96d35a14325b8a42de283c189d278a288c4195e5b07f9db1196c2df3",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -2045001873320470157,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev57",
+   "seq": 57,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev58",
+   "seq": 58,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3a43be58eefa70fa74b40683552930712fd49aa7d2a0410aafebae1a2274bd0e",
+    "decoded_snippet": "def __init__(self, ):\n    pass\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev59",
+   "seq": 59,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev60",
+   "seq": 60,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a006992b17b36c74b6b54496456b3ac05bfc401e60af2a299502e11271a90fe2",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.member_validator,\n        self.iterable_validator,\n    ) == (\n        other.member_validator,\n        other.iterable_validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev61",
+   "seq": 61,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._DeepIterable>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev62",
+   "seq": 62,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "bf5b6752173cbe56b26341020c3f0d7bb49daf7f8d1a04674d3e6a6ab0a811a4",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -5370507727418906653,\n                self.member_validator,\n                self.iterable_validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev63",
+   "seq": 63,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._DeepIterable>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev64",
+   "seq": 64,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "481d9cfbf86fcb73cf5218f98ddf5a080feee4f29bee173e7bf35b8e7078f492",
+    "decoded_snippet": "def __init__(self, member_validator, iterable_validator=attr_dict['iterable_validator'].default):\n    self.member_validator = member_validator\n    self.iterable_validator = iterable_validator\n    if _config._run_validators is True:\n        __attr_validator_member_validator(self, __attr_member_validator, self.member_validator)\n        __attr_validator_iterable_validator(self, __attr_iterable_validator, self.iterable_validator)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev65",
+   "seq": 65,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._DeepIterable>",
+    "decoded_snippet": "iterable_validator"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev66",
+   "seq": 66,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "fc2303357e32b4ee81237834f8ba16b84f4488785a7904da33a8f4e725804cf3",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.key_validator,\n        self.value_validator,\n        self.mapping_validator,\n    ) == (\n        other.key_validator,\n        other.value_validator,\n        other.mapping_validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev67",
+   "seq": 67,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._DeepMapping>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev68",
+   "seq": 68,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "d1a89930f45e66a499aba9cd26dde364246f4e343c63619eb7392d54ee5343b6",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                6553555247192002895,\n                self.key_validator,\n                self.value_validator,\n                self.mapping_validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev69",
+   "seq": 69,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._DeepMapping>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev70",
+   "seq": 70,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "467a821393087e772db27cbb455c39487b8ea46b2849ec77276d232e9acb747e",
+    "decoded_snippet": "def __init__(self, key_validator, value_validator, mapping_validator=attr_dict['mapping_validator'].default):\n    self.key_validator = key_validator\n    self.value_validator = value_validator\n    self.mapping_validator = mapping_validator\n    if _config._run_validators is True:\n        __attr_validator_key_validator(self, __attr_key_validator, self.key_validator)\n        __attr_validator_value_validator(self, __attr_value_validator, self.value_validator)\n        __attr_validator_mapping_validato",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev71",
+   "seq": 71,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._DeepMapping>",
+    "decoded_snippet": "mapping_validator"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev72",
+   "seq": 72,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f2620fc571f76ae1fef4a5c26c82fd8ba9b194bb063a794725e5adba85aa7cc3",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.bound,\n        self.compare_op,\n        self.compare_func,\n    ) == (\n        other.bound,\n        other.compare_op,\n        other.compare_func,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev73",
+   "seq": 73,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev74",
+   "seq": 74,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f6bb7de85cb046facb8fbc873b2f82d5f88ca1e72f6a12b6961b7c8b2087fd05",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -385226939215447470,\n                self.bound,\n                self.compare_op,\n                self.compare_func,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev75",
+   "seq": 75,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev76",
+   "seq": 76,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "91d59dbd0bde1acd973a9526ac2cfd625c0c8fbe06796e051d04f162527e2f49",
+    "decoded_snippet": "def __init__(self, bound, compare_op, compare_func):\n    _setattr = _cached_setattr_get(self)\n    _setattr('bound', bound)\n    _setattr('compare_op', compare_op)\n    _setattr('compare_func', compare_func)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev77",
+   "seq": 77,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev78",
+   "seq": 78,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c9a42fd25dac68b8642eefaebe81bdb80aaa54efb3cd0c1eedecf1264deae455",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.max_length,\n    ) == (\n        other.max_length,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev79",
+   "seq": 79,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev80",
+   "seq": 80,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "7276b30aa5116b68b251d55f7d5f86a9abd0ffea228af3980f6cfb7a194ba685",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -6633954317480662661,\n                self.max_length,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev81",
+   "seq": 81,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev82",
+   "seq": 82,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f7ec29c19340aac024282cd8869adf4c8a3ffa5296033db3510506f9e27a71d9",
+    "decoded_snippet": "def __init__(self, max_length):\n    _setattr = _cached_setattr_get(self)\n    _setattr('max_length', max_length)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev83",
+   "seq": 83,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev84",
+   "seq": 84,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "645ccb36ea386c822cd551e94e64e8d6b1851f25bdc39beb72f77b846e0f860b",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.min_length,\n    ) == (\n        other.min_length,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev85",
+   "seq": 85,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev86",
+   "seq": 86,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "62ec8dc69c2902b8b797cf37e3b50fa8e93ad901801bc5728c23b047d49b9c57",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                5741092570631251378,\n                self.min_length,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev87",
+   "seq": 87,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev88",
+   "seq": 88,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6f51e5153f5e9a7277f1d4ce2d13958f2fc8c6c283acb204d7f00c21b0492b45",
+    "decoded_snippet": "def __init__(self, min_length):\n    _setattr = _cached_setattr_get(self)\n    _setattr('min_length', min_length)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev89",
+   "seq": 89,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev90",
+   "seq": 91,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev91",
+   "seq": 92,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "62c7e6e91f644b2d002580ceaa60d17a5ad17f4da4b16597412ed78259c47988",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -3481740286897954958,\n                self.type,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev92",
+   "seq": 93,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev93",
+   "seq": 95,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev94",
+   "seq": 96,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "4a4908c7613d0d008c32bf14b006c8fafb6fdb3d8386fe3929be1a566ad54230",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.validator,\n        self.msg,\n        self.exc_types,\n    ) == (\n        other.validator,\n        other.msg,\n        other.exc_types,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev95",
+   "seq": 97,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev96",
+   "seq": 98,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "54accfba3ba9a149a9fc525bf0b244a680368be8a62f06cc54fabc82d906303a",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                446515120085761699,\n                self.validator,\n                self.msg,\n                self.exc_types,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev97",
+   "seq": 99,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev98",
+   "seq": 100,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "791df02aaf5eb58975c8ff4c9d5c74e2759161f6f8f36f2f8bcf8ec586de7095",
+    "decoded_snippet": "def __init__(self, validator, msg, exc_types):\n    self.validator = validator\n    self.msg = __attr_converter_msg(msg)\n    self.exc_types = exc_types\n    if _config._run_validators is True:\n        __attr_validator_exc_types(self, __attr_exc_types, self.exc_types)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev99",
+   "seq": 101,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev100",
+   "seq": 102,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "8e100c14983693c9d8b1b961717257a188bdac57acd8205151fe9588a853a7ef",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(year={self.year!r}, minor={self.minor!r}, micro={self.micro!r}, releaselevel={self.releaselevel!r})'\n  finally:\n    a",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev101",
+   "seq": 103,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._version_info.VersionInfo>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev102",
+   "seq": 104,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a34cb6cdc70a6ea42e78b508d0dba6db20cbc657effd3baf04064ffa1dc0f5a9",
+    "decoded_snippet": "def __init__(self, year, minor, micro, releaselevel):\n    _setattr = _cached_setattr_get(self)\n    _setattr('year', year)\n    _setattr('minor', minor)\n    _setattr('micro', micro)\n    _setattr('releaselevel', releaselevel)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev103",
+   "seq": 105,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr._version_info.VersionInfo>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev104",
+   "seq": 106,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev105",
+   "seq": 107,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "dev",
+   "variant": "clock+30d",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev106",
+   "seq": 108,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "59092b5b3846cb446a74b908be01130ae3f735039834f2b7cb703afdc76938bb",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(name={self.name!r}, default={self.default!r}, validator={self.validator!r}, repr={self.repr!r}, eq={self.eq!r}, eq_ke",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev107",
+   "seq": 109,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev108",
+   "seq": 110,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "038b458dbb4f3656b06d905f58ef189866225745617d0de72606cb089576741b",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.name,\n        self.default,\n        self.validator,\n        self.repr,\n        self.eq,\n        self.eq_key,\n        self.order,\n        self.order_key,\n        self.hash,\n        self.init,\n        self.metadata,\n        self.type,\n        self.converter,\n        self.kw_only,\n        self.on_setattr,\n        self.alias,\n    ) == (\n        other.name,\n        other.def",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev109",
+   "seq": 111,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev110",
+   "seq": 112,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "bc18658e0534f20f386a1557d71353dd6e1392e3aca3b179c39457228424a574",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                1833947997287213414,\n                self.name,\n                self.default,\n                self.validator,\n                self.repr,\n                self.eq,\n                self.eq_key,\n                self.order,\n                self.order_key,\n                self.hash,\n                self.init,\n                self.type,\n                self.converter,\n                self.kw_only,\n                self.on_setattr,\n               ",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev111",
+   "seq": 113,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make.Attribute>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev112",
+   "seq": 114,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "1e70decc93d8aa151afe330ca1f4615a01ed0a5069304683f97a55378c29994a",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(counter={self.counter!r}, _default={self._default!r}, repr={self.repr!r}, eq={self.eq!r}, order={self.order!r}, hash=",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev113",
+   "seq": 115,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make._CountingAttr>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev114",
+   "seq": 116,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f10dcf5f352e9c9eb76dbae8f2a361595051ffb4e47768b3745eae1a2e4cd72c",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.counter,\n        self._default,\n        self.repr,\n        self.eq,\n        self.order,\n        self.hash,\n        self.init,\n        self.on_setattr,\n        self.alias,\n        self.metadata,\n    ) == (\n        other.counter,\n        other._default,\n        other.repr,\n        other.eq,\n        other.order,\n        other.hash,\n        other.init,\n        other.on_seta",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev115",
+   "seq": 117,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make._CountingAttr>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev116",
+   "seq": 118,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "138eb9b4147140b0bd9a5e040ae66cd79906f05156f96445c7e446c0e9cef3f6",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(factory={self.factory!r}, takes_self={self.takes_self!r})'\n  finally:\n    already_repring.remove(id(self))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev117",
+   "seq": 119,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev118",
+   "seq": 120,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "bcf00ec6435d462f50431fd60e5a8f4283a62ad9a90571a058b32802ed3ff264",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.factory,\n        self.takes_self,\n    ) == (\n        other.factory,\n        other.takes_self,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev119",
+   "seq": 121,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev120",
+   "seq": 122,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "bc3bd7d98e3f09c8d4761121c9387baad11aa2c0f483dc90b7026c046521f4df",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                7676952385497349164,\n                self.factory,\n                self.takes_self,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev121",
+   "seq": 123,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make.Factory>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev122",
+   "seq": 124,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "017407e6c7f3ed55fc77d21fbc8ea20d66f9c795bb5904488688a90525d6c277",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(_validators={self._validators!r})'\n  finally:\n    already_repring.remove(id(self))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev123",
+   "seq": 125,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev124",
+   "seq": 126,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "2020e5f46e9739eb1fd18b05f00b60a071aa0eeebf347913cf00e715c5cbd4e1",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self._validators,\n    ) == (\n        other._validators,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev125",
+   "seq": 127,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev126",
+   "seq": 128,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "d1c87957a156e0145d58774696f2e8e80b1b9d9380890499819e99dfbd22db2e",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -1672822321887547878,\n                self._validators,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev127",
+   "seq": 129,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev128",
+   "seq": 130,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9bf9ffd7101aac425a902cfd11633f709d96592202caf2f8fc94df727d8d0b9a",
+    "decoded_snippet": "def __init__(self, validators):\n    self._validators = validators\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev129",
+   "seq": 131,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr._make._AndValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev130",
+   "seq": 132,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "4631f253ca7c6bf16dc5c3ef2775fef43ba813c8ff550799f42a5b7e7b21747e",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.type,\n    ) == (\n        other.type,\n    )",
+    "source_kind": "compile",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev131",
+   "seq": 133,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev132",
+   "seq": 134,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c48a2d2f6ef0bd9d4bef5282bb95863bd027e9db298292b9e9fef66cf4c205c9",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                2735502350846705199,\n                self.type,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev133",
+   "seq": 135,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev134",
+   "seq": 136,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3efdeb7faf9096d6cba346c62de32ca97283fbc0e7c7a8f84f0c4204d060a5d2",
+    "decoded_snippet": "def __init__(self, type):\n    self.type = type\n",
+    "source_kind": "compile",
+    "count": 2
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   },
+   "count": 2
+  },
+  {
+   "id": "ev135",
+   "seq": 137,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._InstanceOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev136",
+   "seq": 138,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "ce7131d040367fd11f7c326906e541e9a17f8efb2d21e4b00a5361e75bc22695",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.pattern,\n        self.match_func,\n    ) == (\n        other.pattern,\n        other.match_func,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev137",
+   "seq": 139,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev138",
+   "seq": 140,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6a8367f0b15e216fa7688811f188db74c977aef21228f1494d29b4766c327135",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -3817723158495034428,\n                self.pattern,\n                self.match_func,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev139",
+   "seq": 141,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev140",
+   "seq": 142,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c533074bec14acb10ffc76470a177c959cc42bd805d3b658e2d2fc69b2875dc2",
+    "decoded_snippet": "def __init__(self, pattern, match_func):\n    _setattr = _cached_setattr_get(self)\n    _setattr('pattern', pattern)\n    _setattr('match_func', match_func)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev141",
+   "seq": 143,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MatchesReValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev142",
+   "seq": 144,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "23e151028688fd0339d862755509e6ef7fb7dac47764ce5ee27ae4b2e6256834",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.interface,\n    ) == (\n        other.interface,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev143",
+   "seq": 145,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev144",
+   "seq": 146,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "e73fceb02110a0e5915cedb476a8f7c64a1ada81bee8a3b33b38f1aecb82f3af",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                1873640829893569397,\n                self.interface,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev145",
+   "seq": 147,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev146",
+   "seq": 148,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "69339cfd24438b7910ed1588c6784a575061e4ebf21e1497ec15f3d9c74b374a",
+    "decoded_snippet": "def __init__(self, interface):\n    self.interface = interface\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev147",
+   "seq": 149,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._ProvidesValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev148",
+   "seq": 150,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a392873e8ce2889634f6a3aef132ad844d5705625c3fe2797aeb3b4ce049f7c1",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.validator,\n    ) == (\n        other.validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev149",
+   "seq": 151,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev150",
+   "seq": 152,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "01438d1869ef118c9313c305773be3e3bcd05ced4ad6e54024eb52d10ab4b4d9",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -9042684026729186513,\n                self.validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev151",
+   "seq": 153,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev152",
+   "seq": 154,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "98d677153650089ad5c0d0e25cf0962403b4ce2bb9541decc4698246633b0258",
+    "decoded_snippet": "def __init__(self, validator):\n    self.validator = validator\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev153",
+   "seq": 155,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._OptionalValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev154",
+   "seq": 156,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9513384a50af6f69c398bafea93143af261607ba6cc4178953813089df335236",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.options,\n    ) == (\n        other.options,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev155",
+   "seq": 157,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev156",
+   "seq": 158,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "08e559e653d217a0b241e37dc0dccc0492d1512f2494f4aa66629dc4774bec12",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -4608940039223972848,\n                self.options,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev157",
+   "seq": 159,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev158",
+   "seq": 160,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3f2af37f9e4e4910b1ba85c0ab773671de97be3adf6a428a86ccdd2baef7c09b",
+    "decoded_snippet": "def __init__(self, options):\n    self.options = options\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev159",
+   "seq": 161,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._InValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev160",
+   "seq": 162,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6ca494b3f0cfebd3b378380b5ff6438e5cb7e1927d4924069f652b3228ed2c8a",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return True",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev161",
+   "seq": 163,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev162",
+   "seq": 164,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c8ac532a1a4e368d7bfc4e9dd49f5155877d026d44e9005ed656f223ccc112fe",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                2109925394669260005,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev163",
+   "seq": 165,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev164",
+   "seq": 166,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "3a43be58eefa70fa74b40683552930712fd49aa7d2a0410aafebae1a2274bd0e",
+    "decoded_snippet": "def __init__(self, ):\n    pass\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev165",
+   "seq": 167,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._IsCallableValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev166",
+   "seq": 168,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a006992b17b36c74b6b54496456b3ac05bfc401e60af2a299502e11271a90fe2",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.member_validator,\n        self.iterable_validator,\n    ) == (\n        other.member_validator,\n        other.iterable_validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev167",
+   "seq": 169,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._DeepIterable>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev168",
+   "seq": 170,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "9bff72333aba366d6d9755edf1161e443a6895acfde898dc525f0f548224de29",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                3230466055693894871,\n                self.member_validator,\n                self.iterable_validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev169",
+   "seq": 171,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._DeepIterable>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev170",
+   "seq": 172,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "481d9cfbf86fcb73cf5218f98ddf5a080feee4f29bee173e7bf35b8e7078f492",
+    "decoded_snippet": "def __init__(self, member_validator, iterable_validator=attr_dict['iterable_validator'].default):\n    self.member_validator = member_validator\n    self.iterable_validator = iterable_validator\n    if _config._run_validators is True:\n        __attr_validator_member_validator(self, __attr_member_validator, self.member_validator)\n        __attr_validator_iterable_validator(self, __attr_iterable_validator, self.iterable_validator)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev171",
+   "seq": 173,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._DeepIterable>",
+    "decoded_snippet": "iterable_validator"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev172",
+   "seq": 174,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "fc2303357e32b4ee81237834f8ba16b84f4488785a7904da33a8f4e725804cf3",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.key_validator,\n        self.value_validator,\n        self.mapping_validator,\n    ) == (\n        other.key_validator,\n        other.value_validator,\n        other.mapping_validator,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev173",
+   "seq": 175,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._DeepMapping>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev174",
+   "seq": 176,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "8e691f92fd67c6a72ff29865b2d4e1e9b950cb3416b3f227c0caa87fb75a70ca",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -8841482879313898853,\n                self.key_validator,\n                self.value_validator,\n                self.mapping_validator,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev175",
+   "seq": 177,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._DeepMapping>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev176",
+   "seq": 178,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "467a821393087e772db27cbb455c39487b8ea46b2849ec77276d232e9acb747e",
+    "decoded_snippet": "def __init__(self, key_validator, value_validator, mapping_validator=attr_dict['mapping_validator'].default):\n    self.key_validator = key_validator\n    self.value_validator = value_validator\n    self.mapping_validator = mapping_validator\n    if _config._run_validators is True:\n        __attr_validator_key_validator(self, __attr_key_validator, self.key_validator)\n        __attr_validator_value_validator(self, __attr_value_validator, self.value_validator)\n        __attr_validator_mapping_validato",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev177",
+   "seq": 179,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._DeepMapping>",
+    "decoded_snippet": "mapping_validator"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev178",
+   "seq": 180,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f2620fc571f76ae1fef4a5c26c82fd8ba9b194bb063a794725e5adba85aa7cc3",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.bound,\n        self.compare_op,\n        self.compare_func,\n    ) == (\n        other.bound,\n        other.compare_op,\n        other.compare_func,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev179",
+   "seq": 181,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev180",
+   "seq": 182,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "eef869a5d889434d7fb68c8c214bddc2c3b838e934d357d339acbc46693bc90c",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -3862564129825420343,\n                self.bound,\n                self.compare_op,\n                self.compare_func,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev181",
+   "seq": 183,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev182",
+   "seq": 184,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "91d59dbd0bde1acd973a9526ac2cfd625c0c8fbe06796e051d04f162527e2f49",
+    "decoded_snippet": "def __init__(self, bound, compare_op, compare_func):\n    _setattr = _cached_setattr_get(self)\n    _setattr('bound', bound)\n    _setattr('compare_op', compare_op)\n    _setattr('compare_func', compare_func)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev183",
+   "seq": 185,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._NumberValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev184",
+   "seq": 186,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "c9a42fd25dac68b8642eefaebe81bdb80aaa54efb3cd0c1eedecf1264deae455",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.max_length,\n    ) == (\n        other.max_length,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev185",
+   "seq": 187,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev186",
+   "seq": 188,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "d2f63130a90d4f918c374613fca265f35436d215fea88f39c9b4c1a409c90b62",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                9080119042766120242,\n                self.max_length,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev187",
+   "seq": 189,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev188",
+   "seq": 190,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "f7ec29c19340aac024282cd8869adf4c8a3ffa5296033db3510506f9e27a71d9",
+    "decoded_snippet": "def __init__(self, max_length):\n    _setattr = _cached_setattr_get(self)\n    _setattr('max_length', max_length)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev189",
+   "seq": 191,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MaxLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev190",
+   "seq": 192,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "645ccb36ea386c822cd551e94e64e8d6b1851f25bdc39beb72f77b846e0f860b",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.min_length,\n    ) == (\n        other.min_length,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev191",
+   "seq": 193,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev192",
+   "seq": 194,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6802dcca52a3153ad8f53359d1e6c939eba1dc82539481d5b377b7f0e40c0955",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -5003217792910259904,\n                self.min_length,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev193",
+   "seq": 195,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev194",
+   "seq": 196,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "6f51e5153f5e9a7277f1d4ce2d13958f2fc8c6c283acb204d7f00c21b0492b45",
+    "decoded_snippet": "def __init__(self, min_length):\n    _setattr = _cached_setattr_get(self)\n    _setattr('min_length', min_length)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev195",
+   "seq": 197,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._MinLengthValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev196",
+   "seq": 199,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev197",
+   "seq": 200,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "415e08fb58895606784c3c3e8c34aa432ec1d72373aa0525c972e0777e7687bb",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                1263967737472196221,\n                self.type,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev198",
+   "seq": 201,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev199",
+   "seq": 203,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._SubclassOfValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev200",
+   "seq": 204,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "4a4908c7613d0d008c32bf14b006c8fafb6fdb3d8386fe3929be1a566ad54230",
+    "decoded_snippet": "def __eq__(self, other):\n    if other.__class__ is not self.__class__:\n        return NotImplemented\n    return  (\n        self.validator,\n        self.msg,\n        self.exc_types,\n    ) == (\n        other.validator,\n        other.msg,\n        other.exc_types,\n    )",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev201",
+   "seq": 205,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated eq attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev202",
+   "seq": 206,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "49ddef9136732ab0f85059dcdcfcde32249488d99db42e496a303c7755ae0f31",
+    "decoded_snippet": "def __hash__(self):\n        return hash((\n                -8498168990388317387,\n                self.validator,\n                self.msg,\n                self.exc_types,\n            ))",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev203",
+   "seq": 207,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated hash attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev204",
+   "seq": 208,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "791df02aaf5eb58975c8ff4c9d5c74e2759161f6f8f36f2f8bcf8ec586de7095",
+    "decoded_snippet": "def __init__(self, validator, msg, exc_types):\n    self.validator = validator\n    self.msg = __attr_converter_msg(msg)\n    self.exc_types = exc_types\n    if _config._run_validators is True:\n        __attr_validator_exc_types(self, __attr_exc_types, self.exc_types)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev205",
+   "seq": 209,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr.validators._NotValidator>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev206",
+   "seq": 210,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "8e100c14983693c9d8b1b961717257a188bdac57acd8205151fe9588a853a7ef",
+    "decoded_snippet": "def __repr__(self):\n  try:\n    already_repring = _compat.repr_context.already_repring\n  except AttributeError:\n    already_repring = {id(self),}\n    _compat.repr_context.already_repring = already_repring\n  else:\n    if id(self) in already_repring:\n      return '...'\n    else:\n      already_repring.add(id(self))\n  try:\n    return f'{self.__class__.__qualname__.rsplit(\">.\", 1)[-1]}(year={self.year!r}, minor={self.minor!r}, micro={self.micro!r}, releaselevel={self.releaselevel!r})'\n  finally:\n    a",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev207",
+   "seq": 211,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated repr attr._version_info.VersionInfo>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev208",
+   "seq": 212,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "code_sha256": "a34cb6cdc70a6ea42e78b508d0dba6db20cbc657effd3baf04064ffa1dc0f5a9",
+    "decoded_snippet": "def __init__(self, year, minor, micro, releaselevel):\n    _setattr = _cached_setattr_get(self)\n    _setattr('year', year)\n    _setattr('minor', minor)\n    _setattr('micro', micro)\n    _setattr('releaselevel', releaselevel)\n",
+    "source_kind": "compile"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 317,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev209",
+   "seq": 213,
+   "phase": "install",
+   "trigger": "install",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "dynamic_exec",
+   "detail": {
+    "co_name": "<module>",
+    "co_filename": "<attrs generated init attr._version_info.VersionInfo>",
+    "decoded_snippet": ""
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/usr/lib/python3/dist-packages/attr/_make.py",
+    "line": 318,
+    "layer": "audit"
+   }
+  },
+  {
+   "id": "ev210",
+   "seq": 214,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "default",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  },
+  {
+   "id": "ev211",
+   "seq": 215,
+   "phase": "call",
+   "trigger": "call_all",
+   "profile": "ci",
+   "variant": "clock+30d",
+   "capability": "sandbox_probe",
+   "detail": {
+    "name": "NUMBER_OF_PROCESSORS",
+    "via": "cpu_count"
+   },
+   "canary_hit": false,
+   "canary_ids": [],
+   "outcome": "succeeded",
+   "attributed_to": "pkg",
+   "evidence": {
+    "file": "/w/installed/sys_monitor/__init__.py",
+    "line": 10,
+    "layer": "env"
+   }
+  }
+ ],
+ "static_signals": [],
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 1,
+  "callables_exercised": 1,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ],
+  "whitelisted_or_dropped_events": 4
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYbbc3592ddab9"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS03e03558ccd9"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRCd71b564077ec"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS42c080dfa8d2"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIGc6c34c59d054"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVa21e86b04ab5"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVfb19d9afb560"
+  }
+ ],
+ "capability_summary": {
+  "dynamic_exec": {
+   "phases": [
+    "install"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": true,
+   "count": 208,
+   "canary_hit": false
+  },
+  "sandbox_probe": {
+   "phases": [
+    "call"
+   ],
+   "profiles": [
+    "ci",
+    "dev"
+   ],
+   "conditional": false,
+   "count": 4,
+   "canary_hit": false
+  }
+ }
+}

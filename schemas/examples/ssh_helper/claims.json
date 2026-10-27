@@ -1,0 +1,58 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "ssh-helper",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "75dcfa135d686e92deb123ab7fdb038b32603393c8313178d9432f5faabc2052",
+  "path": "bench/packages/clean/ssh_helper"
+ },
+ "intents": [
+  {
+   "intent": "config_loader",
+   "confidence": 0.7,
+   "quote": "Reads local ssh configuration to manage remote hosts and ssh keys.",
+   "source": "readme"
+  },
+  {
+   "intent": "ssh_tool",
+   "confidence": 0.7,
+   "quote": "An ssh client helper and paramiko-like wrapper for ssh keys and server connections.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "env_secrets",
+   "basis": "intent_prior",
+   "quote": "Reads local ssh configuration to manage remote hosts and ssh keys.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  },
+  {
+   "capability": "fs_read_sensitive",
+   "basis": "intent_prior",
+   "quote": "An ssh client helper and paramiko-like wrapper for ssh keys and server connections.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "An ssh client helper and paramiko-like wrapper for ssh keys and server connections.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

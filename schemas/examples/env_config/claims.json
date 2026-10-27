@@ -1,0 +1,38 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "env-config",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "a9d0e92c9e46bdc8ea9bd4036cbded171736a3da2411446751f7e590036a7777",
+  "path": "bench/packages/clean/env_config"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "A lightweight config loader and environment variable configuration parser.",
+   "source": "readme"
+  },
+  {
+   "intent": "config_loader",
+   "confidence": 0.7,
+   "quote": "A lightweight config loader and environment variable configuration parser.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "env_secrets",
+   "basis": "intent_prior",
+   "quote": "A lightweight config loader and environment variable configuration parser.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

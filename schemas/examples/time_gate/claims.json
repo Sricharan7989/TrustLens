@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "time-gate",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "1a125233948def2bdef9fc5b5698acf50938afbc195c17dd63fb2584c3e99d06",
+  "path": "bench/packages/malicious/time_gate"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "Date and timestamp formatting and timezone conversion utilities.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

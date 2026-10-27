@@ -1,0 +1,59 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "file-fetcher",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "0de801be009f2a3af34700f2aff4bb14deca965f56d9b3944c3cf995e008d811",
+  "path": "bench/packages/clean/file_fetcher"
+ },
+ "intents": [
+  {
+   "intent": "http_client",
+   "confidence": 0.7,
+   "quote": "A simple downloader and http client that downloads files from web servers and caches them locally.",
+   "source": "readme"
+  },
+  {
+   "intent": "downloader",
+   "confidence": 0.7,
+   "quote": "A simple downloader and http client that downloads files from web servers and caches them locally.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "A simple downloader and http client that downloads files from web servers and caches them locally.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "network",
+   "basis": "intent_prior",
+   "quote": "A simple downloader and http client that downloads files from web servers and caches them locally.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "fs_write_outside_pkg",
+   "basis": "intent_prior",
+   "quote": "A simple downloader and http client that downloads files from web servers and caches them locally.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

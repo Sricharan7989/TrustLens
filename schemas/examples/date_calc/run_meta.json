@@ -1,0 +1,125 @@
+{
+ "run": {
+  "sandbox": "bwrap",
+  "network": "sinkhole",
+  "canaries": [
+   "ssh_key",
+   "aws_creds",
+   "npmrc",
+   "gcloud_creds",
+   "docker_config",
+   "aws_secret_env",
+   "github_token_env"
+  ],
+  "phases": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles": [
+   "dev",
+   "ci"
+  ],
+  "variants": [
+   "default",
+   "clock+30d"
+  ],
+  "started_at": "2026-10-27T11:57:12.874054+00:00",
+  "duration_s": 4.19,
+  "stub": false,
+  "tool_versions": {
+   "python": "Python 3.12.3",
+   "bwrap": "bubblewrap 0.9.0",
+   "strace": "strace -- version 6.8",
+   "libfaketime": "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
+  }
+ },
+ "coverage": {
+  "phases_run": [
+   "install",
+   "startup",
+   "import",
+   "call"
+  ],
+  "profiles_run": [
+   "dev",
+   "ci"
+  ],
+  "variants_run": [
+   "default",
+   "clock+30d"
+  ],
+  "triggers_run": [
+   "call_all",
+   "fresh_startup",
+   "import_all",
+   "install"
+  ],
+  "install_completed": true,
+  "install_note": null,
+  "network": "sinkhole",
+  "callables_total": 2,
+  "callables_exercised": 2,
+  "native_skipped": [],
+  "strace_layer": true,
+  "not_observed": [
+   "no console-script entry points to run"
+  ]
+ },
+ "canaries": [
+  {
+   "id": "ssh_key",
+   "kind": "file",
+   "where": ".ssh/id_rsa",
+   "token": "TLCANARYSSHKEYf2cc58e80808"
+  },
+  {
+   "id": "aws_creds",
+   "kind": "file",
+   "where": ".aws/credentials",
+   "token": "TLCANARYAWSCREDS928a569a1646"
+  },
+  {
+   "id": "npmrc",
+   "kind": "file",
+   "where": ".npmrc",
+   "token": "TLCANARYNPMRC6ae1bb066994"
+  },
+  {
+   "id": "gcloud_creds",
+   "kind": "file",
+   "where": ".config/gcloud/application_default_credentials.json",
+   "token": "TLCANARYGCLOUDCREDS9054d193b4d1"
+  },
+  {
+   "id": "docker_config",
+   "kind": "file",
+   "where": ".docker/config.json",
+   "token": "TLCANARYDOCKERCONFIG774bb0c48707"
+  },
+  {
+   "id": "aws_secret_env",
+   "kind": "env",
+   "where": "AWS_SECRET_ACCESS_KEY",
+   "token": "TLCANARYAWSSECRETENVbacfae1c1181"
+  },
+  {
+   "id": "github_token_env",
+   "kind": "env",
+   "where": "GITHUB_TOKEN",
+   "token": "TLCANARYGITHUBTOKENENVb1d170902867"
+  }
+ ],
+ "files_added": [
+  "date_calc-0.1.dist-info/INSTALLER",
+  "date_calc-0.1.dist-info/METADATA",
+  "date_calc-0.1.dist-info/RECORD",
+  "date_calc-0.1.dist-info/REQUESTED",
+  "date_calc-0.1.dist-info/WHEEL",
+  "date_calc-0.1.dist-info/direct_url.json",
+  "date_calc-0.1.dist-info/top_level.txt",
+  "date_calc/__init__.py",
+  "date_calc/__pycache__/__init__.cpython-312.pyc"
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "native-shim",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "ed141c24587b9258dbc549ee29d2832297c3e2aba9cffe08abd0977d3ad3c082",
+  "path": "bench/packages/clean/native_shim"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "A high performance ffi wrapper around platform math routines.",
+   "source": "readme"
+  },
+  {
+   "intent": "cli_tool",
+   "confidence": 0.7,
+   "quote": "A high performance ffi wrapper around platform math routines.",
+   "source": "readme"
+  },
+  {
+   "intent": "native_ext",
+   "confidence": 0.7,
+   "quote": "Provides bindings for native libraries and c extension standard functions.",
+   "source": "readme"
+  }
+ ],
+ "claims": [
+  {
+   "capability": "subprocess",
+   "basis": "intent_prior",
+   "quote": "A high performance ffi wrapper around platform math routines.",
+   "source": "readme",
+   "phases_allowed": [
+    "call",
+    "cli"
+   ]
+  },
+  {
+   "capability": "native_code",
+   "basis": "intent_prior",
+   "quote": "Provides bindings for native libraries and c extension standard functions.",
+   "source": "readme",
+   "phases_allowed": [
+    "import",
+    "call"
+   ]
+  }
+ ],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}

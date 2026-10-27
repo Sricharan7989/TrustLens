@@ -1,0 +1,21 @@
+{
+ "schema_version": "1.0",
+ "package": {
+  "name": "color-text",
+  "version": "0.1",
+  "ecosystem": "pypi",
+  "sha256": "4c629d532692f581bed0a0c1abdd5f23dfb8a2cae730030db697e8bec28183dd",
+  "path": "bench/packages/clean/color_text"
+ },
+ "intents": [
+  {
+   "intent": "string_util",
+   "confidence": 0.7,
+   "quote": "An ANSI color text formatter and terminal string styling library.",
+   "source": "readme"
+  }
+ ],
+ "claims": [],
+ "unknown_intent": false,
+ "declared_entry_points": []
+}
