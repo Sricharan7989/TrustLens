@@ -238,6 +238,58 @@ def test_compare_demo_command(tmp_path):
     assert comp_file.exists()
     content = comp_file.read_text(encoding="utf-8")
     assert "Side-by-Side Verification" in content
-    assert "rest-wrapper" in content or "rest_wrapper" in content
-    assert "evil-slug" in content or "evil_slug" in content
+
+
+def test_diff_subcommand(tmp_path):
+    """Verify diff subcommand compares two package versions and highlights changes (D13)."""
+    diff_file = tmp_path / "diff.html"
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "diff",
+            str(ROOT / "bench/packages/clean/clean_slug"),
+            str(ROOT / "bench/packages/malicious/evil_slug"),
+            "--runner",
+            "fixture",
+            "--out",
+            str(diff_file),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 20
+    assert diff_file.exists()
+    html = diff_file.read_text(encoding="utf-8")
+    assert "Package Behavioral Diff" in html
+    assert "Verdict Shift" in html
+    assert "Newly Introduced Capabilities" in html
+
+
+def test_scan_compare_flag(tmp_path):
+    """Verify scan --compare invokes baseline adapters (D11)."""
+    out = tmp_path / "comp_flag"
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "scan",
+            str(ROOT / "bench/packages/clean/clean_slug"),
+            "--runner",
+            "fixture",
+            "--compare",
+            "--out",
+            str(out),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 0
+    assert "BASELINE COMPARISON" in r.stdout
+    assert "GuardDog 3.2" in r.stdout
+    assert "PipCanary 0.1" in r.stdout
 

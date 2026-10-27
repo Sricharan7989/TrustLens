@@ -83,3 +83,49 @@ def test_webui_compare_demo_endpoint(webui_server):
         assert resp.status == 200
         content = resp.read().decode("utf-8")
         assert "Side-by-Side Verification" in content
+
+
+def test_webui_upload_hostile_filename(webui_server):
+    """Safety: archive upload with path traversal or <script> in filename must remain inert."""
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    src_dir = ROOT / "bench/packages/clean/clean_slug"
+    with zipfile.ZipFile(buf, "w") as zf:
+        for f in src_dir.rglob("*"):
+            if f.is_file():
+                zf.write(f, arcname=f.relative_to(src_dir))
+    zip_bytes = buf.getvalue()
+
+    boundary = "----WebKitFormBoundaryTest123"
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="../../<script>alert(1)</script>.whl"\r\n'
+        f"Content-Type: application/zip\r\n\r\n"
+    ).encode("latin1") + zip_bytes + f"\r\n--{boundary}--\r\n".encode("latin1")
+
+    req = urllib.request.Request(
+        f"{webui_server}/api/upload",
+        data=body,
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+        assert "verdict" in data
+        assert "<script>alert(1)" not in data.get("report_html", "")
+
+
+def test_webui_rejects_oversized_payload(webui_server):
+    """Safety: payload exceeding 20 MB must be rejected with 413 Payload Too Large."""
+    req = urllib.request.Request(
+        f"{webui_server}/api/upload",
+        data=b"a",
+        headers={"Content-Type": "application/json", "Content-Length": str(25 * 1024 * 1024)},
+        method="POST",
+    )
+    with pytest.raises(urllib.error.HTTPError) as exc_info:
+        urllib.request.urlopen(req, timeout=10)
+    assert exc_info.value.code == 413

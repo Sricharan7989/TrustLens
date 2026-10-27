@@ -440,7 +440,9 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                         profiles = [p.strip() for p in prof_val.split(",") if p.strip()]
                 elif 'name="file"' in cdisp or part.get_filename():
                     raw_fn = part.get_filename() or "uploaded_package.whl"
-                    filename = Path(raw_fn).name
+                    # Sanitize filename: strip path traversal and characters illegal on Windows/POSIX (<>:"/\|?*)
+                    clean_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', Path(raw_fn).name)
+                    filename = clean_name or "uploaded_package.whl"
                     file_bytes = part.get_payload(decode=True)
 
             if not file_bytes or not filename:
