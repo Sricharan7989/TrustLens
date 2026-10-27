@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from trustlens.cli import scan
-from trustlens.contracts import ROOT
+from trustlens.contracts import OUTPUT_ROOT, ROOT
 from trustlens.report import render_comparison_html
 from trustlens.report.redact import redact_document
 from trustlens.sandbox.env_check import check_env
@@ -374,7 +374,8 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
             env = check_env()
             resp = {
                 "bwrap_ok": bool(env.get("bwrap_ok")),
-                "demo_packages": DEMO_PACKAGES,
+                # Bench demo packages exist only in a repo checkout, not in a pip install.
+                "demo_packages": [d for d in DEMO_PACKAGES if (ROOT / d["path"]).is_dir()],
             }
             data = json.dumps(resp).encode("utf-8")
             self.send_response(HTTPStatus.OK)
@@ -387,8 +388,8 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
         if self.path == "/api/compare-demo":
             clean_path = ROOT / "bench/packages/clean/rest_wrapper"
             mal_path = ROOT / "bench/packages/malicious/evil_slug"
-            out_c = ROOT / "reports/compare_tmp/clean"
-            out_m = ROOT / "reports/compare_tmp/malicious"
+            out_c = OUTPUT_ROOT / "reports/compare_tmp/clean"
+            out_m = OUTPUT_ROOT / "reports/compare_tmp/malicious"
 
             with scan_lock:
                 rc = scan(str(clean_path), str(out_c), runner="fixture", offline=True)
@@ -445,9 +446,11 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": f"Forbidden: path traversal or absolute path '{rel_pkg}'"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            resolved = (ROOT / raw_path).resolve()
+            # Uploads live under OUTPUT_ROOT (the current folder when installed); bench packages under ROOT.
+            base = OUTPUT_ROOT if raw_path.parts[:3] == ("reports", "webui", "uploads") else ROOT
+            resolved = (base / raw_path).resolve()
             bench_root = (ROOT / "bench/packages").resolve()
-            upload_root = (ROOT / "reports/webui/uploads").resolve()
+            upload_root = (OUTPUT_ROOT / "reports/webui/uploads").resolve()
 
             try:
                 resolved.relative_to(bench_root)
@@ -470,7 +473,7 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                 return
 
             profiles = payload.get("profiles", "dev,ci").split(",")
-            out_dir = ROOT / "reports/webui" / resolved.name
+            out_dir = OUTPUT_ROOT / "reports/webui" / resolved.name
             with scan_lock:
                 try:
                     res = scan(str(resolved), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
@@ -534,7 +537,7 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                         )
                         return
                     tmp_file.write_bytes(file_bytes)
-                    out_dir = ROOT / "reports/webui/uploads" / filename
+                    out_dir = OUTPUT_ROOT / "reports/webui/uploads" / filename
 
                     with scan_lock:
                         res = scan(str(tmp_file), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)

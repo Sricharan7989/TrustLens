@@ -19,6 +19,16 @@ make eval                 # 6. PS1-Bench metrics + heatmap vs baselines -> repor
 
 *Note:* On Ubuntu/Debian, ensure `python3-venv` is installed (`sudo apt install python3-venv python3-pip`).
 
+## Install as a package
+```bash
+pip install trustlens-provenance        # once published on PyPI; until then:
+pip install git+https://github.com/Sricharan7989/TrustLens
+trustlens check-env                      # can this machine run the bwrap sandbox?
+trustlens scan ./some_package --runner live --out reports/some_package
+trustlens serve                          # local web UI at http://127.0.0.1:8765/
+```
+The PyPI name is `trustlens-provenance` (`trustlens` is taken by an unrelated project); the command is `trustlens`. The installed package carries the schemas and the calibrated noise whitelist, and writes reports to the current folder. The benchmark (`bench/`), recorded examples and `make` targets are only in a repo checkout. The live sandbox still needs Linux with bubblewrap (or `--runner docker`).
+
 ## Real sandbox (toys only!)
 Run `bash scripts/check_env.sh` then `make demo-live`. Needs `bubblewrap` (`sudo apt install bubblewrap strace`). On Ubuntu 24.04 you may need the unprivileged user namespace workaround that the check script prints.
 

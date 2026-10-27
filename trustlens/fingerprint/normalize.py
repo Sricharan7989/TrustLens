@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from trustlens.contracts import ROOT, iter_jsonl
+from trustlens.contracts import CALIBRATION_WHITELIST, iter_jsonl
 
 SENSITIVE_PATH = re.compile(
     r"(\.ssh/|(?<![A-Za-z0-9])id_rsa|\.aws/|\.npmrc|\.pypirc|\.git-credentials|\.netrc|\.kube/|\.docker/config|\.config/gcloud|\.azure/|"
@@ -531,7 +531,7 @@ def _home(p: str) -> str:
 
 def _load_whitelist() -> list[dict]:
     rules: list[dict] = []
-    for f in (Path(__file__).resolve().parent.parent / "engine" / "noise_whitelist.yaml", ROOT / "bench" / "calibration" / "noise_whitelist.yaml"):
+    for f in (Path(__file__).resolve().parent.parent / "engine" / "noise_whitelist.yaml", CALIBRATION_WHITELIST):
         if f.exists():
             rules += (yaml.safe_load(f.read_text()) or {}).get("rules", [])
     return rules

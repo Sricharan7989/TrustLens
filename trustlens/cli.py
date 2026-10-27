@@ -40,6 +40,11 @@ def _find_package_root(extracted_dir: Path) -> Path:
     if len(subdirs) == 1:
         sd = subdirs[0]
         if (sd / "setup.py").is_file() or (sd / "pyproject.toml").is_file():
+            # Flatten into extracted_dir (its name is what the fixture runner matches on). Skip that when
+            # a child has the top folder's own name (evil_slug/evil_slug/__init__.py): moving it up would
+            # collide with the folder itself, so scan the top folder in place.
+            if any(item.name == sd.name for item in sd.iterdir()):
+                return sd
             for item in list(sd.iterdir()):
                 shutil.move(str(item), str(extracted_dir / item.name))
             sd.rmdir()
@@ -177,6 +182,14 @@ def _get_runner_display(runner_req: str) -> str:
     return runner_req.upper()
 
 
+def _resolve_input(raw: str, root: Path) -> Path:
+    """A path given on the command line: absolute, or relative to the current folder, else to the repo root."""
+    p = Path(raw)
+    if p.is_absolute() or p.exists():
+        return p
+    return root / p
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="trustlens",
@@ -231,8 +244,8 @@ def main(argv=None) -> int:
         from trustlens.contracts import ROOT
         from trustlens.report import render_diff_html
 
-        p1 = ROOT / a.pkg1 if not Path(a.pkg1).is_absolute() else Path(a.pkg1)
-        p2 = ROOT / a.pkg2 if not Path(a.pkg2).is_absolute() else Path(a.pkg2)
+        p1 = _resolve_input(a.pkg1, ROOT)
+        p2 = _resolve_input(a.pkg2, ROOT)
 
         if not p1.exists() or not p2.exists():
             print(f"trustlens: error: one or both paths do not exist ('{a.pkg1}', '{a.pkg2}')", file=sys.stderr)
@@ -261,8 +274,8 @@ def main(argv=None) -> int:
         from trustlens.contracts import ROOT
         from trustlens.report import render_comparison_html
 
-        clean_path = ROOT / a.clean if not Path(a.clean).is_absolute() else Path(a.clean)
-        mal_path = ROOT / a.malicious if not Path(a.malicious).is_absolute() else Path(a.malicious)
+        clean_path = _resolve_input(a.clean, ROOT)
+        mal_path = _resolve_input(a.malicious, ROOT)
 
         out_clean = Path("reports/compare_tmp/clean")
         out_mal = Path("reports/compare_tmp/malicious")
@@ -285,9 +298,7 @@ def main(argv=None) -> int:
 
         from trustlens.contracts import ROOT
 
-        labels_file = Path(a.labels)
-        if not labels_file.is_absolute():
-            labels_file = ROOT / labels_file
+        labels_file = _resolve_input(a.labels, ROOT)
         if not labels_file.exists():
             print(f"trustlens: error: labels file not found: '{a.labels}'", file=sys.stderr)
             return 2
@@ -306,7 +317,7 @@ def main(argv=None) -> int:
             label = pkg_entry.get("label", "unknown")
             expected_verdict = pkg_entry.get("expected_verdict", "UNKNOWN")
             pkg_rel_path = pkg_entry["path"]
-            pkg_full_path = ROOT / pkg_rel_path
+            pkg_full_path = _resolve_input(pkg_rel_path, labels_file.parent.parent if (labels_file.parent.parent / pkg_rel_path).exists() else ROOT)
             out_dir = Path("reports/demo-all") / pid
 
             try:
