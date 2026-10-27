@@ -106,11 +106,11 @@
 ### Slide 10: Limitations & Future Roadmap
 * **Known Limitations (Honest Disclosure):**
   * Dynamic analysis only observes paths that actually execute.
-  * Blocked network means we observe outbound attempts, not server replies.
-  * Staged payloads requiring multi-step server interaction need loopback sinkholing.
-* **Shipped:** Localhost web UI for one-click package drops (`python -m trustlens serve`).
+  * The sandbox network namespace stays closed. We observe outbound attempts. The loopback HTTP sinkhole is implemented on the bwrap runner, so a staged dropper can fetch a marker and run a second stage inside the netns. Audit-layer `net.*` outcomes stay `blocked`. Docker with `--cap-drop ALL` is not expected to bind ports 53/80. See `docs/SANDBOX.md`.
+* **Shipped:**
+  * Localhost web UI for one-click package drops (`python -m trustlens serve`).
+  * Loopback HTTP sinkhole for staged dropper emulation (bwrap live runner).
 * **Roadmap:**
-  * Loopback HTTP sinkhole for staged dropper emulation.
   * Expansion to npm ecosystems.
 
 ---

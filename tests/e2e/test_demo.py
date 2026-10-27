@@ -336,8 +336,10 @@ def test_synthetic_pth_startup_exit_20(tmp_path):
 
 
 def test_hostile_package_name_sanitized(tmp_path):
-    """(e) Package whose setup.py name contains \x1b[31mPWN\x1b[0m and <script>alert(1)</script>:
-    stdout has no \x1b and no '<script>', report.html has escaped script and no TLCANARY.
+    """(e) Package whose setup.py name contains \\x1b[31mPWN\\x1b[0m and <script>alert(1)</script>.
+
+    stdout has no ESC and no '<script>'. report.html keeps the escaped tag.
+    claims.json, verdict.json, fingerprint.json, and report.json drop the tag and the CSI sequence.
     """
     pkg = tmp_path / "hostile_pkg"
     pkg.mkdir()
@@ -358,6 +360,7 @@ def test_hostile_package_name_sanitized(tmp_path):
     # Stdout must have no raw ANSI escapes and no literal '<script>'
     assert "\x1b" not in r.stdout
     assert "<script>" not in r.stdout
+    assert "PWNalert(1)" in r.stdout
 
     # report.html must have the escaped script, no TLCANARY, and no raw ESC/CSI byte
     html_bytes = (out / "report.html").read_bytes()
@@ -366,6 +369,33 @@ def test_hostile_package_name_sanitized(tmp_path):
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "TLCANARY" not in html
     assert b"\x1b" not in html_bytes
+
+    for name in ("claims.json", "verdict.json", "fingerprint.json", "report.json"):
+        body = (out / name).read_text(encoding="utf-8")
+        assert "<script>" not in body, name
+        assert "\\u001b" not in body, name
+        assert "\x1b" not in body, name
+        assert "PWNalert(1)" in body, name
+    validate("claims", json.loads((out / "claims.json").read_text(encoding="utf-8")))
+    validate("verdict", json.loads((out / "verdict.json").read_text(encoding="utf-8")))
+    validate("fingerprint", json.loads((out / "fingerprint.json").read_text(encoding="utf-8")))
+
+
+def test_redact_text_drops_html_tags_after_controls():
+    """strip_controls leaves tags. redact_text drops them afterwards and keeps canary ids."""
+    from trustlens.report.redact import redact_document, redact_text, strip_controls
+
+    raw = "\x1b[31mPWN\x1b[0m<script>alert(1)</script>"
+    stripped = strip_controls(raw)
+    assert stripped == "PWN<script>alert(1)</script>"
+    assert redact_text(raw) == "PWNalert(1)"
+    assert redact_text("ssh_key") == "ssh_key"
+    assert redact_text("<code>ssh_key</code>") == "ssh_key"
+    doc = redact_document({"package": {"name": raw}, "note": "id ssh_key"})
+    assert doc["package"]["name"] == "PWNalert(1)"
+    assert doc["note"] == "id ssh_key"
+    assert "<script>" not in json.dumps(doc)
+    assert "\\u001b" not in json.dumps(doc)
 
 
 def _assert_canary_report_clean(html: str, text: str, sarif: str) -> None:

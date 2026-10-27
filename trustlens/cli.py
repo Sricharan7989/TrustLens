@@ -150,8 +150,9 @@ def scan(
             for kind, obj in (("claims", claims), ("run_meta", run["run_meta"]), ("fingerprint", fp), ("verdict", verdict)):
                 validate(kind, obj)
 
-        (out / "claims.json").write_text(json.dumps(claims, indent=1), encoding="utf-8")
         # Copies only. scan() still returns the engine objects, which stay unredacted.
+        # claims.json uses the same redaction so a CSI sequence is not stored as a unicode escape.
+        (out / "claims.json").write_text(json.dumps(redact_document(claims), indent=1), encoding="utf-8")
         (out / "fingerprint.json").write_text(json.dumps(redact_document(fp), indent=1), encoding="utf-8")
         (out / "verdict.json").write_text(json.dumps(redact_document(verdict), indent=1), encoding="utf-8")
         (out / "report.html").write_text(render_html(verdict, fp, claims), encoding="utf-8")
