@@ -184,3 +184,60 @@ def test_check_env_command():
     assert r.returncode in (0, 2)
     meta = json.loads(r.stdout)
     assert "bwrap_ok" in meta
+
+
+def test_sarif_format_and_artifact(tmp_path):
+    """Verify SARIF 2.1.0 output with --format sarif and report.sarif creation."""
+    out = tmp_path / "sarif_out"
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "scan",
+            str(ROOT / "bench/packages/malicious/evil_slug"),
+            "--runner",
+            "fixture",
+            "--format",
+            "sarif",
+            "--out",
+            str(out),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 20
+    sarif_file = out / "report.sarif"
+    assert sarif_file.exists()
+    data = json.loads(sarif_file.read_text(encoding="utf-8"))
+    assert data["version"] == "2.1.0"
+    assert data["runs"][0]["tool"]["driver"]["name"] == "TrustLens AI"
+    assert len(data["runs"][0]["results"]) >= 1
+
+
+def test_compare_demo_command(tmp_path):
+    """Verify compare-demo subcommand produces valid side-by-side HTML."""
+    comp_file = tmp_path / "comp.html"
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "compare-demo",
+            "--runner",
+            "fixture",
+            "--out",
+            str(comp_file),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 0
+    assert comp_file.exists()
+    content = comp_file.read_text(encoding="utf-8")
+    assert "Side-by-Side Verification" in content
+    assert "rest-wrapper" in content or "rest_wrapper" in content
+    assert "evil-slug" in content or "evil_slug" in content
+

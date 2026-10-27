@@ -111,7 +111,7 @@ def scan(
     from trustlens.claims import extract_claims, read_package_info
     from trustlens.engine import evaluate
     from trustlens.fingerprint import build_fingerprint, collect_static_signals
-    from trustlens.report import render_html, render_json
+    from trustlens.report import render_html, render_json, render_sarif
     from trustlens.sandbox import run_package
 
     p = Path(pkg_path).resolve()
@@ -149,6 +149,7 @@ def scan(
         (out / "verdict.json").write_text(json.dumps(verdict, indent=1), encoding="utf-8")
         (out / "report.html").write_text(render_html(verdict, fp, claims), encoding="utf-8")
         (out / "report.json").write_text(render_json(verdict, fp, claims), encoding="utf-8")
+        (out / "report.sarif").write_text(render_sarif(verdict, fp, claims), encoding="utf-8")
         return {"verdict": verdict, "fingerprint": fp, "claims": claims, "out_dir": str(out), "run_meta": run["run_meta"]}
     finally:
         if temp_dir is not None:
@@ -180,7 +181,7 @@ def main(argv=None) -> int:
     s.add_argument("--runner", default="auto", choices=["auto", "fixture", "live", "docker"], help="Runner mode")
     s.add_argument("--profiles", default="dev,ci", help="Comma-separated environments (e.g. dev,ci)")
     s.add_argument("--out", default=None, help="Output directory for reports and artifacts")
-    s.add_argument("--format", default="text", choices=["text", "json", "html"], help="Output format")
+    s.add_argument("--format", default="text", choices=["text", "json", "html", "sarif"], help="Output format")
     s.add_argument("--offline", action="store_true", default=True, help="Network off (default: True)")
     s.add_argument("--static", action="store_true", help="Add GuardDog static signals if installed (not with --offline)")
 
@@ -190,7 +191,36 @@ def main(argv=None) -> int:
     d.add_argument("--runner", default="fixture", choices=["auto", "fixture", "live", "docker"], help="Runner mode")
     d.add_argument("--labels", default="bench/labels.yaml", help="Path to ground truth labels YAML")
 
+    c = sub.add_parser("compare-demo", help="Generate side-by-side comparison report of clean vs malicious packages")
+    c.add_argument("--clean", default="bench/packages/clean/rest_wrapper", help="Clean control package path")
+    c.add_argument("--malicious", default="bench/packages/malicious/evil_slug", help="Malicious package path")
+    c.add_argument("--runner", default="fixture", choices=["auto", "fixture", "live"], help="Runner mode")
+    c.add_argument("--out", default="reports/compare_demo.html", help="Output path for comparison HTML")
+
     a = ap.parse_args(argv)
+
+    if a.cmd == "compare-demo":
+        from trustlens.contracts import ROOT
+        from trustlens.report import render_comparison_html
+
+        clean_path = ROOT / a.clean if not Path(a.clean).is_absolute() else Path(a.clean)
+        mal_path = ROOT / a.malicious if not Path(a.malicious).is_absolute() else Path(a.malicious)
+
+        out_clean = Path("reports/compare_tmp/clean")
+        out_mal = Path("reports/compare_tmp/malicious")
+
+        r_clean = scan(str(clean_path), str(out_clean), runner=a.runner, offline=True)
+        r_mal = scan(str(mal_path), str(out_mal), runner=a.runner, offline=True)
+
+        comp_html = render_comparison_html(
+            r_clean["verdict"], r_clean["fingerprint"], r_clean["claims"],
+            r_mal["verdict"], r_mal["fingerprint"], r_mal["claims"],
+        )
+        comp_out = Path(a.out)
+        comp_out.parent.mkdir(parents=True, exist_ok=True)
+        comp_out.write_text(comp_html, encoding="utf-8")
+        print(f"[+] Side-by-side comparison report generated: {comp_out}")
+        return 0
 
     if a.cmd == "demo-all":
         import yaml
@@ -328,9 +358,16 @@ def main(argv=None) -> int:
         return 2
 
     v = r["verdict"]
-    from trustlens.report import render_html, render_text
+    from trustlens.report import render_html, render_sarif, render_text
 
-    print(render_html(v, r["fingerprint"], r["claims"]) if a.format == "html" else json.dumps(v, indent=1) if a.format == "json" else render_text(v, color=sys.stdout.isatty()))
+    if a.format == "html":
+        print(render_html(v, r["fingerprint"], r["claims"]))
+    elif a.format == "sarif":
+        print(render_sarif(v, r["fingerprint"], r["claims"]))
+    elif a.format == "json":
+        print(json.dumps(v, indent=1))
+    else:
+        print(render_text(v, color=sys.stdout.isatty()))
     print(f"  report: {out}/report.html", file=sys.stderr)
     return {"PASS": 0, "REVIEW": 10, "BLOCK": 20}[v["action"]]
 
