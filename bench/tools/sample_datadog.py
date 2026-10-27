@@ -14,7 +14,6 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-import zipfile
 from pathlib import Path
 
 import yaml
@@ -27,30 +26,24 @@ RAW = "https://raw.githubusercontent.com/DataDog/malicious-software-packages-dat
 REPO = "https://github.com/DataDog/malicious-software-packages-dataset.git"
 
 
+def sample_packages(pkg_list: list[str], n: int, seed: int) -> list[str]:
+    """Deterministically sample n packages using given seed."""
+    rng = random.Random(seed)
+    return sorted(rng.sample(pkg_list, min(n, len(pkg_list))))
+
+
 def safe_extract_zip(zip_path: Path, target_dir: Path) -> bool:
-    """Extract password-protected zip without executing any code. Uses extract_in_sandbox.sh if bwrap is available."""
+    """Extract password-protected zip without executing code. Uses extract_in_sandbox.sh. Never extracts on host."""
     target_dir.mkdir(parents=True, exist_ok=True)
     extract_sh = ROOT / "scripts" / "extract_in_sandbox.sh"
-    if shutil.which("bwrap") and extract_sh.exists():
-        try:
-            res = subprocess.run(["bash", str(extract_sh), str(zip_path), str(target_dir)], capture_output=True, text=True, check=False)
-            if res.returncode == 0:
-                return True
-        except Exception:
-            pass
-
-    try:
-        with zipfile.ZipFile(zip_path) as z:
-            z.setpassword(b"infected")
-            for member in z.infolist():
-                clean_name = member.filename.replace("\\", "/")
-                if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                    continue
-                z.extract(member, target_dir)
-        return True
-    except Exception as e:
-        print(f"Warning: failed extracting {zip_path.name}: {e}", file=sys.stderr)
+    if not shutil.which("bwrap") or not extract_sh.exists():
         return False
+    try:
+        res = subprocess.run(["bash", str(extract_sh), str(zip_path), str(target_dir)], capture_output=True, text=True, check=False)
+        return res.returncode == 0
+    except Exception:
+        return False
+
 
 
 def find_pkg_root(target: Path, name: str) -> Path:
@@ -88,7 +81,7 @@ def main() -> int:
     dest.mkdir(parents=True, exist_ok=True)
     manifest = json.load(urllib.request.urlopen(RAW, timeout=60))
     names = sorted(k for k, v in manifest.items() if v is None)
-    sample = sorted(random.Random(a.seed).sample(names, min(a.n, len(names))))
+    sample = sample_packages(names, a.n, a.seed)
 
     (dest / "sample.json").write_text(json.dumps({"seed": a.seed, "n": len(sample), "packages": sample}, indent=1))
 

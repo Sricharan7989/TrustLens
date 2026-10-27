@@ -80,11 +80,11 @@ def generate_report(stats: dict) -> str:
         pct = (count / max(pypi_n, 1)) * 100
         # Map to PS1-Bench
         if "download" in trig.lower() or "installation" in trig.lower():
-            mapping = "`trigger: install` (`evil_slug`, `staged_dropper`, `obfuscated_xor`)"
+            mapping = "`trigger: install` (`evil_slug`)"
         elif "network" in trig.lower() or "connection" in trig.lower():
-            mapping = "`trigger: install / call` (`import_exfil`, `host_gate`)"
+            mapping = "`trigger: import / call` (`import_exfil`, `host_gate`)"
         elif "function" in trig.lower() or "usage" in trig.lower():
-            mapping = "`trigger: call` (`delayed_slug`, `time_gate`)"
+            mapping = "`trigger: call` (`delayed_slug`, `staged_dropper`, `obfuscated_xor`, `time_gate`)"
         else:
             mapping = "Uncovered trigger"
         lines.append(f"| {trig} | {count:,} | {pct:.1f}% | {mapping} |")
@@ -132,9 +132,10 @@ def generate_report(stats: dict) -> str:
     lines.extend([
         "",
         "## 3. PS1-Bench Alignment & Coverage Assessment",
-        "- **Install-time dominance:** OSPTrack demonstrates that 95.2% of PyPI attacks trigger during download/install. PS1-Bench aligns with this empirical distribution with 4 install-time planted toys (`evil_slug`, `staged_dropper`, `obfuscated_xor`, `pth_hook`).",
-        "- **Obfuscation prevalence:** Base64 encoding accounts for 81.1% of PyPI malware. PS1-Bench tests base64 payload decoding, XOR obfuscation (`chr()` transforms), and un-obfuscated baseline exfiltration.",
-        "- **Staged Droppers:** Droppers and second-stage fetchers represent 81.1% of PyPI attacks, directly matching our `staged_dropper` planted toy.",
+        "- **Trigger distributions:** In OSPTrack, 95.2% of PyPI attacks execute during download/installation (5,460 download + 900 installation out of 6,683). In PS1-Bench, the install-time label is specifically tested by `evil_slug` (`trigger: install`), with `pth_hook` testing `trigger: pth`, and second-stage/evasion packages (`staged_dropper`, `obfuscated_xor`) testing `trigger: call`.",
+        "- **Obfuscation prevalence:** Base64 encoding accounts for 81.1% (5,423/6,683) of PyPI malware. PS1-Bench tests base64 payload decoding (`delayed_slug`), XOR obfuscation (`obfuscated_xor`), and un-obfuscated baseline exfiltration.",
+        "- **Staged Droppers:** Droppers and second-stage fetchers represent 81.1% (5,423/6,683) of PyPI attacks, directly matching our `staged_dropper` planted toy.",
+
         "",
         "## 4. Planned Planted Toys (Informed by OSPTrack Gaps)",
         "Based on OSPTrack patterns, the following synthetic packages are planned for PS1-Bench expansion:",

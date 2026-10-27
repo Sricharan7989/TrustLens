@@ -68,7 +68,7 @@ def _generate_roc_svg(sweep_records: list[dict], auc: float, nominal_t: float) -
 
     # Axis titles
     svg.append(f'<text x="{x0 + w_px / 2}" y="{y0 + 44}" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">False Positive Rate (FPR)</text>')
-    svg.append(f'<text x="20" y="{30 + h_px / 2}" font-size="12" font-weight="600" fill="#374151" text-anchor="middle" transform="rotate(-90 20 {30 + h_px / 2})">True Positive Rate (Recall)</text>')
+    svg.append(f'<text x="20" y="{30 + h_px / 2}" font-size="12" font-weight="600" fill="#374151" text-anchor="middle" transform="rotate(-90 20 {30 + h_px / 2})">True Positive Rate (decided cases only)</text>')
 
     # Diagonal chance line (FPR = TPR)
     svg.append(f'<line x1="{x0}" y1="{y0}" x2="{x0 + w_px}" y2="{30}" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4 4" />')
@@ -276,9 +276,9 @@ def render(results: dict) -> str:
 
     # Column 1: Inline SVG ROC Curve
     h.append("<div class='roc-container'>")
-    h.append("<h3 style='margin-top:0;'>Empirical ROC Curve</h3>")
+    h.append("<h3 style='margin-top:0;'>Empirical ROC Curve (decided cases only)</h3>")
     h.append(_generate_roc_svg(sweep_records, auc_val, nominal_t))
-    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve: <strong>ROC AUC = {auc_val:.4f}</strong></p>")
+    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve (decided cases only): <strong>ROC AUC = {auc_val:.4f}</strong></p>")
     h.append("</div>")
 
     # Column 2: Sensitivity Summary

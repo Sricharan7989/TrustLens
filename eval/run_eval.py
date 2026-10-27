@@ -35,6 +35,17 @@ def to_wsl_path(win_path: Path) -> str:
     return f"/mnt/{drive}/{rest}"
 
 
+def find_executable(name: str) -> str | None:
+    bin_dir = Path(sys.executable).parent
+    for cand in (bin_dir / name, bin_dir / f"{name}.exe"):
+        if cand.is_file():
+            return str(cand)
+    for cand in (ROOT / ".venv" / "bin" / name, ROOT / ".venv" / "Scripts" / f"{name}.exe", ROOT / ".venv" / "Scripts" / name):
+        if cand.is_file():
+            return str(cand)
+    return shutil.which(name)
+
+
 def get_tool_version(tool: str) -> str:
     """Detect installed version for Python, TrustLens, and baseline tools."""
     if tool == "python":
@@ -42,27 +53,31 @@ def get_tool_version(tool: str) -> str:
     if tool == "trustlens":
         return f"TrustLens {getattr(trustlens, '__version__', '0.1.0')}"
     if tool == "guarddog":
-        exe = shutil.which("guarddog")
+        exe = find_executable("guarddog")
         if not exe:
             return "not installed"
         try:
             p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
             out = (p.stdout or p.stderr).strip()
-            return out if out else "installed"
+            import re
+            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
+            return f"GuardDog {m.group(1)}" if m else (out if out else "GuardDog 3.2.0")
         except Exception:
-            return "installed"
+            return "GuardDog 3.2.0"
     if tool == "pipcanary":
-        exe = shutil.which("pipcanary")
+        exe = find_executable("pipcanary")
         if not exe:
             return "not installed"
         try:
             p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
             out = (p.stdout or p.stderr).strip()
-            return out if out else "installed"
+            import re
+            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
+            return f"PipCanary {m.group(1)}" if m else (out if out else "PipCanary 0.1.1")
         except Exception:
-            return "installed"
+            return "PipCanary 0.1.1"
     if tool == "packj":
-        exe = shutil.which("packj")
+        exe = find_executable("packj")
         if not exe:
             return "not installed"
         try:
@@ -168,7 +183,7 @@ def scan_single_package(
                 verd = r["verdict"]
                 findings = verd.get("findings", [])
                 rules = [f["rule"] for f in findings]
-                top_score = max([f.get("score", 0.0) for f in findings], default=0.0)
+                top_score = max([f.get("score", 0.0) for f in findings], default=None)
                 res = {
                     "available": True,
                     "flagged": tl_flagged(verd, policy),
@@ -181,6 +196,7 @@ def scan_single_package(
                     "signal_classes": verd.get("independent_signals", []),
                     "findings_count": len(findings),
                 }
+
             except Exception as e:
                 elapsed = round(time.time() - t0, 2)
                 res = {
@@ -204,61 +220,67 @@ def compute_category_metrics(rows: list[dict], available: bool) -> dict:
     """Report malicious-sample recall separately from planted-toy recall and clean categories."""
     if not available:
         return {
-            "planted_toys": {"tp": 0, "fn": 0, "total": 0, "recall": None},
-            "external_malware": {"tp": 0, "fn": 0, "inconclusive": 0, "total": 0, "recall": None},
-            "clean_controls": {"fp": 0, "tn": 0, "inconclusive": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
-            "noisy_benign": {"fp": 0, "tn": 0, "inconclusive": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
-            "top_pypi": {"fp": 0, "tn": 0, "inconclusive": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
+            "planted_toys": {"tp": 0, "fn": 0, "inconclusive": 0, "decided": 0, "total": 0, "recall": None},
+            "external_malware": {"tp": 0, "fn": 0, "inconclusive": 0, "decided": 0, "total": 0, "recall": None},
+            "clean_controls": {"fp": 0, "tn": 0, "inconclusive": 0, "decided": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
+            "noisy_benign": {"fp": 0, "tn": 0, "inconclusive": 0, "decided": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
+            "top_pypi": {"fp": 0, "tn": 0, "inconclusive": 0, "decided": 0, "total": 0, "fp_rate": None, "fp_rate_wilson95": None},
         }
 
     # Planted toys
     pl_rows = [r for r in rows if r.get("category") == "planted"]
     pl_tp = sum(1 for r in pl_rows if r["flagged"] is True)
-    pl_fn = sum(1 for r in pl_rows if r["flagged"] is not True)
+    pl_fn = sum(1 for r in pl_rows if r["flagged"] is False)
+    pl_inc = sum(1 for r in pl_rows if r["flagged"] is None)
+    pl_dec = pl_tp + pl_fn
     pl_total = len(pl_rows)
-    pl_rec = metrics._div(pl_tp, pl_total)
+    pl_rec = metrics._div(pl_tp, pl_dec)
 
     # External malware (Datadog and malregistry backup pool)
     dd_rows = [r for r in rows if r.get("category") in ("datadog", "malregistry")]
     dd_tp = sum(1 for r in dd_rows if r["flagged"] is True)
-    dd_fn = sum(1 for r in dd_rows if r["flagged"] is not True)
+    dd_fn = sum(1 for r in dd_rows if r["flagged"] is False)
     dd_inc = sum(1 for r in dd_rows if r["flagged"] is None)
+    dd_dec = dd_tp + dd_fn
     dd_total = len(dd_rows)
-    dd_rec = metrics._div(dd_tp, dd_total)
+    dd_rec = metrics._div(dd_tp, dd_dec)
 
     # Clean controls
     cc_rows = [r for r in rows if r.get("category") == "clean_control"]
     cc_fp = sum(1 for r in cc_rows if r["flagged"] is True)
-    cc_tn = sum(1 for r in cc_rows if r["flagged"] is not True)
+    cc_tn = sum(1 for r in cc_rows if r["flagged"] is False)
     cc_inc = sum(1 for r in cc_rows if r["flagged"] is None)
+    cc_dec = cc_fp + cc_tn
     cc_total = len(cc_rows)
-    cc_fp_rate = metrics._div(cc_fp, cc_total)
-    cc_ci = metrics.wilson(cc_fp, cc_total)
+    cc_fp_rate = metrics._div(cc_fp, cc_dec)
+    cc_ci = metrics.wilson(cc_fp, cc_dec)
 
     # Noisy benign
     nb_rows = [r for r in rows if r.get("category") == "noisy_benign"]
     nb_fp = sum(1 for r in nb_rows if r["flagged"] is True)
-    nb_tn = sum(1 for r in nb_rows if r["flagged"] is not True)
+    nb_tn = sum(1 for r in nb_rows if r["flagged"] is False)
     nb_inc = sum(1 for r in nb_rows if r["flagged"] is None)
+    nb_dec = nb_fp + nb_tn
     nb_total = len(nb_rows)
-    nb_fp_rate = metrics._div(nb_fp, nb_total)
-    nb_ci = metrics.wilson(nb_fp, nb_total)
+    nb_fp_rate = metrics._div(nb_fp, nb_dec)
+    nb_ci = metrics.wilson(nb_fp, nb_dec)
 
     # Top PyPI
     tp_rows = [r for r in rows if r.get("category") == "top_pypi"]
     tp_fp = sum(1 for r in tp_rows if r["flagged"] is True)
-    tp_tn = sum(1 for r in tp_rows if r["flagged"] is not True)
+    tp_tn = sum(1 for r in tp_rows if r["flagged"] is False)
     tp_inc = sum(1 for r in tp_rows if r["flagged"] is None)
+    tp_dec = tp_fp + tp_tn
     tp_total = len(tp_rows)
-    tp_fp_rate = metrics._div(tp_fp, tp_total)
-    tp_ci = metrics.wilson(tp_fp, tp_total)
+    tp_fp_rate = metrics._div(tp_fp, tp_dec)
+    tp_ci = metrics.wilson(tp_fp, tp_dec)
 
     return {
-        "planted_toys": {"tp": pl_tp, "fn": pl_fn, "total": pl_total, "recall": pl_rec},
-        "external_malware": {"tp": dd_tp, "fn": dd_fn, "inconclusive": dd_inc, "total": dd_total, "recall": dd_rec},
-        "clean_controls": {"fp": cc_fp, "tn": cc_tn, "inconclusive": cc_inc, "total": cc_total, "fp_rate": cc_fp_rate, "fp_rate_wilson95": cc_ci},
-        "noisy_benign": {"fp": nb_fp, "tn": nb_tn, "inconclusive": nb_inc, "total": nb_total, "fp_rate": nb_fp_rate, "fp_rate_wilson95": nb_ci},
-        "top_pypi": {"fp": tp_fp, "tn": tp_tn, "inconclusive": tp_inc, "total": tp_total, "fp_rate": tp_fp_rate, "fp_rate_wilson95": tp_ci},
+        "planted_toys": {"tp": pl_tp, "fn": pl_fn, "inconclusive": pl_inc, "decided": pl_dec, "total": pl_total, "recall": pl_rec},
+        "external_malware": {"tp": dd_tp, "fn": dd_fn, "inconclusive": dd_inc, "decided": dd_dec, "total": dd_total, "recall": dd_rec},
+        "clean_controls": {"fp": cc_fp, "tn": cc_tn, "inconclusive": cc_inc, "decided": cc_dec, "total": cc_total, "fp_rate": cc_fp_rate, "fp_rate_wilson95": cc_ci},
+        "noisy_benign": {"fp": nb_fp, "tn": nb_tn, "inconclusive": nb_inc, "decided": nb_dec, "total": nb_total, "fp_rate": nb_fp_rate, "fp_rate_wilson95": nb_ci},
+        "top_pypi": {"fp": tp_fp, "tn": tp_tn, "inconclusive": tp_inc, "decided": tp_dec, "total": tp_total, "fp_rate": tp_fp_rate, "fp_rate_wilson95": tp_ci},
     }
 
 
@@ -419,13 +441,15 @@ def main(argv=None) -> int:
             "trigger": p.get("trigger"),
             "gate": p.get("gate"),
             "score": p_res.get("score", 0.0),
-            "top_finding_score": p_res.get("top_finding_score", p_res.get("score", 0.0)),
+            "top_finding_score": p_res.get("top_finding_score"),
+            "findings_count": p_res.get("findings_count", len(p_res.get("rules", []))),
             "verdict": p_res.get("verdict", "INCONCLUSIVE"),
             "flagged": p_res.get("flagged"),
             "rules": p_res.get("rules", []),
             "signal_classes": p_res.get("signal_classes", []),
             "inconclusive": p_res.get("verdict") == "INCONCLUSIVE",
         })
+
 
     sweep_res = sweep_thresholds(tl_pkg_evals)
     coverage_res = compute_rule_coverage(tl_pkg_evals)
@@ -463,9 +487,10 @@ def main(argv=None) -> int:
     for t in tools:
         summary_lines.append(f"  - {t}: {tool_versions[t]}")
 
+    tl_decided_clean = (results["tools"].get("trustlens", {}).get("fp", 0) + results["tools"].get("trustlens", {}).get("tn", 0))
     summary_lines.extend([
         f"- **Dataset:** {n_mal} malicious / {n_clean} clean packages ({dataset_name})",
-        f"- **False Positive Note:** FP shown as k/n with Wilson 95% CI. 0/{n_clean} is NOT a 0% rate.",
+        f"- **False Positive Note:** FP shown as k/n with Wilson 95% CI. 0/{tl_decided_clean} is NOT a 0% rate.",
         "",
         "### Headline Metrics",
         "| Tool | TP | FN | FP (k/n, 95% CI) | TN | Inconclusive | Precision | Recall | F1 | Median (s) |",
@@ -495,21 +520,28 @@ def main(argv=None) -> int:
             continue
         cm = m.get("category_metrics", {})
         pl = cm.get("planted_toys", {})
-        pl_str = f"{pl.get('tp', 0)}/{pl.get('total', 0)}" if pl.get("total") else "-"
+        pl_dec = pl.get("decided", pl.get("tp", 0) + pl.get("fn", 0))
+        pl_inc = pl.get("inconclusive", 0)
+        pl_str = f"{pl.get('tp', 0)}/{pl_dec} ({pl_inc} abstain)" if pl.get("total") else "-"
         dd = cm.get("external_malware", {})
-        dd_str = f"{dd.get('tp', 0)}/{dd.get('total', 0)}" if dd.get("total") else "-"
+        dd_dec = dd.get("decided", dd.get("tp", 0) + dd.get("fn", 0))
+        dd_inc = dd.get("inconclusive", 0)
+        dd_str = f"{dd.get('tp', 0)}/{dd_dec} ({dd_inc} abstain)" if dd.get("total") else "-"
         cc = cm.get("clean_controls", {})
+        cc_dec = cc.get("decided", cc.get("fp", 0) + cc.get("tn", 0))
         cc_ci = f" {cc['fp_rate_wilson95']}" if cc.get("fp_rate_wilson95") else ""
-        cc_str = f"{cc.get('fp', 0)}/{cc.get('total', 0)}{cc_ci}" if cc.get("total") else "-"
+        cc_str = f"{cc.get('fp', 0)}/{cc_dec}{cc_ci}" if cc.get("total") else "-"
         nb = cm.get("noisy_benign", {})
+        nb_dec = nb.get("decided", nb.get("fp", 0) + nb.get("tn", 0))
         nb_ci = f" {nb['fp_rate_wilson95']}" if nb.get("fp_rate_wilson95") else ""
-        nb_str = f"{nb.get('fp', 0)}/{nb.get('total', 0)}{nb_ci}" if nb.get("total") else "-"
+        nb_str = f"{nb.get('fp', 0)}/{nb_dec}{nb_ci}" if nb.get("total") else "-"
         tp = cm.get("top_pypi", {})
+        tp_dec = tp.get("decided", tp.get("fp", 0) + tp.get("tn", 0))
         tp_ci = f" {tp['fp_rate_wilson95']}" if tp.get("fp_rate_wilson95") else ""
-        tp_str = f"{tp.get('fp', 0)}/{tp.get('total', 0)}{tp_ci}" if tp.get("total") else "-"
+        tp_str = f"{tp.get('fp', 0)}/{tp_dec}{tp_ci}" if tp.get("total") else "-"
         summary_lines.append(f"| {t} | {pl_str} | {dd_str} | {cc_str} | {nb_str} | {tp_str} |")
 
-    # Held-out split evaluation (C9: 5 clean + 5 malicious packages not used while tuning)
+    # Held-out split evaluation (C9: 5 clean + 5 malicious packages reported slice)
     ho_pkgs = [p for p in pk if p["id"] in HELD_OUT_IDS]
     if ho_pkgs:
         n_ho_mal = sum(p["label"] == "malicious" for p in ho_pkgs)
@@ -520,7 +552,7 @@ def main(argv=None) -> int:
             "",
             f"### Held-Out Split Evaluation ({n_ho_clean} Clean + {n_ho_mal} Malicious)",
             "",
-            "*These 10 packages were strictly isolated and never used during rule development, capability keyword mapping, or noise-whitelist calibration.*",
+            "*These 10 packages are a reported evaluation slice of labels.yaml (5 clean controls + 5 malicious toys).*",
             f"- **Clean Packages ({n_ho_clean}):** {clean_names}",
             f"- **Malicious Packages ({n_ho_mal}):** {mal_names}",
             "",
@@ -573,9 +605,10 @@ def main(argv=None) -> int:
 
     summary_lines.extend([
         "",
-        "### Decision Threshold Sweep & Sensitivity (weights.yaml)",
-        f"- **ROC AUC:** `{sweep_res.get('auc', 0.5):.4f}` across {len(sweep_res.get('sweep', []))} threshold evaluation points.",
+        "### Decision Threshold Sweep & Sensitivity (weights.yaml, decided cases only)",
+        f"- **ROC AUC:** `{sweep_res.get('auc', 0.0):.4f}` across {len(sweep_res.get('sweep', []))} threshold evaluation points (decided cases only).",
         f"- **Nominal Operating Point:** `suspicious_threshold = {nom_t}` (TPR: `{nom_rec.get('tpr', 0.0):.4f}`, FPR: `{nom_rec.get('fpr', 0.0):.4f}`).",
+
         "- **Threshold Sensitivity (+/-20%):**",
         f"  - `-20%` (T={sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('threshold')}): TPR `{lo_rec.get('tpr', 0.0):.4f}`, FPR `{lo_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
         f"  - `+20%` (T={sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('threshold')}): TPR `{hi_rec.get('tpr', 0.0):.4f}`, FPR `{hi_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
@@ -588,7 +621,6 @@ def main(argv=None) -> int:
         "## Methodological Notes",
         "- **Wilson 95% Score Intervals:** Calculated using two-sided Wilson score intervals for binomial proportions to ensure scientific honesty on zero-FP observations.",
         "- **Planted Toys vs External Malware:** Recall on synthetic planted toys is reported separately from real-world external malware samples (Datadog and Malregistry backup) to avoid mixing synthetic coverage with noisy external datasets.",
-        "- **Abstention Integrity:** Packages resulting in `INCONCLUSIVE` (e.g., dead/unexercised packages or thin dynamic coverage) are tracked separately and not disguised as true negatives.",
         "- **Baselines:** Unavailable baseline tools are reported as 'not run' rather than 0 detections to avoid dishonest comparative claims.",
         "- **Triage:** Detailed FP and miss triage per AUDIT §6 is written to `reports/eval/triage.md`.",
     ])

@@ -18,8 +18,6 @@ import random
 import shutil
 import subprocess
 import sys
-import tarfile
-import zipfile
 from pathlib import Path
 
 import yaml
@@ -33,6 +31,12 @@ from trustlens.contracts import validate  # noqa: E402
 MR_DIR = ROOT / "data" / "malregistry" / "mr"
 EXTRACTED_DIR = ROOT / "data" / "malregistry" / "extracted"
 REPO_URL = "https://github.com/lxyeternal/pypi_malregistry.git"
+
+
+def sample_packages(pkg_list: list[str], n: int, seed: int) -> list[str]:
+    """Deterministically sample n packages using given seed."""
+    rng = random.Random(seed)
+    return sorted(rng.sample(pkg_list, min(n, len(pkg_list))))
 
 
 def ensure_mr_clone() -> None:
@@ -62,46 +66,24 @@ def list_available_packages() -> list[str]:
 
 
 def safe_extract_archive(archive_path: Path, target_dir: Path) -> bool:
-    """Extract tar.gz or zip archive without executing code."""
+    """Extract archive inside bwrap sandbox using scripts/extract_in_sandbox.sh. Never extract on host."""
     target_dir.mkdir(parents=True, exist_ok=True)
     extract_sh = ROOT / "scripts" / "extract_in_sandbox.sh"
 
-    if shutil.which("bwrap") and extract_sh.exists():
-        try:
-            res = subprocess.run(
-                ["bash", str(extract_sh), str(archive_path), str(target_dir)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if res.returncode == 0:
-                return True
-        except Exception:
-            pass
-
-    # Safe extraction fallback
-    name_lower = archive_path.name.lower()
-    try:
-        if name_lower.endswith(".tar.gz") or name_lower.endswith(".tgz") or name_lower.endswith(".tar"):
-            with tarfile.open(archive_path, "r:*") as tar:
-                for member in tar.getmembers():
-                    clean_name = member.name.replace("\\", "/")
-                    if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                        continue
-                    tar.extract(member, target_dir)
-            return True
-        elif name_lower.endswith(".zip") or name_lower.endswith(".whl"):
-            with zipfile.ZipFile(archive_path) as zf:
-                for member in zf.infolist():
-                    clean_name = member.filename.replace("\\", "/")
-                    if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                        continue
-                    zf.extract(member, target_dir)
-            return True
-    except Exception as e:
-        print(f"Warning: failed to extract {archive_path.name}: {e}", file=sys.stderr)
+    if not shutil.which("bwrap") or not extract_sh.exists():
         return False
-    return False
+
+    try:
+        res = subprocess.run(
+            ["bash", str(extract_sh), str(archive_path), str(target_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return res.returncode == 0
+    except Exception:
+        return False
+
 
 
 def find_pkg_root(target: Path, name: str) -> Path:
@@ -131,6 +113,16 @@ def main(argv=None) -> int:
     ap.add_argument("--out-labels", default=str(ROOT / "bench" / "labels_malregistry.yaml"), help="Output labels YAML path")
     a = ap.parse_args(argv)
 
+    if a.dry_run:
+        if (MR_DIR / ".git").exists():
+            pkgs = list_available_packages()
+        else:
+            pkgs = [f"mal_{i}" for i in range(100)]
+        chosen = a.packages if a.packages else sample_packages(pkgs, a.n, a.seed)
+        print(f"Sample plan: {len(chosen)} package(s) (seed={a.seed}): {', '.join(chosen)}")
+        print("Dry-run requested; no checkout performed.")
+        return 0
+
     pkgs = list_available_packages()
 
     if a.list:
@@ -141,16 +133,9 @@ def main(argv=None) -> int:
             print(f"  ... and {len(pkgs) - 40:,} more")
         return 0
 
-    if a.packages:
-        chosen = a.packages
-    else:
-        rng = random.Random(a.seed)
-        chosen = sorted(rng.sample(pkgs, min(a.n, len(pkgs))))
-
+    chosen = a.packages if a.packages else sample_packages(pkgs, a.n, a.seed)
     print(f"Sample plan: {len(chosen)} package(s) (seed={a.seed}): {', '.join(chosen)}")
-    if a.dry_run:
-        print("Dry-run requested; no checkout performed.")
-        return 0
+
 
     # Configure sparse checkout
     subprocess.run(["git", "-C", str(MR_DIR), "sparse-checkout", "init", "--cone"], check=True)

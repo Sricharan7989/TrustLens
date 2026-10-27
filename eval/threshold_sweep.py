@@ -48,14 +48,14 @@ def compute_roc_auc(points: list[dict[str, Any]]) -> float:
     Sorts points by FPR ascending, TPR ascending.
     """
     if not points:
-        return 0.5
-    # Ensure (0,0) and (1,1) are conceptually bounded if not already present
-    sorted_pts = sorted(points, key=lambda p: (p["fpr"], p["tpr"]))
+        return 0.0
+    valid = [p for p in points if p.get("fpr") is not None and p.get("tpr") is not None]
+    if not valid:
+        return 0.0
+    sorted_pts = sorted(valid, key=lambda p: (p["fpr"], p["tpr"]))
     pts = [(0.0, 0.0)]
     for p in sorted_pts:
         pts.append((p["fpr"], p["tpr"]))
-    if pts[-1] != (1.0, 1.0):
-        pts.append((1.0, 1.0))
 
     # Remove duplicates preserving order
     dedup: list[tuple[float, float]] = []
@@ -103,6 +103,8 @@ def sweep_thresholds(
     # Ensure operating points are in threshold list
     all_t = sorted(set(thresholds) | {default_t, t_minus_20, t_plus_20})
 
+    strong_classes = set(weights.get("strong_signal_classes", []))
+    block_min = int(weights.get("block_min_independent_signals", 2))
     sweep_records: list[dict] = []
 
     for t in all_t:
@@ -115,14 +117,18 @@ def sweep_thresholds(
         for pkg in package_evals:
             lbl = pkg.get("label")
             is_inc = pkg.get("inconclusive", False) or pkg.get("verdict") == "INCONCLUSIVE"
-            # Flag decision: either strong signal classes or finding score >= t
-            score = pkg.get("top_finding_score", pkg.get("score", 0.0))
-            classes = pkg.get("signal_classes", [])
-            flagged = bool(classes or score >= t)
-
             if is_inc:
                 inc += 1
-            elif lbl == "malicious":
+                continue
+
+            # Sweep top_finding_score only; keep engine block rule (canary-in-bytes or >= 2 strong classes) as flagged at every T
+            classes = set(c for c in pkg.get("signal_classes", []) if c in strong_classes)
+            is_block = ("canary_in_bytes" in classes or len(classes) >= block_min)
+            top_score = pkg.get("top_finding_score")
+            score_flagged = bool(top_score is not None and top_score >= t)
+            flagged = bool(is_block or score_flagged)
+
+            if lbl == "malicious":
                 if flagged:
                     tp += 1
                 else:
@@ -181,17 +187,29 @@ def sweep_thresholds(
     # Identify packages that change verdict between t_minus_20 and t_plus_20
     flips: list[dict] = []
     for pkg in package_evals:
-        s = pkg.get("top_finding_score", pkg.get("score", 0.0))
-        classes = pkg.get("signal_classes", [])
-        if not classes and (t_minus_20 <= s < t_plus_20 or t_minus_20 <= s <= t_plus_20):
+        is_inc = pkg.get("inconclusive", False) or pkg.get("verdict") == "INCONCLUSIVE"
+        if is_inc:
+            continue
+        classes = set(c for c in pkg.get("signal_classes", []) if c in strong_classes)
+        is_block = ("canary_in_bytes" in classes or len(classes) >= block_min)
+        if is_block:
+            continue
+        s = pkg.get("top_finding_score")
+        if s is None:
+            continue
+        f_lo = bool(s >= t_minus_20)
+        f_nom = bool(s >= default_t)
+        f_hi = bool(s >= t_plus_20)
+        if f_lo != f_hi:
             flips.append({
                 "id": pkg["id"],
                 "label": pkg.get("label"),
                 "score": s,
-                "flagged_at_3_2": bool(s >= t_minus_20),
-                "flagged_at_4_0": bool(s >= default_t),
-                "flagged_at_4_8": bool(s >= t_plus_20),
+                "flagged_at_3_2": f_lo,
+                "flagged_at_4_0": f_nom,
+                "flagged_at_4_8": f_hi,
             })
+
     sensitivity["flipping_packages"] = flips
 
     auc = compute_roc_auc(sweep_records)

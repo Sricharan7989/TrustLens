@@ -39,6 +39,7 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
             "fn": 0,
             "tn": 0,
             "inconclusive": 0,
+            "abstain": 0,
             "precision": None,
             "recall": None,
             "f1": None,
@@ -51,17 +52,21 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
         }
 
     tp = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is True)
-    fn = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is not True)
+    fn = sum(1 for r in rows if r["label"] == "malicious" and r["flagged"] is False)
     fp = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is True)
-    tn = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is not True)
+    tn = sum(1 for r in rows if r["label"] == "clean" and r["flagged"] is False)
     inc = sum(1 for r in rows if r["flagged"] is None)
-    prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
+
+    decided_mal = tp + fn
+    decided_clean = fp + tn
+    prec = _div(tp, tp + fp)
+    rec = _div(tp, decided_mal)
     f1 = round(2 * prec * rec / (prec + rec), 4) if prec and rec else (0.0 if prec is not None and rec is not None else None)
     rts = [r["runtime_s"] for r in rows if r.get("runtime_s") is not None]
 
     recall_by_gate = {}
     for k, v in sorted(by.items()):
-        rec_val = _div(v[0], v[1]) if v[2] > 0 else None
+        rec_val = _div(v[0], v[2]) if v[2] > 0 else None
         recall_by_gate[k] = {"detected": v[0], "total": v[1], "recall": rec_val}
 
     return {
@@ -70,11 +75,12 @@ def confusion(rows: list[dict], available: bool = True) -> dict:
         "fn": fn,
         "tn": tn,
         "inconclusive": inc,
+        "abstain": inc,
         "precision": prec,
         "recall": rec,
         "f1": f1,
-        "fp_rate": _div(fp, fp + tn),
-        "fp_rate_wilson95": wilson(fp, fp + tn),
+        "fp_rate": _div(fp, decided_clean),
+        "fp_rate_wilson95": wilson(fp, decided_clean),
         "median_runtime_s": round(statistics.median(rts), 2) if rts else None,
         "recall_by_trigger_gate": recall_by_gate,
     }

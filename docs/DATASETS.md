@@ -23,7 +23,7 @@ Run commands:
 
 Evaluation datasets evaluated during live evaluation:
 1. **PS1-Bench planted toys** (`bench/labels.yaml`): 10 synthetic planted packages covering trigger $\times$ gate $\times$ obfuscation.
-2. **PS1-Bench clean controls** (`bench/labels.yaml`): 16 clean controls (8 standard controls + 8 noisy-benign packages performing system inspection, network downloads, subprocess execution, SSH config reads).
+2. **PS1-Bench clean controls** (`bench/labels.yaml`): 16 clean controls (9 clean_control + 7 noisy_benign packages performing system inspection, network downloads, subprocess execution, SSH config reads).
 3. **Top-PyPI clean set** (`bench/labels_external.yaml`): 30 popular real-world packages downloaded via PyPI JSON API with SHA-256 verification.
 4. **Datadog PyPI malware sample** (`bench/labels_datadog.yaml`): 150 real-world malware packages sampled reproducibly (seed 1337).
 
@@ -40,12 +40,13 @@ Evaluation datasets evaluated during live evaluation:
 
 ## Noise-Whitelist Calibration (`bench/calibration/build_noise_whitelist.py`)
 
-Calibration dataset: **QUT-DV25** (Harvard Dataverse 11542393, 14,271 trace records: 7,144 benign and 7,127 malicious packages).
+Calibration dataset: **QUT-DV25** (Harvard Dataverse 11542393, 14,271 trace records: 7,144 benign and 7,127 malicious packages) and OSPTrack traces.
 
-- **Calibration, not training:** QUT-DV25 trace records are used solely to calibrate benign build/runtime noise thresholds (frequency filtering for common toolchain sub-processes and local loopback/test signals). No machine learning model is trained on these datasets.
+- **Calibration, not training:** Benign trace records are used solely to calibrate benign build/runtime noise thresholds (frequency filtering for common file/path noise). Loopback communication (127.0.0.1, localhost) and test-runner environment variables (TEST_*) are predefined seed rules (`source: seed`). No machine learning model is trained on these datasets.
 - **Rule criterion:** A token is whitelisted only if it occurs in $\ge 2\%$ of benign trace records AND in $< \frac{1}{4}$ of that prevalence in malicious trace records (rare-in-malware noise only).
 - **Canary invariant (AUDIT §6):** No rule in `noise_whitelist.yaml` may ever match canary tokens, sensitive credential paths (`.ssh`, `.aws`, `.npmrc`), or RFC 5737 targets.
 - **Generated output:** `bench/calibration/noise_whitelist.yaml`, which is merged dynamically by the fingerprint normalizer (`trustlens/fingerprint/normalize.py`).
+
 
 ## Baseline Adapters (GuardDog, PipCanary, Packj)
 
@@ -126,7 +127,7 @@ OSPTrack (Zenodo record 21853840, CC-BY-4.0) provides empirical metadata and exe
 - **Fetch script:** `bash scripts/fetch_osptrack.sh` (`--metrics-only`, `--check-only`, or full download).
 
 ### 2. Empirical PyPI Attack Distributions (N = 6,683)
-Analysis performed by `python bench/tools/analyze_osptrack.py` (`reports/bench/osptrack_metrics.md`):
+Analysis performed by `python bench/tools/analyze_osptrack.py` quoting output from real CSV `data/osptrack/data_metrics.csv` (`reports/bench/osptrack_metrics.md`):
 - **Triggers:**
   - *Automatic execution upon download/install:* 95.2% (5,460 download + 900 installation).
   - *Runtime network connection:* 4.2% (283 packages).
@@ -143,8 +144,8 @@ Analysis performed by `python bench/tools/analyze_osptrack.py` (`reports/bench/o
 
 ### 3. PS1-Bench Matrix Validation & Expansion Plan
 OSPTrack empirical findings validate the core architecture of PS1-Bench:
-- **Trigger alignment:** 4/10 planted toys focus on install-time execution (`evil_slug`, `staged_dropper`, `obfuscated_xor`, `pth_hook`), mirroring the 95.2% real-world concentration.
-- **Obfuscation alignment:** Base64 decoding (`delayed_slug`) and XOR dynamic evaluation (`obfuscated_xor`) cover the dominant real-world obfuscation vectors.
+- **Trigger alignment:** In PS1-Bench, the install-time label is tested solely by `evil_slug` (`trigger: install`), with `pth_hook` testing `trigger: pth`, and second-stage/evasion packages (`staged_dropper`, `obfuscated_xor`) testing `trigger: call`.
+- **Obfuscation alignment:** Base64 decoding (`delayed_slug`) and XOR dynamic evaluation (`obfuscated_xor`) cover dominant real-world obfuscation vectors.
 - **Planned expansion toys:**
   1. `clip_stealer`: Clipboard access and cryptocurrency address hijacking (OSPTrack `uurllib3` pattern).
   2. `asset_stego`: Hiding payloads within package image assets (OSPTrack `steganography/obfuscation`).
@@ -153,8 +154,9 @@ OSPTrack empirical findings validate the core architecture of PS1-Bench:
 
 ### 4. Benign-Trace Whitelist Cross-Check
 Verified via `python bench/tools/cross_check_whitelist.py`:
-- All 12 calibrated rules in `bench/calibration/noise_whitelist.yaml` were cross-checked against benign trace schemas.
+- All calibrated rules in `bench/calibration/noise_whitelist.yaml` were cross-checked against benign trace schemas.
 - **AUDIT §6 Invariant Verified:** Zero whitelist rules match canary tokens, SSH/AWS/npm credential files, RFC 5737 targets, or `.invalid` test domains.
+
 
 ## Malregistry Backup Dataset (C11)
 
