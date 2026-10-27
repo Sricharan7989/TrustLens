@@ -29,30 +29,91 @@ def esc(val: object, *, urls: bool = False) -> str:
 
 CSS = """
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-alt: #334155;
-  --text: #f8fafc;
-  --text-muted: #94a3b8;
-  --border: #475569;
+  --bg: #000000;
+  --surface: #0D0D0D;
+  --surface-alt: #141414;
+  --surface-code: #050505;
+  --text: #FFFFFF;
+  --text-muted: #A6A6AC;
+  --text-subtle: #686870;
+  --border: rgba(255, 255, 255, 0.14);
+  --border-hover: rgba(255, 255, 255, 0.35);
   --pass: #10b981;
-  --pass-bg: rgba(16, 185, 129, 0.15);
+  --pass-bg: rgba(16, 185, 129, 0.12);
   --review: #f59e0b;
-  --review-bg: rgba(245, 158, 11, 0.15);
+  --review-bg: rgba(245, 158, 11, 0.12);
   --block: #ef4444;
-  --block-bg: rgba(239, 68, 68, 0.15);
-  --info: #3b82f6;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --block-bg: rgba(239, 68, 68, 0.16);
+  --primary: #8b5cf6;
+  --glow: 0 0 40px -10px rgba(139, 92, 246, 0.25);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
-  padding: 2rem 1rem;
+  line-height: 1.6;
+  padding: 2.5rem 1rem;
 }
 .container { max-width: 1100px; margin: 0 auto; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.9);
+  transition: border-color 0.2s ease;
+}
+.card:hover { border-color: var(--border-hover); }
+.ml-gauge-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.25rem;
+}
+.gauge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.gauge-title { font-weight: 600; font-size: 0.95rem; color: #E0E0E4; }
+.gauge-badge {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+}
+.gauge-badge.CRITICAL { background: var(--block-bg); color: var(--block); border: 1px solid var(--block); }
+.gauge-badge.HIGH { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid #ef4444; }
+.gauge-badge.MEDIUM { background: var(--review-bg); color: var(--review); border: 1px solid var(--review); }
+.gauge-badge.LOW { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid #3b82f6; }
+.gauge-badge.CLEAN { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+.gauge-track {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.gauge-fill { height: 100%; border-radius: 9999px; transition: width 0.4s ease; }
+.gauge-fill.CRITICAL { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.gauge-fill.HIGH { background: linear-gradient(90deg, #f97316, #ef4444); }
+.gauge-fill.MEDIUM { background: linear-gradient(90deg, #eab308, #f59e0b); }
+.gauge-fill.LOW { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+.gauge-fill.CLEAN { background: linear-gradient(90deg, #10b981, #059669); }
+.llm-report-card { border-left: 4px solid var(--primary); }
+.llm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.badge-llm { font-size: 0.78rem; font-family: var(--font-mono); background: rgba(139, 92, 246, 0.15); color: #c4b5fd; padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid rgba(139, 92, 246, 0.3); }
+.llm-body h3 { font-size: 1.05rem; margin-top: 1rem; margin-bottom: 0.4rem; color: #FFFFFF; }
+.llm-body p { color: #D1D1D6; margin-bottom: 0.75rem; font-size: 0.92rem; }
+.llm-body ul { margin-left: 1.25rem; margin-bottom: 0.75rem; color: #D1D1D6; font-size: 0.92rem; }
+.llm-body li { margin-bottom: 0.25rem; }
 .banner-stub {
   background: #78350f;
   color: #fef3c7;
@@ -570,6 +631,28 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
     h.append(f"<div class='stat-item'><div class='stat-label'>Findings Count</div><div class='stat-val'>{len(findings)}</div></div>")
     h.append("</div>")
 
+    # XGBoost ML Threat Score Gauge
+    ml_score = verdict.get("ml_threat_score")
+    ml_tier = verdict.get("ml_risk_tier")
+    if ml_score is None:
+        try:
+            from trustlens.ml.threat_model import get_threat_model
+            pred = get_threat_model().predict(verdict, fingerprint, claims)
+            ml_score = pred.threat_score
+            ml_tier = pred.risk_tier
+        except Exception:
+            ml_score = score
+            ml_tier = "CRITICAL" if action == "BLOCK" else "CLEAN" if action == "PASS" else "MEDIUM"
+
+    h.append("<div class='ml-gauge-card'>")
+    h.append("<div class='gauge-header'>")
+    h.append("<span class='gauge-title'>⚡ XGBoost Machine Learning Threat Score</span>")
+    h.append(f"<span class='gauge-badge {esc(ml_tier)}'>{ml_score:.1f} / 100.0 ({esc(ml_tier)} RISK)</span>")
+    h.append("</div>")
+    h.append("<div class='gauge-track'>")
+    h.append(f"<div class='gauge-fill {esc(ml_tier)}' style='width: {min(100.0, max(2.0, ml_score)):.1f}%;'></div>")
+    h.append("</div></div>")
+
     # Why This Verdict Box
     h.append("<div class='why-verdict-card'>")
     h.append(f"<div class='why-title {esc(why_level)}'>⚖️ Why This Verdict ({esc(verdict_name)})</div>")
@@ -578,7 +661,53 @@ def render_html(verdict: dict, fingerprint: dict | None = None, claims: dict | N
 
     # Summary Sentence
     h.append(f"<div class='summary-box {esc(action)}'><strong>Summary:</strong> {esc(summary, urls=summary_urls)}</div>")
-    h.append("</div>")  # end card
+    h.append("</div>")  # end hero card
+
+    # Gemini LLM Executive Threat Intelligence Report Card
+    llm_report = verdict.get("llm_report")
+    llm_model = verdict.get("llm_model") or "Google Gemini 3.8 Flash"
+    if not llm_report:
+        try:
+            from trustlens.llm.reporter import generate_llm_report
+            rep_res = generate_llm_report(verdict, fingerprint, claims)
+            llm_report = rep_res.report_markdown
+            llm_model = rep_res.model_used
+        except Exception:
+            llm_report = None
+
+    if llm_report:
+        h.append("<div class='card llm-report-card'>")
+        h.append("<div class='llm-header'>")
+        h.append("<h2>⚡ Executive Threat Intelligence Report</h2>")
+        h.append(f"<span class='badge-llm'>{esc(llm_model)}</span>")
+        h.append("</div><div class='llm-body'>")
+        lines = llm_report.splitlines()
+        in_list = False
+        for line in lines:
+            sline = line.strip()
+            if not sline:
+                if in_list:
+                    h.append("</ul>")
+                    in_list = False
+                continue
+            if sline.startswith("### "):
+                if in_list:
+                    h.append("</ul>")
+                    in_list = False
+                h.append(f"<h3>{esc(sline[4:])}</h3>")
+            elif sline.startswith("- ") or sline.startswith("• "):
+                if not in_list:
+                    h.append("<ul>")
+                    in_list = True
+                h.append(f"<li>{esc(sline[2:])}</li>")
+            else:
+                if in_list:
+                    h.append("</ul>")
+                    in_list = False
+                h.append(f"<p>{esc(sline)}</p>")
+        if in_list:
+            h.append("</ul>")
+        h.append("</div></div>")
 
     # Claims vs Capabilities Panel
     h.append("<div class='card'>")

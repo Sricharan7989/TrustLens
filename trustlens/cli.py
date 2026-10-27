@@ -191,14 +191,22 @@ def _resolve_input(raw: str, root: Path) -> Path:
 
 
 def main(argv=None) -> int:
+    if (argv is None and len(sys.argv) <= 1) or (argv == []):
+        from trustlens.tui.app import launch_tui
+        launch_tui()
+        return 0
+
     ap = argparse.ArgumentParser(
         prog="trustlens",
         description="TrustLens AI: Deterministic, rule-based behavioral provenance for Python dependencies.",
     )
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub = ap.add_subparsers(dest="cmd", required=False)
 
-    s = sub.add_parser("scan", help="Scan a package directory, wheel/sdist, or requirements.txt")
-    s.add_argument("path", help="Path to package directory, archive (.whl/.tar.gz/.zip), or requirements.txt")
+    sub.add_parser("ui", help="Launch interactive OpenCode-style Terminal GUI")
+    sub.add_parser("tui", help="Launch interactive OpenCode-style Terminal GUI")
+
+    s = sub.add_parser("scan", help="Scan a package directory, PyPI package name, wheel/sdist, or requirements.txt")
+    s.add_argument("path", help="Package name on PyPI, benchmark toy ID, directory, or archive")
     s.add_argument("--runner", default="auto", choices=["auto", "fixture", "live", "docker"], help="Runner mode")
     s.add_argument("--profiles", default="dev,ci", help="Comma-separated environments (e.g. dev,ci)")
     s.add_argument("--out", default=None, help="Output directory for reports and artifacts")
@@ -206,6 +214,7 @@ def main(argv=None) -> int:
     s.add_argument("--offline", action="store_true", default=True, help="Network off (default: True)")
     s.add_argument("--static", action="store_true", help="Add GuardDog static signals if installed (not with --offline)")
     s.add_argument("--compare", action="store_true", help="Run GuardDog & PipCanary baselines side-by-side (if installed)")
+    s.add_argument("--web", action="store_true", help="Open generated HTML report in browser after scan")
 
     sub.add_parser("check-env", help="Check host sandbox capabilities (bwrap, namespaces, docker)")
 
@@ -230,6 +239,11 @@ def main(argv=None) -> int:
     c.add_argument("--out", default="reports/compare_demo.html", help="Output path for comparison HTML")
 
     a = ap.parse_args(argv)
+
+    if a.cmd in ("ui", "tui", None):
+        from trustlens.tui.app import launch_tui
+        launch_tui()
+        return 0
 
     if a.cmd == "serve":
         from trustlens.webui import run_server
@@ -365,7 +379,15 @@ def main(argv=None) -> int:
         return 0
 
     target_path = Path(a.path)
-    if not target_path.exists():
+
+    # 1. Handle explicit file / path checks
+    if target_path.exists():
+        if target_path.is_file() and target_path.name.endswith(".txt"):
+            pass  # will be handled by requirements block
+        elif not any(target_path.name.lower().endswith(ext) for ext in ARCHIVE_EXTENSIONS) and not _is_valid_package_dir(target_path):
+            print(f"trustlens: error: '{a.path}' is not a valid Python package (missing setup.py, pyproject.toml, or Python files)", file=sys.stderr)
+            return 2
+    elif ("/" in a.path or "\\" in a.path or a.path.startswith(".")) and not target_path.exists():
         print(f"trustlens: error: path does not exist: '{a.path}'", file=sys.stderr)
         return 2
 
@@ -425,13 +447,25 @@ def main(argv=None) -> int:
 
         return exit_code_map[worst_action]
 
+    # Resolve package (PyPI name, benchmark toy ID, or local directory/archive)
+    from trustlens.resolver import resolve_package
+    try:
+        resolved = resolve_package(a.path)
+        target_path = resolved.local_path
+    except Exception as e:
+        if not target_path.exists():
+            print(f"trustlens: error: path does not exist: '{a.path}'", file=sys.stderr)
+        else:
+            print(f"trustlens: error: {e}", file=sys.stderr)
+        return 2
+
     # Validate package directory or archive
     is_archive = any(target_path.name.lower().endswith(ext) for ext in ARCHIVE_EXTENSIONS)
     if not is_archive and not _is_valid_package_dir(target_path):
         print(f"trustlens: error: '{a.path}' is not a valid Python package (missing setup.py, pyproject.toml, or Python files)", file=sys.stderr)
         return 2
 
-    out = a.out or f"reports/{target_path.resolve().name}"
+    out = a.out or f"reports/{resolved.name}"
     try:
         r = scan(str(target_path), out, runner=a.runner, profiles=tuple(a.profiles.split(",")), offline=a.offline, static=a.static)
     except Exception as e:  # noqa: BLE001
@@ -439,8 +473,29 @@ def main(argv=None) -> int:
         return 2
 
     v = r["verdict"]
+
+    # Compute static AST, XGBoost Threat Score, and Gemini LLM Report
+    from trustlens.static.ast_analyzer import scan_package_static
+    from trustlens.ml.threat_model import get_threat_model
+    from trustlens.llm.reporter import generate_llm_report
+
+    static_res = scan_package_static(target_path)
+    tm = get_threat_model()
+    pred = tm.predict(v, r["fingerprint"], r["claims"], static_res)
+    v["ml_threat_score"] = pred.threat_score
+    v["ml_risk_tier"] = pred.risk_tier
+    v["ml_factors"] = pred.top_factors
+
+    llm_rep = generate_llm_report(v, r["fingerprint"], r["claims"], pred)
+    v["llm_report"] = llm_rep.report_markdown
+    v["llm_model"] = llm_rep.model_used
+
     from trustlens.report import render_html, render_sarif, render_text
     from trustlens.report.redact import redact_document
+
+    # Save enriched verdict and HTML
+    (Path(out) / "verdict.json").write_text(json.dumps(redact_document(v), indent=1), encoding="utf-8")
+    (Path(out) / "report.html").write_text(render_html(v, r["fingerprint"], r["claims"]), encoding="utf-8")
 
     if a.format == "html":
         print(render_html(v, r["fingerprint"], r["claims"]))
@@ -449,9 +504,32 @@ def main(argv=None) -> int:
     elif a.format == "json":
         print(json.dumps(redact_document(v), indent=1))
     else:
-        color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
-        print(render_text(v, color=color_enabled))
-    print(f"  report: {out}/report.html", file=sys.stderr)
+        use_tui = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+        if use_tui:
+            try:
+                from trustlens.tui.app import display_terminal_report
+                display_terminal_report({
+                    "resolved": resolved,
+                    "verdict": v,
+                    "claims": r["claims"],
+                    "fingerprint": r["fingerprint"],
+                    "prediction": pred,
+                    "llm_report": llm_rep,
+                    "out_dir": str(out),
+                })
+            except ImportError:
+                use_tui = False
+
+        if not use_tui:
+            color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+            print(render_text(v, color=color_enabled))
+            print(f"  report: {out}/report.html", file=sys.stderr)
+
+    if a.web:
+        import webbrowser
+        report_url = f"file://{Path(out, 'report.html').resolve()}"
+        print(f"[*] Opening web report: {report_url}", file=sys.stderr)
+        webbrowser.open(report_url)
     if a.compare:
         print("\n" + "=" * 70)
         print("BASELINE COMPARISON (TrustLens vs Static/Dynamic Baselines)")

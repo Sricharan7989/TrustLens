@@ -33,6 +33,7 @@ Source = "https://github.com/Sricharan7989/TrustLens"
 packages = [
   "trustlens", "trustlens.claims", "trustlens.engine", "trustlens.fingerprint", "trustlens.report",
   "trustlens.sandbox", "trustlens.sandbox.agent", "trustlens.webui",
+  "trustlens.llm", "trustlens.ml", "trustlens.static", "trustlens.tui",
   "trustlens._schemas", "trustlens._calibration",
   "eval", "eval.baselines",
 ]
@@ -43,6 +44,7 @@ packages = [
 
 [tool.setuptools.package-data]
 trustlens = ["engine/*.yaml", "sandbox/agent/*.py"]
+"trustlens.ml" = ["model.json"]
 "trustlens._schemas" = ["*.schema.json", "capabilities.yaml"]
 "trustlens._calibration" = ["noise_whitelist.yaml"]
 

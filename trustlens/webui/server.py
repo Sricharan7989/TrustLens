@@ -1,9 +1,11 @@
-"""Dev D: Localhost-only Web UI server using standard library http.server.
-Pure Python, offline, zero CDN dependencies, strict loopback binding (127.0.0.1).
+"""TrustLens Localhost-only Web UI console.
+Features a luxury monochromatic obsidian aesthetic matching the landing page.
+Displays exclusively the security report with a minimalist top dependency search bar.
 """
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import sys
@@ -18,17 +20,22 @@ from typing import Any
 
 from trustlens.cli import scan
 from trustlens.contracts import OUTPUT_ROOT, ROOT
+from trustlens.llm.reporter import generate_llm_report
+from trustlens.ml.threat_model import get_threat_model
 from trustlens.report import render_comparison_html
 from trustlens.report.redact import redact_document
+from trustlens.resolver import resolve_package
 from trustlens.sandbox.env_check import check_env
+from trustlens.static.ast_analyzer import scan_package_static
 
 MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
 scan_lock = threading.Lock()
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 
+logger = logging.getLogger("trustlens.webui")
+
 
 def host_is_loopback(host_header: str) -> bool:
-    """True for a loopback Host. ``[::1]:port`` is parsed as a bracketed IPv6 literal, not split on the first colon."""
     value = (host_header or "").strip().lower()
     if not value:
         return False
@@ -49,10 +56,11 @@ def host_is_loopback(host_header: str) -> bool:
 
 
 def _rejected_upload_name(raw_fn: str) -> bool:
-    """True when the upload basename is ``.`` or ``..`` (pathlib collapses ``.`` to an empty name)."""
+    """True when the upload basename is `.` or `..` (pathlib collapses `.` to an empty name)."""
     if raw_fn in {".", ".."}:
         return True
     return Path(raw_fn).name in {".", ".."}
+
 
 DEMO_PACKAGES = [
     {"id": "evil_slug", "name": "evil-slug (malicious / install-time exfil)", "path": "bench/packages/malicious/evil_slug"},
@@ -64,7 +72,6 @@ DEMO_PACKAGES = [
 
 def bench_packages() -> list[dict]:
     """Every bench/labels.yaml package present in this checkout (none in a pip install).
-
     Falls back to DEMO_PACKAGES when the labels file is missing or unreadable.
     """
     labels = ROOT / "bench" / "labels.yaml"
@@ -83,176 +90,207 @@ def bench_packages() -> list[dict]:
         pass
     return [d for d in DEMO_PACKAGES if (ROOT / d["path"]).is_dir()]
 
+
 HTML_PAGE = """<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TrustLens AI - Localhost Provenance Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --surface: #151d30;
-      --surface-alt: #222f4c;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --border: #334155;
+      --bg: #000000;
+      --surface: #0D0D0D;
+      --surface-raised: #141414;
+      --border: rgba(255, 255, 255, 0.12);
+      --border-bright: rgba(255, 255, 255, 0.4);
+      --text: #FFFFFF;
+      --text-muted: #A6A6AC;
+      --primary: #8b5cf6;
       --pass: #10b981;
       --block: #ef4444;
       --review: #f59e0b;
-      --primary: #3b82f6;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.5;
-      padding: 1.5rem;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
     }
-    .header {
+    .topbar {
+      background: rgba(13, 13, 13, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-    .header h1 { font-size: 1.6rem; display: flex; align-items: center; gap: 0.5rem; }
-    .badge-runner {
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      padding: 0.35rem 0.8rem;
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .badge-runner.live { border-color: var(--pass); color: var(--pass); }
-    .badge-runner.fixture { border-color: var(--review); color: var(--review); }
-
-    .grid-top {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      position: sticky;
+      top: 0;
+      z-index: 50;
       gap: 1.5rem;
-      margin-bottom: 1.5rem;
     }
-    @media (max-width: 900px) { .grid-top { grid-template-columns: 1fr; } }
-
-    .card {
-      background: var(--surface);
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      white-space: nowrap;
+    }
+    .brand-logo {
+      width: 28px;
+      height: 28px;
+      background: #FFFFFF;
+      color: #000000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+    }
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .brand-tag {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      max-width: 600px;
+    }
+    .search-input {
+      flex: 1;
+      background: var(--surface-raised);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 1.25rem;
-    }
-    .card h2 { font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--text); }
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem; }
-    select, input[type="file"], input[type="text"] {
-      width: 100%;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
       color: var(--text);
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
+      padding: 0.55rem 1rem;
       font-size: 0.9rem;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: all 0.2s ease;
     }
-    .checkbox-group { display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem; }
-    .checkbox-group label { display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0; cursor: pointer; }
-
-    .btn-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
-    .btn {
-      background: var(--primary);
-      color: #fff;
+    .search-input:focus {
+      border-color: var(--border-bright);
+      box-shadow: 0 0 20px -5px rgba(139, 92, 246, 0.4);
+    }
+    .btn-scan {
+      background: #FFFFFF;
+      color: #000000;
       border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: opacity 0.2s;
-    }
-    .btn:hover { opacity: 0.9; }
-    .btn-secondary { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text); }
-
-    #status-banner {
-      display: none;
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
-    }
-    #status-banner.running { display: block; background: #1e3a8a; border: 1px solid #3b82f6; }
-    #status-banner.error { display: block; background: #7f1d1d; border: 1px solid var(--block); }
-
-    .report-frame-wrap {
-      width: 100%;
-      height: 900px;
-      border: 1px solid var(--border);
       border-radius: 8px;
-      overflow: hidden;
-      background: #0f172a;
+      padding: 0.55rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
-    iframe { width: 100%; height: 100%; border: none; }
+    .btn-scan:hover {
+      background: #E0E0E4;
+      transform: translateY(-1px);
+    }
+    .pills-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .pill:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      border-color: var(--border-bright);
+    }
+    #status-bar {
+      display: none;
+      padding: 0.65rem 2rem;
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+      border-bottom: 1px solid var(--border);
+      background: rgba(139, 92, 246, 0.12);
+      color: #c4b5fd;
+    }
+    #status-bar.error {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+    }
+    .report-viewport {
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 65px);
+      position: relative;
+      background: #000000;
+    }
+    iframe.report-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>🛡️ TrustLens AI <span>Provenance Console</span></h1>
-    <div id="runner-badge" class="badge-runner">Detecting Sandbox...</div>
-  </div>
-
-  <div class="grid-top">
-    <!-- Preset Demo Packages -->
-    <div class="card">
-      <h2>1. Select Benchmark Package</h2>
-      <div class="form-group">
-        <label for="demo-select">Pre-configured Benchmark Samples:</label>
-        <select id="demo-select">
-          <option value="">Loading benchmark packages...</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Profiles to Exercise:</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" id="prof-dev" checked> Dev Laptop</label>
-          <label><input type="checkbox" id="prof-ci" checked> CI Pipeline</label>
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn" id="btn-scan-preset">Run Behavioral Scan</button>
-        <button class="btn btn-secondary" id="btn-compare">Side-by-Side (PASS vs BLOCK)</button>
-      </div>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">◈</div>
+      <div class="brand-title">TrustLens AI</div>
+      <div class="brand-tag">Provenance Console</div>
     </div>
 
-    <!-- Archive Upload Zone -->
-    <div class="card">
-      <h2>2. Or Upload Archive (.whl / .tar.gz / .zip)</h2>
-      <div class="form-group">
-        <label for="file-upload">Upload Candidate Wheel or Sdist:</label>
-        <input type="file" id="file-upload" accept=".whl,.zip,.tar.gz,.tgz">
-      </div>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-        Archives are extracted inside isolated temporary storage with path traversal filters. Zero package code executes on the host outside the sandbox.
-      </p>
-      <div class="btn-row">
-        <button class="btn" id="btn-scan-upload">Upload &amp; Scan</button>
-      </div>
+    <div class="search-wrap">
+      <input type="text" id="pkg-input" class="search-input" placeholder="Scan PyPI package or toy (e.g. requests, evil_slug)..." value="">
+      <button id="btn-scan" class="btn-scan">Run Behavioral Scan</button>
+    </div>
+
+    <div class="pills-bar">
+      <span style="color: var(--text-muted);">Quick:</span>
+      <span class="pill" onclick="scanPill('evil_slug')">evil_slug</span>
+      <span class="pill" onclick="scanPill('clean_slug')">clean_slug</span>
+      <span class="pill" onclick="scanPill('rest_wrapper')">rest_wrapper</span>
+      <span class="pill" onclick="scanPill('delayed_slug')">delayed_slug</span>
+      <span class="pill" onclick="scanPill('requests')">requests</span>
     </div>
   </div>
 
-  <div id="status-banner"></div>
+  <div id="status-bar"></div>
 
-  <div class="card" style="padding: 0.5rem;">
-    <div class="report-frame-wrap">
-      <iframe id="report-iframe" sandbox="allow-scripts" title="TrustLens report" srcdoc="<p style='font-family:sans-serif;color:#888;padding:2rem'>Select a package and click <b>Run Behavioral Scan</b>, or upload an archive. The report for that package appears here.</p>"></iframe>
-    </div>
+  <div class="report-viewport">
+    <iframe id="report-iframe" name="report-frame" class="report-frame" sandbox="allow-scripts allow-same-origin" src="about:blank"></iframe>
   </div>
 
   <script>
-    // Each click gets a number. A response is shown only if it belongs to the latest click,
-    // so a slow earlier scan can never overwrite the report of the package selected now.
     let scanSeq = 0;
 
     function escapeText(t) {
@@ -260,95 +298,63 @@ HTML_PAGE = """<!doctype html>
     }
 
     function showPlaceholder(msg) {
-      document.getElementById('report-iframe').srcdoc =
-        "<p style='font-family:sans-serif;color:#888;padding:2rem'>" + escapeText(msg) + "</p>";
+      const frame = document.getElementById('report-iframe') || document.getElementById('report-frame');
+      if (frame) {
+        frame.srcdoc = "<p style='font-family:sans-serif;color:#888;padding:2rem'>" + escapeText(msg) + "</p>";
+      }
     }
 
     function setBusy(busy) {
-      ['btn-scan-preset', 'btn-compare', 'btn-scan-upload'].forEach(id => {
+      ['btn-scan', 'btn-scan-preset', 'btn-compare'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = busy;
       });
     }
 
+    function setStatus(text, isError) {
+      const sb = document.getElementById('status-bar');
+      if (!text) {
+        sb.style.display = 'none';
+        return;
+      }
+      sb.textContent = text;
+      sb.className = isError ? 'error' : '';
+      sb.style.display = 'block';
+    }
+
     function showResult(seq, label, data) {
-      if (seq !== scanSeq) return;  // a newer scan was started; drop this late answer
+      if (seq !== scanSeq) return;
       setBusy(false);
+      const btn = document.getElementById('btn-scan');
+      if (btn) btn.textContent = 'Run Behavioral Scan';
       if (data.error) {
-        setStatus('❌ ' + label + ': ' + data.error, 'error');
+        setStatus('❌ ' + label + ': ' + data.error, true);
         showPlaceholder('No report for ' + label + ': ' + data.error);
         return;
       }
-      const v = data.verdict;
+      const v = data.verdict || {};
       const who = v.package ? (v.package.name + ' ' + (v.package.version || '')) : label;
-      setStatus('✅ Report for ' + who + ': ' + v.verdict + ' (' + v.action + ')', 'running');
-      document.getElementById('report-iframe').srcdoc = data.report_html;
+      setStatus('✔ Report for ' + who + ': ' + (v.verdict || '') + ' (' + (v.action || '') + ')', false);
+      const frame = document.getElementById('report-iframe') || document.getElementById('report-frame');
+      if (frame) frame.srcdoc = data.report_html;
     }
 
-    async function loadStatus() {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        const sel = document.getElementById('demo-select');
-        sel.innerHTML = '';
-        const pkgs = data.demo_packages || [];
-        if (!pkgs.length) {
-          sel.innerHTML = '<option value="">No benchmark packages here (pip install): upload an archive instead</option>';
-        }
-        for (const group of ['malicious', 'clean', '']) {
-          const items = pkgs.filter(p => (p.label || '') === group || (group === '' && !['malicious', 'clean'].includes(p.label || '')));
-          if (!items.length) continue;
-          const og = document.createElement('optgroup');
-          og.label = group ? group : 'other';
-          for (const p of items) {
-            const o = document.createElement('option');
-            o.value = p.path;
-            o.textContent = p.name;
-            og.appendChild(o);
-          }
-          sel.appendChild(og);
-        }
-        const badge = document.getElementById('runner-badge');
-        if (data.bwrap_ok) {
-          badge.textContent = 'Runner: LIVE (bwrap sandbox)';
-          badge.className = 'badge-runner live';
-        } else {
-          badge.textContent = 'Runner: RECORDED FIXTURE (stub replay)';
-          badge.className = 'badge-runner fixture';
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function setStatus(msg, type) {
-      const b = document.getElementById('status-banner');
-      if (!msg) {
-        b.style.display = 'none';
-        return;
-      }
-      b.textContent = msg;
-      b.className = type;
-      b.style.display = 'block';
-    }
-
-    async function runScan(targetPath) {
-      const dev = document.getElementById('prof-dev').checked;
-      const ci = document.getElementById('prof-ci').checked;
-      const profiles = [];
-      if (dev) profiles.push('dev');
-      if (ci) profiles.push('ci');
-
-      const label = targetPath.split('/').pop();
+    async function triggerScan(pkgName) {
+      if (!pkgName || !pkgName.trim()) return;
+      const target = pkgName.trim();
+      const label = target.split('/').pop();
       const seq = ++scanSeq;
       setBusy(true);
-      setStatus('⏳ Scanning ' + label + ' (a live sandbox run takes about a minute)...', 'running');
+      const btn = document.getElementById('btn-scan');
+      if (btn) btn.textContent = 'Analyzing...';
+      setStatus('⚡ Fetching package files, parsing claims, and executing XGBoost & Gemini analysis for ' + label + '...', false);
       showPlaceholder('Scanning ' + label + '... the report for this package will appear here.');
+
       try {
         const res = await fetch('/api/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ package: targetPath, profiles: profiles.join(',') })
+          body: JSON.stringify({ package: target })
         });
         showResult(seq, label, await res.json());
       } catch (err) {
@@ -356,68 +362,25 @@ HTML_PAGE = """<!doctype html>
       }
     }
 
-    document.getElementById('btn-scan-preset').addEventListener('click', () => {
-      const sel = document.getElementById('demo-select').value;
-      if (!sel) { setStatus('Select a benchmark package first.', 'error'); return; }
-      runScan(sel);
+    const runScan = triggerScan;
+
+    function scanPill(name) {
+      document.getElementById('pkg-input').value = name;
+      triggerScan(name);
+    }
+
+    document.getElementById('btn-scan').addEventListener('click', () => {
+      triggerScan(document.getElementById('pkg-input').value);
     });
 
-    document.getElementById('btn-compare').addEventListener('click', async () => {
-      const seq = ++scanSeq;
-      setBusy(true);
-      setStatus('⏳ Generating side-by-side comparison (rest_wrapper vs evil_slug)...', 'running');
-      showPlaceholder('Building the side-by-side comparison of rest_wrapper (PASS) and evil_slug (BLOCK)...');
-      try {
-        const res = await fetch('/api/compare-demo');
-        const html = await res.text();
-        if (seq !== scanSeq) return;
-        setBusy(false);
-        if (!res.ok) { setStatus('❌ Comparison failed: ' + html.slice(0, 200), 'error'); showPlaceholder('Comparison failed.'); return; }
-        document.getElementById('report-iframe').srcdoc = html;
-        setStatus('✅ Side-by-side comparison: rest_wrapper vs evil_slug', 'running');
-      } catch (err) {
-        if (seq !== scanSeq) return;
-        setBusy(false);
-        setStatus('❌ Error: ' + err.message, 'error');
-        showPlaceholder('Comparison failed: ' + err.message);
-      }
-    });
-
-    document.getElementById('btn-scan-upload').addEventListener('click', async () => {
-      const fileInput = document.getElementById('file-upload');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Please select an archive file to upload.');
-        return;
-      }
-      const file = fileInput.files[0];
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const dev = document.getElementById('prof-dev').checked;
-      const ci = document.getElementById('prof-ci').checked;
-      const profiles = [];
-      if (dev) profiles.push('dev');
-      if (ci) profiles.push('ci');
-      formData.append('profiles', profiles.join(','));
-
-      const seq = ++scanSeq;
-      setBusy(true);
-      setStatus('⏳ Uploading and scanning ' + file.name + '...', 'running');
-      showPlaceholder('Scanning ' + file.name + '... the report for this archive will appear here.');
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        showResult(seq, file.name, await res.json());
-      } catch (err) {
-        showResult(seq, file.name, { error: 'upload error: ' + err.message });
+    document.getElementById('pkg-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        triggerScan(e.target.value);
       }
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadStatus();
-      // No automatic scan: the report area stays empty until a package is chosen.
+      // No automatic scan: the report area stays empty until a package is chosen
     });
   </script>
 </body>
@@ -438,7 +401,7 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
         if self.path == "/" or self.path.startswith("/?"):
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; frame-src 'self' data: about:;")
+            self.send_header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src 'self' https://fonts.gstatic.com data:; frame-src 'self' data: about:;")
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode("utf-8"))
             return
@@ -447,15 +410,9 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
             env = check_env()
             resp = {
                 "bwrap_ok": bool(env.get("bwrap_ok")),
-                # Bench packages exist only in a repo checkout, not in a pip install.
                 "demo_packages": bench_packages(),
             }
-            data = json.dumps(resp).encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+            self._send_json(resp)
             return
 
         if self.path == "/api/compare-demo":
@@ -504,54 +461,78 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": f"Invalid JSON payload: {e}"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            rel_pkg = payload.get("package", "")
-            if not isinstance(rel_pkg, str) or not rel_pkg.strip():
-                self._send_json({"error": "Missing package path"}, HTTPStatus.BAD_REQUEST)
+            pkg_query = payload.get("package", "").strip()
+            if not pkg_query:
+                self._send_json({"error": "Missing package query"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            raw_path = Path(rel_pkg)
+            raw_path = Path(pkg_query)
             if (
-                rel_pkg.startswith(("/", "\\"))
+                pkg_query.startswith(("/", "\\"))
                 or raw_path.is_absolute()
                 or ".." in raw_path.parts
-                or (len(rel_pkg) >= 2 and rel_pkg[1] == ":")
+                or (len(pkg_query) >= 2 and pkg_query[1] == ":")
             ):
-                self._send_json({"error": f"Forbidden: path traversal or absolute path '{rel_pkg}'"}, HTTPStatus.BAD_REQUEST)
+                self._send_json({"error": f"Forbidden: path traversal or absolute path '{pkg_query}'"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            # Uploads live under OUTPUT_ROOT (the current folder when installed); bench packages under ROOT.
-            base = OUTPUT_ROOT if raw_path.parts[:3] == ("reports", "webui", "uploads") else ROOT
-            resolved = (base / raw_path).resolve()
-            bench_root = (ROOT / "bench/packages").resolve()
-            upload_root = (OUTPUT_ROOT / "reports/webui/uploads").resolve()
-
-            try:
-                resolved.relative_to(bench_root)
-                is_in_bench = True
-            except ValueError:
-                is_in_bench = False
-
-            try:
-                resolved.relative_to(upload_root)
-                is_in_upload = True
-            except ValueError:
-                is_in_upload = False
-
-            if not (is_in_bench or is_in_upload):
-                self._send_json({"error": f"Forbidden: path must be inside bench/packages/ or uploads/: '{rel_pkg}'"}, HTTPStatus.BAD_REQUEST)
-                return
-
-            if not resolved.exists():
-                self._send_json({"error": f"Package path '{rel_pkg}' does not exist"}, HTTPStatus.NOT_FOUND)
-                return
-
-            profiles = payload.get("profiles", "dev,ci").split(",")
-            out_dir = OUTPUT_ROOT / "reports/webui" / resolved.name
             with scan_lock:
                 try:
-                    res = scan(str(resolved), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
-                    report_html = (Path(res["out_dir"]) / "report.html").read_text(encoding="utf-8")
-                    self._send_json({"verdict": redact_document(res["verdict"]), "report_html": report_html})
+                    bench_root = (ROOT / "bench/packages").resolve()
+                    upload_root = (OUTPUT_ROOT / "reports/webui/uploads").resolve()
+                    base = OUTPUT_ROOT if raw_path.parts[:3] == ("reports", "webui", "uploads") else ROOT
+                    cand_local = (base / raw_path).resolve()
+
+                    if cand_local.exists():
+                        try:
+                            cand_local.relative_to(bench_root)
+                            target_path = cand_local
+                            pkg_name = cand_local.name
+                        except ValueError:
+                            try:
+                                cand_local.relative_to(upload_root)
+                                target_path = cand_local
+                                pkg_name = cand_local.name
+                            except ValueError:
+                                self._send_json({"error": f"Forbidden: path must be inside bench/packages/ or uploads/: '{pkg_query}'"}, HTTPStatus.BAD_REQUEST)
+                                return
+                    else:
+                        resolved = resolve_package(pkg_query)
+                        target_path = resolved.local_path
+                        pkg_name = resolved.name
+
+                    profiles = payload.get("profiles", "dev,ci").split(",")
+                    out_dir = OUTPUT_ROOT / "reports" / pkg_name
+
+                    # Run scan
+                    res = scan(str(target_path), str(out_dir), runner="auto", profiles=tuple(profiles), offline=True)
+                    v = res["verdict"]
+                    fp = res["fingerprint"]
+                    cl = res["claims"]
+
+                    # Static AST
+                    static_res = scan_package_static(target_path)
+
+                    # ML Threat Model
+                    tm = get_threat_model()
+                    pred = tm.predict(v, fp, cl, static_res)
+                    v["ml_threat_score"] = pred.threat_score
+                    v["ml_risk_tier"] = pred.risk_tier
+                    v["ml_factors"] = pred.top_factors
+
+                    # Gemini LLM Report
+                    llm_rep = generate_llm_report(v, fp, cl, pred)
+                    v["llm_report"] = llm_rep.report_markdown
+                    v["llm_model"] = llm_rep.model_used
+
+                    from trustlens.report import render_html
+                    report_html = render_html(v, fp, cl)
+                    (Path(out_dir) / "report.html").write_text(report_html, encoding="utf-8")
+
+                    self._send_json({
+                        "verdict": redact_document(v),
+                        "report_html": report_html,
+                    })
                 except Exception as e:
                     self._send_json({"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return
@@ -586,7 +567,6 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                                 HTTPStatus.BAD_REQUEST,
                             )
                             return
-                        # Sanitize filename: strip path traversal and characters illegal on Windows/POSIX (<>:"/\|?*)
                         clean_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', Path(raw_fn).name)
                         if _rejected_upload_name(clean_name):
                             self._send_json(
@@ -622,33 +602,31 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
 
-    def _send_json(self, data: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
+    def _send_json(self, data: Any, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(data).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
     def log_message(self, format: str, *args: Any) -> None:
-        # Suppress noisy request logging during tests
-        if os.environ.get("TRUSTLENS_LOG_QUIET"):
-            return
-        super().log_message(format, *args)
+        # Keep server quiet unless debugging
+        pass
 
 
 def create_server(host: str = "127.0.0.1", port: int = 8765) -> HTTPServer:
-    """Create a configured HTTPServer instance binding exclusively to host."""
-    server = HTTPServer((host, port), TrustLensWebHandler)
-    return server
+    if not host_is_loopback(host):
+        raise ValueError(f"Server refused to bind to non-loopback host: {host}")
+    return HTTPServer((host, port), TrustLensWebHandler)
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8765) -> None:
     server = create_server(host, port)
-    print(f"[*] TrustLens Web UI active at http://{host}:{port}/ (Press Ctrl+C to stop)", file=sys.stderr)
+    print(f"\n◈ TrustLens Provenance Console active at: http://{host}:{port}/")
+    print("Press Ctrl+C to stop.\n")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n[*] Shutting down TrustLens Web UI server...", file=sys.stderr)
-    finally:
+        print("\nStopping TrustLens Provenance Console.")
         server.server_close()
