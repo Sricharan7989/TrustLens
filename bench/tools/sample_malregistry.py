@@ -18,8 +18,6 @@ import random
 import shutil
 import subprocess
 import sys
-import tarfile
-import zipfile
 from pathlib import Path
 
 import yaml
@@ -49,7 +47,12 @@ def ensure_mr_clone() -> None:
 
 
 def list_available_packages() -> list[str]:
-    ensure_mr_clone()
+    """Return package directory names from an existing local clone.
+
+    Does not clone and does not use the network. A missing checkout yields [].
+    """
+    if not (MR_DIR / ".git").is_dir():
+        return []
     proc = subprocess.run(
         ["git", "-C", str(MR_DIR), "ls-tree", "-d", "--name-only", "HEAD"],
         capture_output=True,
@@ -62,46 +65,24 @@ def list_available_packages() -> list[str]:
 
 
 def safe_extract_archive(archive_path: Path, target_dir: Path) -> bool:
-    """Extract tar.gz or zip archive without executing code."""
-    target_dir.mkdir(parents=True, exist_ok=True)
+    """Extract via scripts/extract_in_sandbox.sh. Never extracts on the host.
+
+    Returns False and writes nothing when bwrap or the script is missing or the
+    sandbox exits non-zero.
+    """
     extract_sh = ROOT / "scripts" / "extract_in_sandbox.sh"
-
-    if shutil.which("bwrap") and extract_sh.exists():
-        try:
-            res = subprocess.run(
-                ["bash", str(extract_sh), str(archive_path), str(target_dir)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if res.returncode == 0:
-                return True
-        except Exception:
-            pass
-
-    # Safe extraction fallback
-    name_lower = archive_path.name.lower()
-    try:
-        if name_lower.endswith(".tar.gz") or name_lower.endswith(".tgz") or name_lower.endswith(".tar"):
-            with tarfile.open(archive_path, "r:*") as tar:
-                for member in tar.getmembers():
-                    clean_name = member.name.replace("\\", "/")
-                    if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                        continue
-                    tar.extract(member, target_dir)
-            return True
-        elif name_lower.endswith(".zip") or name_lower.endswith(".whl"):
-            with zipfile.ZipFile(archive_path) as zf:
-                for member in zf.infolist():
-                    clean_name = member.filename.replace("\\", "/")
-                    if clean_name.startswith("/") or ".." in clean_name.split("/"):
-                        continue
-                    zf.extract(member, target_dir)
-            return True
-    except Exception as e:
-        print(f"Warning: failed to extract {archive_path.name}: {e}", file=sys.stderr)
+    if shutil.which("bwrap") is None or not extract_sh.is_file():
         return False
-    return False
+    try:
+        res = subprocess.run(
+            ["bash", str(extract_sh), str(archive_path), str(target_dir)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    return res.returncode == 0
 
 
 def find_pkg_root(target: Path, name: str) -> Path:
@@ -131,9 +112,9 @@ def main(argv=None) -> int:
     ap.add_argument("--out-labels", default=str(ROOT / "bench" / "labels_malregistry.yaml"), help="Output labels YAML path")
     a = ap.parse_args(argv)
 
-    pkgs = list_available_packages()
-
     if a.list:
+        ensure_mr_clone()
+        pkgs = list_available_packages()
         print(f"Total available packages in pypi_malregistry: {len(pkgs):,}")
         for p in pkgs[:40]:
             print(f"  {p}")
@@ -142,8 +123,12 @@ def main(argv=None) -> int:
         return 0
 
     if a.packages:
-        chosen = a.packages
+        chosen = list(a.packages)
     else:
+        pkgs = list_available_packages()
+        if not pkgs:
+            print("No local malregistry package list (clone absent). Dry-run does not clone.")
+            return 0 if a.dry_run else 1
         rng = random.Random(a.seed)
         chosen = sorted(rng.sample(pkgs, min(a.n, len(pkgs))))
 
@@ -152,6 +137,7 @@ def main(argv=None) -> int:
         print("Dry-run requested; no checkout performed.")
         return 0
 
+    ensure_mr_clone()
     # Configure sparse checkout
     subprocess.run(["git", "-C", str(MR_DIR), "sparse-checkout", "init", "--cone"], check=True)
     subprocess.run(["git", "-C", str(MR_DIR), "sparse-checkout", "set", *chosen], check=True)

@@ -5,7 +5,9 @@ python bench/calibration/build_noise_whitelist.py [--csv data/qut/QUT-DV25_Filet
 
 A token is whitelisted when it occurs in >= min-prevalence of BENIGN rows AND in < 1/4 of that prevalence of malicious rows (rare-in-malware noise only).
 Safety invariant (AUDIT §6): no whitelist rule may match canary tokens, sensitive credential files, or RFC 5737 targets.
-Output schema = trustlens/engine/noise_whitelist.yaml rules: {capability, path_glob|host_glob|env_glob, reason, source, benign_prevalence}.
+Output schema = trustlens/engine/noise_whitelist.yaml rules: {capability, path_glob|host_glob|env_glob, reason, source, benign_prevalence?}.
+benign_prevalence is omitted on source: seed rules. It is set only from CSV row counts.
+Subprocess path_glob rules are not emitted: proc.spawn records argv, not path.
 """
 from __future__ import annotations
 
@@ -41,6 +43,19 @@ FORBIDDEN_PATTERNS = re.compile(
     r"(id_rsa|\.ssh|\.aws|\.npmrc|\.pypirc|canary|198\.51\.100|203\.0\.113|192\.0\.2|invalid|token|secret|password)",
     re.I,
 )
+
+# proc.spawn detail is argv, not path. These path_globs cannot match it, and neither can any other subprocess path_glob.
+UNMATCHABLE_PROC_GLOBS = {
+    "*python*",
+    "*ld*",
+    "*clear*",
+    "*strace*",
+    "*cc1*",
+    "*pip3*",
+    "*systemd-oomd*",
+    "*ThreadPoolForeg*",
+    "*cc1plus*",
+}
 
 
 def parse_cell(cell: str) -> set[str]:
@@ -113,28 +128,25 @@ def main(argv=None) -> int:
     rules: list[dict] = []
     seen_globs: set[tuple[str, str]] = set()
 
-    # Domain-calibrated baseline rules for common benign runtime noise
+    # Seed rules are not measurements. Prevalence is attached only when a CSV computes it.
     calibrated_seeds = [
         {
             "capability": "network",
             "host_glob": "127.0.0.1*",
-            "reason": "loopback socket communication used by local unit test servers and clients (benign prevalence 100%)",
-            "source": "calibration:network_loopback",
-            "benign_prevalence": 1.0,
+            "reason": "loopback socket communication used by local unit test servers and clients",
+            "source": "seed",
         },
         {
             "capability": "network",
             "host_glob": "localhost*",
-            "reason": "localhost hostname lookup used by local test servers (benign prevalence 100%)",
-            "source": "calibration:network_loopback",
-            "benign_prevalence": 1.0,
+            "reason": "localhost hostname lookup used by local test servers",
+            "source": "seed",
         },
         {
             "capability": "env_secrets",
             "env_glob": "TEST_*",
-            "reason": "test-runner configuration and dummy database passwords (benign prevalence 100%)",
-            "source": "calibration:env_test_noise",
-            "benign_prevalence": 1.0,
+            "reason": "test-runner configuration and dummy database passwords",
+            "source": "seed",
         },
     ]
 
@@ -160,6 +172,11 @@ def main(argv=None) -> int:
             pm = mal[c][tok] / max(nm, 1)
             if pb >= a.min_prevalence and pm < pb / 4:
                 glob_pat = f"*{tok}*" if not tok.startswith("*") else tok
+                # path_glob is matched against detail["path"]. proc.spawn has argv, so these rules never fire.
+                if cap == "subprocess" and key == "path_glob":
+                    continue
+                if glob_pat in UNMATCHABLE_PROC_GLOBS:
+                    continue
                 rule_key = (cap, glob_pat)
                 if rule_key in seen_globs:
                     continue

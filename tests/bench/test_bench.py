@@ -1,10 +1,15 @@
 """Dev C. Labels, metrics, dataset tooling (offline parts only)."""
-import importlib.util
+import io
 import json
+import random
+import stat
 import subprocess
 import sys
+import tarfile
+import zipfile
 from pathlib import Path
 
+import pytest
 import yaml
 
 from eval.metrics import confusion, wilson
@@ -46,13 +51,40 @@ def test_planted_toys_only_use_reserved_addresses():
             assert ok.fullmatch(host), f"{f}: non-reserved host {host}"
 
 
-def test_datadog_sampler_is_importable_and_seeded():
-    spec = importlib.util.spec_from_file_location("sd", ROOT / "bench/tools/sample_datadog.py")
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    import random
-    names = [f"p{i}" for i in range(500)]
-    assert sorted(random.Random(7).sample(names, 5)) == sorted(random.Random(7).sample(names, 5))
+def test_datadog_sampler_is_importable_and_seeded(monkeypatch, tmp_path):
+    """Dry-run samples an injected manifest. urlopen is stubbed; git is not called."""
+    from bench.tools import sample_datadog as sd
+
+    manifest = {f"pkg{i:02d}": None for i in range(40)}
+    manifest["partial"] = ["1.0.0"]
+    payload = json.dumps(manifest).encode()
+    calls: list[str] = []
+
+    def fake_urlopen(url, timeout=60):
+        calls.append(str(url))
+        return io.BytesIO(payload)
+
+    def forbid_subprocess(*_a, **_k):
+        raise AssertionError("dry-run must not spawn git or any subprocess")
+
+    monkeypatch.setattr(sd.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(sd.subprocess, "run", forbid_subprocess)
+    manifest_txt = ROOT / "bench" / "datadog_sample.txt"
+    original = manifest_txt.read_text(encoding="utf-8")
+    dest = tmp_path / "datadog"
+    try:
+        assert sd.main(["--n", "5", "--seed", "7", "--dry-run", "--dest", str(dest)]) == 0
+        first = json.loads((dest / "sample.json").read_text(encoding="utf-8"))
+        assert sd.main(["--n", "5", "--seed", "7", "--dry-run", "--dest", str(dest)]) == 0
+        second = json.loads((dest / "sample.json").read_text(encoding="utf-8"))
+    finally:
+        manifest_txt.write_text(original, encoding="utf-8")
+    names = sorted(k for k, v in manifest.items() if v is None)
+    expected = sorted(random.Random(7).sample(names, 5))
+    assert first["packages"] == expected
+    assert second["packages"] == expected
+    assert calls and all("manifest.json" in url for url in calls)
+    assert "partial" not in expected
 
 
 def test_eval_runs_on_fixtures(tmp_path):
@@ -77,6 +109,10 @@ def test_eval_runs_on_fixtures(tmp_path):
     assert "runner" in summary.lower()
     assert "wilson 95%" in summary.lower()
     assert "not run" in summary
+    assert "decided cases only" in summary
+    assert "not disguised as true negatives" not in summary
+    assert "ROC AUC:** `1.0" not in summary
+    assert "ROC AUC:** `1.0000" not in summary
 
     heatmap_content = hm_file.read_text(encoding="utf-8")
     assert "<table" in heatmap_content
@@ -84,31 +120,38 @@ def test_eval_runs_on_fixtures(tmp_path):
     assert "legend" in heatmap_content
 
 
+def _skip_if_data_paths_absent(labels: dict) -> None:
+    missing = [p["path"] for p in labels["packages"] if not (ROOT / p["path"]).exists()]
+    if missing:
+        pytest.skip(f"data/ paths absent ({len(missing)} packages)")
+
+
 def test_labels_external_conforms_to_schema():
     ext = ROOT / "bench/labels_external.yaml"
-    if ext.exists():
-        labels = yaml.safe_load(ext.read_text())
-        validate("bench_labels", labels)
-        assert len(labels["packages"]) >= 25
-        for p in labels["packages"]:
-            assert p["label"] == "clean"
-            assert p["category"] == "top_pypi"
-            if not (ROOT / p["path"]).exists():
-                continue
-            assert (ROOT / p["path"]).exists()
+    if not ext.exists():
+        pytest.skip("bench/labels_external.yaml absent")
+    labels = yaml.safe_load(ext.read_text())
+    validate("bench_labels", labels)
+    _skip_if_data_paths_absent(labels)
+    assert len(labels["packages"]) >= 25
+    for p in labels["packages"]:
+        assert p["label"] == "clean"
+        assert p["category"] == "top_pypi"
+        assert (ROOT / p["path"]).exists()
 
 
 def test_labels_datadog_conforms_to_schema():
     dd = ROOT / "bench/labels_datadog.yaml"
-    if dd.exists():
-        labels = yaml.safe_load(dd.read_text())
-        validate("bench_labels", labels)
-        assert 100 <= len(labels["packages"]) <= 200
-        for p in labels["packages"]:
-            assert p["label"] == "malicious"
-            assert p["category"] == "datadog"
-            if not (ROOT / p["path"]).exists():
-                continue
+    if not dd.exists():
+        pytest.skip("bench/labels_datadog.yaml absent")
+    labels = yaml.safe_load(dd.read_text())
+    validate("bench_labels", labels)
+    _skip_if_data_paths_absent(labels)
+    assert 100 <= len(labels["packages"]) <= 200
+    for p in labels["packages"]:
+        assert p["label"] == "malicious"
+        assert p["category"] == "datadog"
+        assert (ROOT / p["path"]).exists()
 def test_clean_chosen_json_exists_and_valid():
     cc = ROOT / "bench/clean_chosen.json"
     assert cc.exists(), "bench/clean_chosen.json must exist"
@@ -158,20 +201,38 @@ def test_compute_category_metrics():
     assert cm["top_pypi"]["fp"] == 0
 
 
+_BANNED_PROC_GLOBS = {
+    "*python*",
+    "*ld*",
+    "*clear*",
+    "*strace*",
+    "*cc1*",
+    "*pip3*",
+    "*systemd-oomd*",
+    "*ThreadPoolForeg*",
+    "*cc1plus*",
+}
+
+
 def test_noise_whitelist_yaml_valid_and_safe():
     wl_file = ROOT / "bench/calibration/noise_whitelist.yaml"
     assert wl_file.exists(), "bench/calibration/noise_whitelist.yaml must exist"
     data = yaml.safe_load(wl_file.read_text(encoding="utf-8"))
     assert "rules" in data
     rules = data["rules"]
-    assert len(rules) >= 5
+    assert len(rules) >= 3
     for r in rules:
         assert "capability" in r
         assert any(k in r for k in ("path_glob", "host_glob", "env_glob"))
         assert "reason" in r
         assert "source" in r
-        assert "benign_prevalence" in r
-        assert 0.0 <= r["benign_prevalence"] <= 1.0
+        glob = str(r.get("path_glob") or "")
+        assert glob not in _BANNED_PROC_GLOBS
+        if r.get("source") == "seed":
+            assert "benign_prevalence" not in r
+        else:
+            assert "benign_prevalence" in r
+            assert 0.0 <= r["benign_prevalence"] <= 1.0
         val = str(r.get("path_glob") or r.get("host_glob") or r.get("env_glob") or "")
         # Safety invariant: no rule may match canary tokens, sensitive credential files, or RFC 5737 targets
         for forbidden in ("id_rsa", ".ssh", ".aws", ".npmrc", "canary", "198.51.100", "203.0.113", "192.0.2"):
@@ -181,8 +242,10 @@ def test_noise_whitelist_yaml_valid_and_safe():
 def test_noise_whitelist_loaded_by_normalizer():
     from trustlens.fingerprint.normalize import _load_whitelist
     rules = _load_whitelist()
-    sources = {r.get("source") for r in rules}
-    assert any("calibration" in s or "QUT" in s for s in sources if s)
+    globs = {str(r.get("host_glob") or r.get("env_glob") or r.get("path_glob") or "") for r in rules}
+    assert "127.0.0.1*" in globs
+    assert "TEST_*" in globs
+    assert _BANNED_PROC_GLOBS.isdisjoint(globs)
 
 
 def test_guarddog_network_rules_excluded():
@@ -195,7 +258,16 @@ def test_guarddog_network_rules_excluded():
 
 def test_baseline_adapters_contract_when_uninstalled(monkeypatch, tmp_path):
     from eval.baselines import guarddog, packj, pipcanary
-    monkeypatch.setattr("shutil.which", lambda _: None)
+    monkeypatch.setattr("shutil.which", lambda *_a, **_k: None)
+    real_is_file = Path.is_file
+
+    def _venv_lookup_missing(self):
+        # setup-dev installs the binaries next to sys.executable and under .venv.
+        if self.name in {"guarddog", "pipcanary", "packj", "guarddog.exe", "pipcanary.exe", "packj.exe"}:
+            return False
+        return real_is_file(self)
+
+    monkeypatch.setattr(Path, "is_file", _venv_lookup_missing)
 
     for mod, name in [(guarddog, "guarddog"), (pipcanary, "pipcanary"), (packj, "packj")]:
         res = mod.run(tmp_path)
@@ -365,6 +437,11 @@ def test_eval_runs_on_held_out_split(tmp_path):
     assert "Held-Out Split Evaluation" in summary
     assert "5 Clean + 5 Malicious" in summary
     assert "Held-Out Package Detail" in summary
+    assert "reported slice" in summary
+    assert "strictly isolated" not in summary
+    assert "never used" not in summary
+    assert "not disguised as true negatives" not in summary
+    assert "decided cases only" in summary
 
 
 def test_osptrack_cell_parsing_in_build_noise_whitelist():
@@ -387,7 +464,7 @@ def test_whitelist_cross_check_and_safety_invariant():
     res = cross_check(ROOT / "bench/calibration/noise_whitelist.yaml")
     assert res["is_safe"] is True
     assert len(res["violations"]) == 0
-    assert res["total_rules"] >= 5
+    assert res["total_rules"] >= 3
 
 
 def test_osptrack_metrics_analyzer_mock_and_real(tmp_path):
@@ -408,32 +485,61 @@ def test_osptrack_metrics_analyzer_mock_and_real(tmp_path):
     assert "# OSPTrack Empirical Analysis" in report
     assert "execute automatically upon download" in report
     assert "Planned Planted Toys" in report
+    assert "95.2" not in report
+    assert "81.1" not in report
+    assert "4/10" not in report
 
 
-def test_malregistry_sampler_is_importable_and_seeded():
-    import random
+def test_osptrack_analyzer_missing_csv_prints_not_computed(tmp_path, capsys):
+    from bench.tools.analyze_osptrack import main
+    missing = tmp_path / "no-such.csv"
+    out = tmp_path / "out.md"
+    assert main(["--csv", str(missing), "--out", str(out)]) == 0
+    assert "not computed" in capsys.readouterr().out
+    text = out.read_text(encoding="utf-8")
+    assert "not computed" in text
+    assert "95.2" not in text
+    assert "81.1" not in text
 
-    from bench.tools.sample_malregistry import main as mr_main
-    # Test dry-run execution
-    code = mr_main(["--dry-run", "--n", "3", "--seed", "42"])
-    assert code == 0
 
-    pkgs = [f"mal_{i}" for i in range(100)]
-    assert sorted(random.Random(42).sample(pkgs, 5)) == sorted(random.Random(42).sample(pkgs, 5))
+def test_malregistry_sampler_is_importable_and_seeded(monkeypatch, capsys):
+    from bench.tools import sample_malregistry as mr
+
+    pkgs = [f"mal_{i:03d}" for i in range(50)]
+
+    def fail_clone():
+        raise AssertionError("ensure_mr_clone must not run on --dry-run")
+
+    def forbid_subprocess(*_a, **_k):
+        raise AssertionError("dry-run must not call git")
+
+    monkeypatch.setattr(mr, "ensure_mr_clone", fail_clone)
+    monkeypatch.setattr(mr, "list_available_packages", lambda: list(pkgs))
+    monkeypatch.setattr(mr.subprocess, "run", forbid_subprocess)
+    expected = sorted(random.Random(42).sample(pkgs, 5))
+    assert mr.main(["--dry-run", "--n", "5", "--seed", "42"]) == 0
+    first = capsys.readouterr().out
+    assert mr.main(["--dry-run", "--n", "5", "--seed", "42"]) == 0
+    second = capsys.readouterr().out
+    assert first == second
+    for name in expected:
+        assert name in first
 
 
 def test_labels_malregistry_conforms_to_schema():
     mr = ROOT / "bench/labels_malregistry.yaml"
-    if mr.exists():
-        labels = yaml.safe_load(mr.read_text(encoding="utf-8"))
-        validate("bench_labels", labels)
-        assert len(labels["packages"]) >= 1
-        for p in labels["packages"]:
-            assert p["label"] == "malicious"
-            assert p["category"] == "malregistry"
-            assert p["expected_verdict"] == "MALICIOUS-EVIDENT"
-            assert (ROOT / p["path"]).exists()
-            assert (ROOT / p["path"] / "README.md").exists() or any((ROOT / p["path"]).rglob("README.md"))
+    if not mr.exists():
+        pytest.skip("bench/labels_malregistry.yaml absent")
+    labels = yaml.safe_load(mr.read_text(encoding="utf-8"))
+    validate("bench_labels", labels)
+    _skip_if_data_paths_absent(labels)
+    assert len(labels["packages"]) >= 1
+    for p in labels["packages"]:
+        assert p["label"] == "malicious"
+        assert p["category"] == "malregistry"
+        assert p["expected_verdict"] == "MALICIOUS-EVIDENT"
+        assert (ROOT / p["path"]).exists()
+        assert (ROOT / p["path"] / "README.md").exists() or any((ROOT / p["path"]).rglob("README.md"))
 
 
 def test_load_labels_malregistry():
@@ -470,12 +576,12 @@ def test_threshold_sweep_loads_weights_readonly():
 
 def test_threshold_sweep_roc_auc_math():
     from eval.threshold_sweep import compute_roc_auc
-    # Perfect classifier: (0, 1)
-    assert compute_roc_auc([{"fpr": 0.0, "tpr": 1.0}]) == 1.0
-    # Diagonal classifier: AUC == 0.5
-    assert compute_roc_auc([{"fpr": 0.5, "tpr": 0.5}]) == 0.5
-    # Empty
-    assert compute_roc_auc([]) == 0.5
+    # Caller-supplied corners are integrated. The function does not add them.
+    assert compute_roc_auc([{"fpr": 0.0, "tpr": 0.0}, {"fpr": 1.0, "tpr": 1.0}]) == 0.5
+    assert compute_roc_auc([{"fpr": 0.0, "tpr": 1.0}, {"fpr": 1.0, "tpr": 1.0}]) == 1.0
+    # A single point is not an AUC.
+    assert compute_roc_auc([{"fpr": 0.0, "tpr": 1.0}]) is None
+    assert compute_roc_auc([]) is None
 
 
 def test_threshold_sweep_sensitivity_bounds_and_records():
@@ -487,8 +593,9 @@ def test_threshold_sweep_sensitivity_bounds_and_records():
         {"id": "p4", "label": "clean", "score": 0.0, "top_finding_score": 0.0, "verdict": "BENIGN-CONSISTENT", "signal_classes": []},
     ]
     res = sweep_thresholds(mock_evals)
-    assert "auc" in res
-    assert 0.0 <= res["auc"] <= 1.0
+    assert res["auc_label"] == "decided cases only"
+    assert res["auc"] is None or 0.0 <= res["auc"] <= 1.0
+    assert res["inconclusive"] == 0
     sens = res["sensitivity"]
     assert sens["nominal_threshold"] == 4.0
     assert sens["minus_20_pct"]["threshold"] == 3.2
@@ -540,6 +647,238 @@ def test_heatmap_renders_all_three_sections():
     assert "ROC AUC =" in html
     assert "T=4.0" in html
     assert "Detection Rule Hits by Verdict Category" in html
+
+
+def test_nine_abstentions_and_one_tp_do_not_report_auc_one():
+    from eval.threshold_sweep import sweep_thresholds
+    pkgs = [
+        {
+            "id": f"abs{i}",
+            "label": "malicious",
+            "score": 0.0,
+            "top_finding_score": 0.0,
+            "verdict": "INCONCLUSIVE",
+            "signal_classes": [],
+            "inconclusive": True,
+        }
+        for i in range(9)
+    ]
+    pkgs.append({
+        "id": "tp1",
+        "label": "malicious",
+        "score": 12.0,
+        "top_finding_score": 12.0,
+        "verdict": "MALICIOUS-EVIDENT",
+        "signal_classes": ["canary_access"],
+        "inconclusive": False,
+    })
+    res = sweep_thresholds(pkgs)
+    assert res["auc"] is None
+    assert res["auc"] != 1.0
+    assert res["auc_label"] == "decided cases only"
+    assert res["inconclusive"] == 9
+    assert res["decided_malicious"] == 1
+    assert res["decided_clean"] == 0
+    nominal = res["sensitivity"]["nominal"]
+    assert nominal["tpr"] == 1.0
+    assert nominal["fpr"] is None
+    assert nominal["tp"] == 1
+    assert nominal["inconclusive"] == 9
+
+
+def test_mostly_inconclusive_perfect_decided_split_is_not_auc_one():
+    """Score-0 clean rows are flagged only at T<=0, which is not imputed as (1, 1)."""
+    from eval.threshold_sweep import sweep_thresholds
+    pkgs = [
+        {"id": "evil", "label": "malicious", "score": 12.0, "top_finding_score": 12.0, "verdict": "MALICIOUS-EVIDENT", "signal_classes": ["canary_access"], "inconclusive": False},
+        {"id": "delayed", "label": "malicious", "score": 5.4, "top_finding_score": 5.4, "verdict": "MALICIOUS-EVIDENT", "signal_classes": ["decoded_exec"], "inconclusive": False},
+        {"id": "clean_slug", "label": "clean", "score": 0.0, "top_finding_score": 0.0, "verdict": "BENIGN-CONSISTENT", "signal_classes": [], "inconclusive": False},
+        {"id": "rest", "label": "clean", "score": 0.0, "top_finding_score": 0.0, "verdict": "BENIGN-CONSISTENT", "signal_classes": [], "inconclusive": False},
+    ]
+    for i in range(22):
+        pkgs.append({
+            "id": f"inc{i}",
+            "label": "clean" if i % 2 else "malicious",
+            "score": 0.0,
+            "top_finding_score": 0.0,
+            "verdict": "INCONCLUSIVE",
+            "signal_classes": [],
+            "inconclusive": True,
+        })
+    res = sweep_thresholds(pkgs)
+    assert res["inconclusive"] == 22
+    assert res["auc"] is None
+    assert res["auc"] != 1.0
+    assert res["auc_label"] == "decided cases only"
+
+
+def test_category_cell_uses_decided_denominator():
+    from eval.run_eval import format_category_cell
+    assert format_category_cell(1, 1, 2) == "1/1 (inconclusive 2)"
+    cell = format_category_cell(0, 4, 2, [0.0, 0.49])
+    assert cell.startswith("0/4 ")
+    assert "inconclusive 2" in cell
+    assert "/6" not in cell
+    assert format_category_cell(0, 0, 5) == "- (inconclusive 5)"
+
+
+def test_get_tool_version_does_not_invent_literals(monkeypatch):
+    from eval.run_eval import get_tool_version
+    monkeypatch.setattr("eval.run_eval.find_executable", lambda _name: "/fake/tool")
+
+    class _Proc:
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr("eval.run_eval.subprocess.run", lambda *_a, **_k: _Proc())
+    assert get_tool_version("guarddog") == "unknown"
+    assert get_tool_version("pipcanary") == "unknown"
+    assert "3.2.0" not in get_tool_version("guarddog")
+    assert "0.1.1" not in get_tool_version("pipcanary")
+
+    def _boom(*_a, **_k):
+        raise OSError("nope")
+
+    monkeypatch.setattr("eval.run_eval.subprocess.run", _boom)
+    assert get_tool_version("guarddog") == "unknown"
+    assert get_tool_version("pipcanary") == "unknown"
+
+
+def test_build_noise_whitelist_drops_unmatchable_proc_globs(tmp_path):
+    from bench.calibration.build_noise_whitelist import main
+    csv_path = tmp_path / "traces.csv"
+    benign = "0,python;ld;clear,cc1;pip3,strace;systemd-oomd;ThreadPoolForeg;cc1plus\n"
+    malicious = "1,python,cc1,strace\n"
+    csv_path.write_text("Level,Read_Processes,Write_Processes,File_Access_Processes\n" + benign * 20 + malicious, encoding="utf-8")
+    out = tmp_path / "noise_whitelist.yaml"
+    assert main(["--csv", str(csv_path), "--out", str(out), "--min-prevalence", "0.02"]) == 0
+    data = yaml.safe_load(out.read_text(encoding="utf-8"))
+    globs = []
+    for rule in data["rules"]:
+        if rule.get("source") == "seed":
+            assert "benign_prevalence" not in rule
+        if rule.get("path_glob"):
+            globs.append(rule["path_glob"])
+    assert _BANNED_PROC_GLOBS.isdisjoint(globs)
+
+
+def _outside_snapshot(root: Path) -> dict[str, bytes | None]:
+    snap: dict[str, bytes | None] = {}
+    if not root.exists():
+        return snap
+    for path in root.rglob("*"):
+        rel = str(path.relative_to(root))
+        if path.is_symlink():
+            snap[rel] = b"SYMLINK"
+        elif path.is_file():
+            snap[rel] = path.read_bytes()
+        else:
+            snap[rel] = None
+    return snap
+
+
+def _build_malicious_zip(path: Path, abs_name: str) -> None:
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("ok.txt", "ok")
+        zf.writestr("../escaped.txt", "pwned")
+        zf.writestr("subdir/../../escaped2.txt", "pwned")
+        zf.writestr(abs_name, "abs-pwn")
+        info = zipfile.ZipInfo("escape_link")
+        info.create_system = 3
+        info.external_attr = (stat.S_IFLNK | 0o777) << 16
+        zf.writestr(info, b"../linked_outside")
+        zf.writestr("escape_link/pwned.txt", "via-link")
+
+
+def _build_malicious_tar(path: Path, abs_name: str) -> None:
+    with tarfile.open(path, "w:gz") as tf:
+        payload = b"ok"
+        info = tarfile.TarInfo("ok.txt")
+        info.size = len(payload)
+        tf.addfile(info, io.BytesIO(payload))
+        bad = b"pwned"
+        trav = tarfile.TarInfo("../escaped.txt")
+        trav.size = len(bad)
+        tf.addfile(trav, io.BytesIO(bad))
+        absolute = tarfile.TarInfo(abs_name)
+        absolute.size = len(bad)
+        tf.addfile(absolute, io.BytesIO(bad))
+        link = tarfile.TarInfo("escape_link")
+        link.type = tarfile.SYMTYPE
+        link.linkname = ".."
+        tf.addfile(link)
+
+
+def _assert_contained(root: Path, dest: Path, before: dict[str, bytes | None]) -> None:
+    assert (dest / "ok.txt").read_text(encoding="utf-8") == "ok"
+    for path in dest.rglob("*"):
+        assert not path.is_symlink()
+    after = _outside_snapshot(root)
+    for rel, content in after.items():
+        if rel == "dest" or rel.startswith("dest/"):
+            continue
+        assert rel in before, rel
+        assert before[rel] == content
+    assert not (root / "escaped.txt").exists()
+    assert not (root / "escaped2.txt").exists()
+    assert not (root / "abs_escaped.txt").exists()
+
+
+def test_malicious_archive_data_filter_stays_inside_destination(tmp_path):
+    """Traversal and symlink members must not write outside the destination."""
+    import shutil
+    abs_name = str(tmp_path / "abs_escaped.txt")
+    script = ROOT / "scripts" / "extract_in_sandbox.sh"
+    use_sandbox = shutil.which("bwrap") is not None and script.is_file()
+    for builder, name in ((_build_malicious_zip, "evil.zip"), (_build_malicious_tar, "evil.tar.gz")):
+        case = tmp_path / name.replace(".", "_")
+        case.mkdir()
+        archive = case / name
+        builder(archive, abs_name)
+        dest = case / "dest"
+        marker = case / "outside.txt"
+        marker.write_bytes(b"untouched")
+        before = _outside_snapshot(case)
+        if use_sandbox:
+            proc = subprocess.run(["bash", str(script), str(archive), str(dest)], capture_output=True, text=True, check=False)
+            assert proc.returncode == 0, proc.stderr
+        else:
+            from bench.tools.archive_filter import extract_archive_filtered
+            assert extract_archive_filtered(archive, dest) is True
+        assert marker.read_bytes() == b"untouched"
+        _assert_contained(case, dest, before)
+        assert not Path(abs_name).exists()
+        assert not (dest / "escaped.txt").exists()
+        assert not (dest / "escaped2.txt").exists()
+        link = dest / "escape_link"
+        assert not link.is_symlink()
+        if name.endswith(".tar.gz"):
+            assert not link.exists()
+        elif link.exists():
+            assert link.is_dir()
+
+
+def test_safe_extract_archive_does_not_fall_back_on_host(monkeypatch, tmp_path):
+    from bench.tools import sample_malregistry as mr
+    archive = tmp_path / "plain.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("ok.txt", "ok")
+        zf.writestr("../escaped.txt", "pwned")
+    dest = tmp_path / "out"
+    monkeypatch.setattr(mr.shutil, "which", lambda *_a, **_k: None)
+    assert mr.safe_extract_archive(archive, dest) is False
+    assert not (dest / "ok.txt").exists()
+    assert not (tmp_path / "escaped.txt").exists()
+
+    class _Failed:
+        returncode = 1
+        stdout = ""
+        stderr = "sandbox failed"
+
+    monkeypatch.setattr(mr.shutil, "which", lambda name, *_a, **_k: "/usr/bin/bwrap" if name == "bwrap" else None)
+    monkeypatch.setattr(mr.subprocess, "run", lambda *_a, **_k: _Failed())
+    assert mr.safe_extract_archive(archive, dest) is False
+    assert not (dest / "ok.txt").exists()
 
 
 

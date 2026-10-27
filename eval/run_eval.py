@@ -10,6 +10,7 @@ import argparse
 import concurrent.futures
 import json
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -47,47 +48,54 @@ def find_executable(name: str) -> str | None:
     return shutil.which(name)
 
 
+def _cli_version(exe_name: str, label: str) -> str:
+    """Read a baseline's --version output. Missing or unparseable versions are 'unknown'."""
+    exe = find_executable(exe_name)
+    if not exe:
+        return "not installed"
+    try:
+        proc = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+    out = (proc.stdout or proc.stderr).strip()
+    match = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
+    if match:
+        return f"{label} {match.group(1)}"
+    return out or "unknown"
+
+
 def get_tool_version(tool: str) -> str:
     """Detect installed version for Python, TrustLens, and baseline tools."""
     if tool == "python":
         return f"Python {platform.python_version()}"
     if tool == "trustlens":
-        return f"TrustLens {getattr(trustlens, '__version__', '0.1.0')}"
+        ver = getattr(trustlens, "__version__", None)
+        return f"TrustLens {ver}" if ver else "unknown"
     if tool == "guarddog":
-        exe = find_executable("guarddog")
-        if not exe:
-            return "not installed"
-        try:
-            p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
-            out = (p.stdout or p.stderr).strip()
-            import re
-            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
-            return f"GuardDog {m.group(1)}" if m else (out if out else "GuardDog 3.2.0")
-        except Exception:
-            return "GuardDog 3.2.0"
+        return _cli_version("guarddog", "GuardDog")
     if tool == "pipcanary":
-        exe = find_executable("pipcanary")
-        if not exe:
-            return "not installed"
-        try:
-            p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
-            out = (p.stdout or p.stderr).strip()
-            import re
-            m = re.search(r"(\d+\.\d+(?:\.\d+)?)", out)
-            return f"PipCanary {m.group(1)}" if m else (out if out else "PipCanary 0.1.1")
-        except Exception:
-            return "PipCanary 0.1.1"
+        return _cli_version("pipcanary", "PipCanary")
     if tool == "packj":
-        exe = find_executable("packj")
-        if not exe:
-            return "not installed"
-        try:
-            p = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
-            out = (p.stdout or p.stderr).strip()
-            return out if out else "installed"
-        except Exception:
-            return "installed"
+        return _cli_version("packj", "Packj")
     return "unknown"
+
+
+def format_category_cell(numer: int, decided: int, inconclusive: int, ci: list | None = None) -> str:
+    """Print k/(decided rows) plus the inconclusive count.
+
+    The denominator matches the Wilson interval and the held-out table (tp+fn or fp+tn).
+    """
+    inc = f"inconclusive {inconclusive}"
+    if decided <= 0:
+        return f"- ({inc})"
+    ci_str = f" [{ci[0]}, {ci[1]}]" if ci else ""
+    return f"{numer}/{decided}{ci_str} ({inc})"
+
+
+def _fmt_rate(value: float | None, signed: bool = False) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:+.4f}" if signed else f"{value:.4f}"
 
 
 def tl_flagged(verdict: dict, policy: str):
@@ -97,7 +105,7 @@ def tl_flagged(verdict: dict, policy: str):
     return v == "MALICIOUS-EVIDENT" if policy == "block" else v in ("MALICIOUS-EVIDENT", "SUSPICIOUS")
 
 
-# Held-out split (C9): 5 clean and 5 malicious packages not used while tuning
+# Held-out slice (C9): 5 clean and 5 malicious ids from labels.yaml, reported as their own table.
 HELD_OUT_MALICIOUS_IDS = {
     "cli_payload",
     "staged_dropper",
@@ -515,21 +523,18 @@ def main(argv=None) -> int:
             continue
         cm = m.get("category_metrics", {})
         pl = cm.get("planted_toys", {})
-        pl_str = f"{pl.get('tp', 0)}/{pl.get('total', 0)}" if pl.get("total") else "-"
+        pl_str = format_category_cell(pl.get("tp", 0), pl.get("tp", 0) + pl.get("fn", 0), pl.get("inconclusive", 0)) if pl.get("total") else "-"
         dd = cm.get("external_malware", {})
-        dd_str = f"{dd.get('tp', 0)}/{dd.get('total', 0)}" if dd.get("total") else "-"
+        dd_str = format_category_cell(dd.get("tp", 0), dd.get("tp", 0) + dd.get("fn", 0), dd.get("inconclusive", 0)) if dd.get("total") else "-"
         cc = cm.get("clean_controls", {})
-        cc_ci = f" {cc['fp_rate_wilson95']}" if cc.get("fp_rate_wilson95") else ""
-        cc_str = f"{cc.get('fp', 0)}/{cc.get('total', 0)}{cc_ci}" if cc.get("total") else "-"
+        cc_str = format_category_cell(cc.get("fp", 0), cc.get("fp", 0) + cc.get("tn", 0), cc.get("inconclusive", 0), cc.get("fp_rate_wilson95")) if cc.get("total") else "-"
         nb = cm.get("noisy_benign", {})
-        nb_ci = f" {nb['fp_rate_wilson95']}" if nb.get("fp_rate_wilson95") else ""
-        nb_str = f"{nb.get('fp', 0)}/{nb.get('total', 0)}{nb_ci}" if nb.get("total") else "-"
+        nb_str = format_category_cell(nb.get("fp", 0), nb.get("fp", 0) + nb.get("tn", 0), nb.get("inconclusive", 0), nb.get("fp_rate_wilson95")) if nb.get("total") else "-"
         tp = cm.get("top_pypi", {})
-        tp_ci = f" {tp['fp_rate_wilson95']}" if tp.get("fp_rate_wilson95") else ""
-        tp_str = f"{tp.get('fp', 0)}/{tp.get('total', 0)}{tp_ci}" if tp.get("total") else "-"
+        tp_str = format_category_cell(tp.get("fp", 0), tp.get("fp", 0) + tp.get("tn", 0), tp.get("inconclusive", 0), tp.get("fp_rate_wilson95")) if tp.get("total") else "-"
         summary_lines.append(f"| {t} | {pl_str} | {dd_str} | {cc_str} | {nb_str} | {tp_str} |")
 
-    # Held-out split evaluation (C9: 5 clean + 5 malicious packages not used while tuning)
+    # Held-out slice of labels.yaml (C9): reported again as its own table, not a withheld tuning set.
     ho_pkgs = [p for p in pk if p["id"] in HELD_OUT_IDS]
     if ho_pkgs:
         n_ho_mal = sum(p["label"] == "malicious" for p in ho_pkgs)
@@ -540,7 +545,7 @@ def main(argv=None) -> int:
             "",
             f"### Held-Out Split Evaluation ({n_ho_clean} Clean + {n_ho_mal} Malicious)",
             "",
-            "*These 10 packages were strictly isolated and never used during rule development, capability keyword mapping, or noise-whitelist calibration.*",
+            "Held-out is a reported slice of `labels.yaml`, not a withheld tuning set.",
             f"- **Clean Packages ({n_ho_clean}):** {clean_names}",
             f"- **Malicious Packages ({n_ho_mal}):** {mal_names}",
             "",
@@ -591,14 +596,16 @@ def main(argv=None) -> int:
     hi_rec = sweep_res.get("sensitivity", {}).get("plus_20_pct", {}).get("record", {})
     nom_t = sweep_res.get("nominal_threshold", 4.0)
 
+    auc_val = sweep_res.get("auc")
+    auc_txt = "null" if auc_val is None else f"{auc_val:.4f}"
     summary_lines.extend([
         "",
         "### Decision Threshold Sweep & Sensitivity (weights.yaml)",
-        f"- **ROC AUC:** `{sweep_res.get('auc', 0.5):.4f}` across {len(sweep_res.get('sweep', []))} threshold evaluation points.",
-        f"- **Nominal Operating Point:** `suspicious_threshold = {nom_t}` (TPR: `{nom_rec.get('tpr', 0.0):.4f}`, FPR: `{nom_rec.get('fpr', 0.0):.4f}`).",
+        f"- **ROC AUC:** `{auc_txt}` ({sweep_res.get('auc_label', 'decided cases only')}; inconclusive: {sweep_res.get('inconclusive', 0)}; decided malicious: {sweep_res.get('decided_malicious', 0)}; decided clean: {sweep_res.get('decided_clean', 0)}).",
+        f"- **Nominal Operating Point:** `suspicious_threshold = {nom_t}` (TPR: `{_fmt_rate(nom_rec.get('tpr'))}`, FPR: `{_fmt_rate(nom_rec.get('fpr'))}`, decided cases only).",
         "- **Threshold Sensitivity (+/-20%):**",
-        f"  - `-20%` (T={sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('threshold')}): TPR `{lo_rec.get('tpr', 0.0):.4f}`, FPR `{lo_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
-        f"  - `+20%` (T={sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('threshold')}): TPR `{hi_rec.get('tpr', 0.0):.4f}`, FPR `{hi_rec.get('fpr', 0.0):.4f}` (Delta TPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_tpr', 0.0):+.4f}`, Delta FPR: `{sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_fpr', 0.0):+.4f}`)",
+        f"  - `-20%` (T={sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('threshold')}): TPR `{_fmt_rate(lo_rec.get('tpr'))}`, FPR `{_fmt_rate(lo_rec.get('fpr'))}` (Delta TPR: `{_fmt_rate(sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_tpr'), signed=True)}`, Delta FPR: `{_fmt_rate(sweep_res.get('sensitivity', {}).get('minus_20_pct', {}).get('delta_fpr'), signed=True)}`)",
+        f"  - `+20%` (T={sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('threshold')}): TPR `{_fmt_rate(hi_rec.get('tpr'))}`, FPR `{_fmt_rate(hi_rec.get('fpr'))}` (Delta TPR: `{_fmt_rate(sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_tpr'), signed=True)}`, Delta FPR: `{_fmt_rate(sweep_res.get('sensitivity', {}).get('plus_20_pct', {}).get('delta_fpr'), signed=True)}`)",
         f"- **Verdict Stability:** {len(sweep_res.get('sensitivity', {}).get('flipping_packages', []))} package(s) flip verdict within +/-20% threshold margin.",
         "",
         "### Detection Rule Coverage Summary (TrustLens)",
@@ -608,7 +615,6 @@ def main(argv=None) -> int:
         "## Methodological Notes",
         "- **Wilson 95% Score Intervals:** Calculated using two-sided Wilson score intervals for binomial proportions to ensure scientific honesty on zero-FP observations.",
         "- **Planted Toys vs External Malware:** Recall on synthetic planted toys is reported separately from real-world external malware samples (Datadog and Malregistry backup) to avoid mixing synthetic coverage with noisy external datasets.",
-        "- **Abstention Integrity:** Packages resulting in `INCONCLUSIVE` (e.g., dead/unexercised packages or thin dynamic coverage) are tracked separately and not disguised as true negatives.",
         "- **Baselines:** Unavailable baseline tools are reported as 'not run' rather than 0 detections to avoid dishonest comparative claims.",
         "- **Triage:** Detailed FP and miss triage per AUDIT §6 is written to `reports/eval/triage.md`.",
     ])

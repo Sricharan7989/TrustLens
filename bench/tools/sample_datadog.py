@@ -2,7 +2,7 @@
 
   python bench/tools/sample_datadog.py --n 150 --seed 1337 --dry-run     # prints the sample, downloads only manifest.json (small)
   python bench/tools/sample_datadog.py --n 150 --seed 1337               # + blobless sparse clone into data/datadog/ and safe extract
-Zip password is 'infected'. EXTRACT ONLY INSIDE THE SANDBOX (scripts/extract_in_sandbox.sh) or safe data extraction fallback.
+Zip password is 'infected'. EXTRACT ONLY INSIDE THE SANDBOX (scripts/extract_in_sandbox.sh).
 Manifest: name -> null (every version malicious) | [bad versions]. We sample only the null ones (kind malicious_intent).
 """
 from __future__ import annotations
@@ -62,13 +62,13 @@ def get_readme_summary(pkg_root: Path) -> str:
     return "uninspected Datadog sample"
 
 
-def main() -> int:
+def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=150)
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--dest", default="data/datadog")
     ap.add_argument("--dry-run", action="store_true")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
 
     dest = ROOT / a.dest if not Path(a.dest).is_absolute() else Path(a.dest)
     dest.mkdir(parents=True, exist_ok=True)

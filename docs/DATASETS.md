@@ -23,14 +23,14 @@ Run commands:
 
 Evaluation datasets evaluated during live evaluation:
 1. **PS1-Bench planted toys** (`bench/labels.yaml`): 10 synthetic planted packages covering trigger $\times$ gate $\times$ obfuscation.
-2. **PS1-Bench clean controls** (`bench/labels.yaml`): 16 clean controls (8 standard controls + 8 noisy-benign packages performing system inspection, network downloads, subprocess execution, SSH config reads).
+2. **PS1-Bench clean packages** (`bench/labels.yaml`): 9 `clean_control` + 7 `noisy_benign` (system inspection, network downloads, subprocess execution, SSH config reads).
 3. **Top-PyPI clean set** (`bench/labels_external.yaml`): 30 popular real-world packages downloaded via PyPI JSON API with SHA-256 verification.
 4. **Datadog PyPI malware sample** (`bench/labels_datadog.yaml`): 150 real-world malware packages sampled reproducibly (seed 1337).
 
 ### Statistical and Methodological Integrity
 - **Recall Separation:** Synthetic planted toy recall is reported strictly separately from real-world external malware recall. We never combine them into a single misleading headline number.
 - **Wilson 95% Score Intervals:** False positive rates are reported as $k/n$ with two-sided Wilson 95% confidence intervals ($0/n$ is never claimed as "0% FP").
-- **Abstention Integrity:** Packages that fail installation, lack dynamic coverage, or return `INCONCLUSIVE` are recorded as abstentions, never disguised as clean PASS or false positives.
+- **Abstention:** `INCONCLUSIVE` rows are counted in the inconclusive column. Recall and false-positive rates use decided rows only (the same denominator as the Wilson interval).
 - **AUDIT §6 Triage:** Every false positive and miss is triaged and classified into:
   - *(a) true noise* -> whitelist candidate
   - *(b) claim parser gap* -> intent keywords in `capabilities.yaml`
@@ -95,7 +95,7 @@ If a tool reports `available: False`, the harness renders it as `"not run"` in b
 
 ## Held-Out Evaluation Split (C9)
 
-To ensure methodological rigor and protect against rule overfitting, **10 packages (5 clean + 5 malicious)** are designated as the held-out split (`bench/held_out.yaml`).
+`bench/held_out.yaml` is a reported slice of `bench/labels.yaml`: the same 5 clean and 5 malicious packages, shown again as their own table. It is not a withheld tuning set.
 
 ### Composition of the Held-Out Split
 - **Clean Controls (5):**
@@ -111,10 +111,7 @@ To ensure methodological rigor and protect against rule overfitting, **10 packag
   4. `obfuscated_xor`: XOR/`chr()`-obfuscated payload executed dynamically.
   5. `time_gate`: Dormant bomb gated by calendar date (> now + 15 days).
 
-### Methodological Isolation
-- **Zero Tuning Exposure:** These 10 packages were completely isolated from the initial tuning set (`evil_slug`, `delayed_slug`, `clean_slug`, `rest_wrapper`, `_synthetic_pth_startup`).
-- **No Rule or Threshold Calibration:** No detection rule, claim parser intent keyword, or noise-whitelist token was created or calibrated against these packages.
-- **Execution:** Can be evaluated individually via `python -m eval.run_eval --labels bench/held_out.yaml` or as part of full benchmark runs.
+Evaluated via `python -m eval.run_eval --labels bench/held_out.yaml` or as part of a full `labels.yaml` run.
 
 ## OSPTrack Dataset & Empirical Toy Planning (C10)
 
@@ -125,27 +122,18 @@ OSPTrack (Zenodo record 21853840, CC-BY-4.0) provides empirical metadata and exe
 - **`label_data_v2.csv` (1.76 GB):** Dynamic trace execution records across 18 columns (`import_Files`, `import_Sockets`, `import_Commands`, `import_DNS`, `install_*`, `Label`). MD5 verified against `1d3aeaa9e1b338603c2f4ce8e6f5d68c`.
 - **Fetch script:** `bash scripts/fetch_osptrack.sh` (`--metrics-only`, `--check-only`, or full download).
 
-### 2. Empirical PyPI Attack Distributions (N = 6,683)
-Analysis performed by `python bench/tools/analyze_osptrack.py` (`reports/bench/osptrack_metrics.md`):
-- **Triggers:**
-  - *Automatic execution upon download/install:* 95.2% (5,460 download + 900 installation).
-  - *Runtime network connection:* 4.2% (283 packages).
-  - *Function call / usage:* 0.5% (31 packages).
-- **Hiding & Obfuscation:**
-  - *Base64 encoding:* 81.1% (5,423 packages).
-  - *General obfuscation (XOR, eval, hex):* 13.5% (900 packages).
-  - *Plain / un-obfuscated:* 4.7% (312 packages).
-  - *Steganography & split payloads:* 0.7% (48 packages).
-- **Attack Types:**
-  - *Droppers & second-stage loaders:* 81.1% (5,423 packages).
-  - *Typosquatting & credential harvesting:* 14.5% (968 packages).
-  - *C2 communication & persistent beacons:* 4.2% (283 packages).
+### 2. Empirical PyPI Attack Distributions
+`python bench/tools/analyze_osptrack.py` writes `reports/bench/osptrack_metrics.md` from `data/osptrack/data_metrics.csv`. Without that CSV the shares are **not computed**.
 
-### 3. PS1-Bench Matrix Validation & Expansion Plan
-OSPTrack empirical findings validate the core architecture of PS1-Bench:
-- **Trigger alignment:** 4/10 planted toys focus on install-time execution (`evil_slug`, `staged_dropper`, `obfuscated_xor`, `pth_hook`), mirroring the 95.2% real-world concentration.
-- **Obfuscation alignment:** Base64 decoding (`delayed_slug`) and XOR dynamic evaluation (`obfuscated_xor`) cover the dominant real-world obfuscation vectors.
-- **Planned expansion toys:**
+### 3. PS1-Bench triggers
+Malicious toys in `bench/labels.yaml`:
+- **install:** `evil_slug` only
+- **pth:** `pth_hook`
+- **import:** `import_exfil`
+- **cli:** `cli_payload`
+- **call:** `delayed_slug`, `time_gate`, `host_gate`, `staged_dropper`, `env_harvester`, `obfuscated_xor` (the other six)
+
+Planned expansion toys:
   1. `clip_stealer`: Clipboard access and cryptocurrency address hijacking (OSPTrack `uurllib3` pattern).
   2. `asset_stego`: Hiding payloads within package image assets (OSPTrack `steganography/obfuscation`).
   3. `split_payload`: Distributing payload fragments across submodules (OSPTrack `split payloads`).
@@ -153,7 +141,7 @@ OSPTrack empirical findings validate the core architecture of PS1-Bench:
 
 ### 4. Benign-Trace Whitelist Cross-Check
 Verified via `python bench/tools/cross_check_whitelist.py`:
-- All 12 calibrated rules in `bench/calibration/noise_whitelist.yaml` were cross-checked against benign trace schemas.
+- Seed rules in `bench/calibration/noise_whitelist.yaml` (`source: seed`, no prevalence) were cross-checked against benign trace schemas. Subprocess `path_glob` rules are not emitted: `proc.spawn` records argv, not a path. Prevalence is stored only when `build_noise_whitelist.py` computes it from a CSV.
 - **AUDIT §6 Invariant Verified:** Zero whitelist rules match canary tokens, SSH/AWS/npm credential files, RFC 5737 targets, or `.invalid` test domains.
 
 ## Malregistry Backup Dataset (C11)
@@ -168,8 +156,7 @@ Backup malicious pool sourced from `lxyeternal/pypi_malregistry`. Used as a supp
 
 ### 2. Host Safety & Sandbox Isolation
 - **No Host Execution:** Malware samples must never be executed directly on the host machine (`python setup.py`, `pip install`, etc. on the host are strictly forbidden).
-- **Safe Sandbox Extraction:** Package archives (`.tar.gz`, `.zip`, `.whl`) are extracted using `scripts/extract_in_sandbox.sh` (rootless `bwrap` container without network access or host file-system write permissions).
-- **Path-Traversal Protection:** The fallback Python extractor validates all member paths, rejecting any archive entries containing absolute paths or directory traversal segments (`..`).
+- **Safe Sandbox Extraction:** Package archives (`.tar.gz`, `.zip`, `.whl`) are extracted only by `scripts/extract_in_sandbox.sh` inside rootless `bwrap` (no network). The extractor applies a data filter: no symlinks, no absolute paths, no `..`. If `bwrap` or the script is missing or exits non-zero, extraction fails and nothing is extracted on the host.
 
 ### 3. Blobless Sparse Checkout Protocol
 - **Bandwidth & Storage Optimization:** The full repository contains thousands of malware archives (~1.4 GB). We **never download the entire repository or repo zip**.
@@ -191,7 +178,7 @@ Backup malicious pool sourced from `lxyeternal/pypi_malregistry`. Used as a supp
 - **Harness Integration (`eval/run_eval.py`):**
   - Evaluated via `python -m eval.run_eval --labels malregistry --runner fixture|live`.
   - Automatically discovered when running `--labels all`.
-  - Aggregated under `external_malware` metrics alongside Datadog samples, ensuring synthetic planted toy recall remains strictly isolated.
+  - Aggregated under `external_malware` metrics alongside Datadog samples. Planted-toy recall stays in its own column.
 
 ## Verdict &times; Rule Coverage & ROC Threshold Sweep (C12)
 

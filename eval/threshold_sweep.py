@@ -41,35 +41,42 @@ def load_weights_readonly() -> dict:
         return yaml.safe_load(f.read())
 
 
-def compute_roc_auc(points: list[dict[str, Any]]) -> float:
-    """Compute Area Under the ROC Curve (AUC) using trapezoidal rule.
+def _is_inconclusive(pkg: dict[str, Any]) -> bool:
+    return bool(pkg.get("inconclusive", False) or pkg.get("verdict") == "INCONCLUSIVE")
 
-    Points must contain 'fpr' and 'tpr'.
-    Sorts points by FPR ascending, TPR ascending.
+
+def _rate_delta(new: float | None, old: float | None) -> float | None:
+    if new is None or old is None:
+        return None
+    return round(new - old, 4)
+
+
+def compute_roc_auc(points: list[dict[str, Any]]) -> float | None:
+    """Trapezoidal AUC over the supplied points.
+
+    Does not invent (0, 0) or (1, 1). Returns None when the points do not span
+    a positive FPR width, so a single decided hit cannot become AUC 1.0.
     """
-    if not points:
-        return 0.5
-    # Ensure (0,0) and (1,1) are conceptually bounded if not already present
-    sorted_pts = sorted(points, key=lambda p: (p["fpr"], p["tpr"]))
-    pts = [(0.0, 0.0)]
-    for p in sorted_pts:
-        pts.append((p["fpr"], p["tpr"]))
-    if pts[-1] != (1.0, 1.0):
-        pts.append((1.0, 1.0))
-
-    # Remove duplicates preserving order
     dedup: list[tuple[float, float]] = []
-    for pt in pts:
+    for p in sorted(points, key=lambda item: (float(item["fpr"]), float(item["tpr"]))):
+        if p.get("fpr") is None or p.get("tpr") is None:
+            continue
+        pt = (float(p["fpr"]), float(p["tpr"]))
         if not dedup or pt != dedup[-1]:
             dedup.append(pt)
-
+    if len(dedup) < 2:
+        return None
     auc = 0.0
+    width = 0.0
     for i in range(1, len(dedup)):
         x0, y0 = dedup[i - 1]
         x1, y1 = dedup[i]
         dx = x1 - x0
         if dx > 0:
             auc += dx * (y0 + y1) / 2.0
+            width += dx
+    if width <= 0:
+        return None
     return round(auc, 4)
 
 
@@ -104,6 +111,9 @@ def sweep_thresholds(
     all_t = sorted(set(thresholds) | {default_t, t_minus_20, t_plus_20})
 
     sweep_records: list[dict] = []
+    n_inc = sum(1 for pkg in package_evals if _is_inconclusive(pkg))
+    n_dec_mal = sum(1 for pkg in package_evals if pkg.get("label") == "malicious" and not _is_inconclusive(pkg))
+    n_dec_clean = sum(1 for pkg in package_evals if pkg.get("label") == "clean" and not _is_inconclusive(pkg))
 
     for t in all_t:
         tp = 0
@@ -114,7 +124,7 @@ def sweep_thresholds(
 
         for pkg in package_evals:
             lbl = pkg.get("label")
-            is_inc = pkg.get("inconclusive", False) or pkg.get("verdict") == "INCONCLUSIVE"
+            is_inc = _is_inconclusive(pkg)
             # Flag decision: either strong signal classes or finding score >= t
             score = pkg.get("top_finding_score", pkg.get("score", 0.0))
             classes = pkg.get("signal_classes", [])
@@ -133,11 +143,13 @@ def sweep_thresholds(
                 else:
                     tn += 1
 
-        tpr = round(tp / (tp + fn), 4) if (tp + fn) > 0 else 0.0
-        fpr = round(fp / (fp + tn), 4) if (fp + tn) > 0 else 0.0
+        decided_mal = tp + fn
+        decided_clean = fp + tn
+        tpr = round(tp / decided_mal, 4) if decided_mal > 0 else None
+        fpr = round(fp / decided_clean, 4) if decided_clean > 0 else None
         prec = round(tp / (tp + fp), 4) if (tp + fp) > 0 else None
         f1 = round(2 * prec * tpr / (prec + tpr), 4) if (prec and tpr and (prec + tpr) > 0) else None
-        ci = wilson(fp, fp + tn)
+        ci = wilson(fp, decided_clean)
 
         note = ""
         if t == default_t:
@@ -160,6 +172,7 @@ def sweep_thresholds(
             "precision": prec,
             "f1": f1,
             "fpr_wilson95": ci,
+            "rate_scope": "decided cases only",
             "note": note,
         })
 
@@ -174,8 +187,8 @@ def sweep_thresholds(
     sensitivity = {
         "nominal_threshold": default_t,
         "nominal": rec_def,
-        "minus_20_pct": {"threshold": t_minus_20, "record": rec_lo, "delta_tpr": round((rec_lo.get("tpr", 0.0) - rec_def.get("tpr", 0.0)), 4), "delta_fpr": round((rec_lo.get("fpr", 0.0) - rec_def.get("fpr", 0.0)), 4)},
-        "plus_20_pct": {"threshold": t_plus_20, "record": rec_hi, "delta_tpr": round((rec_hi.get("tpr", 0.0) - rec_def.get("tpr", 0.0)), 4), "delta_fpr": round((rec_hi.get("fpr", 0.0) - rec_def.get("fpr", 0.0)), 4)},
+        "minus_20_pct": {"threshold": t_minus_20, "record": rec_lo, "delta_tpr": _rate_delta(rec_lo.get("tpr"), rec_def.get("tpr")), "delta_fpr": _rate_delta(rec_lo.get("fpr"), rec_def.get("fpr"))},
+        "plus_20_pct": {"threshold": t_plus_20, "record": rec_hi, "delta_tpr": _rate_delta(rec_hi.get("tpr"), rec_def.get("tpr")), "delta_fpr": _rate_delta(rec_hi.get("fpr"), rec_def.get("fpr"))},
     }
 
     # Identify packages that change verdict between t_minus_20 and t_plus_20
@@ -194,12 +207,22 @@ def sweep_thresholds(
             })
     sensitivity["flipping_packages"] = flips
 
-    auc = compute_roc_auc(sweep_records)
+    # T <= 0 flags every non-negative score (score >= 0). That point is the
+    # (1, 1) corner; it is not imputed into the integral.
+    auc_points = [
+        r for r in sweep_records
+        if r.get("threshold", 0) > 0 and r.get("tpr") is not None and r.get("fpr") is not None
+    ]
+    auc = compute_roc_auc(auc_points) if n_dec_mal >= 1 and n_dec_clean >= 1 else None
 
     return {
         "weights_file": str(WEIGHTS_FILE.relative_to(ROOT)),
         "nominal_threshold": default_t,
         "auc": auc,
+        "auc_label": "decided cases only",
+        "inconclusive": n_inc,
+        "decided_malicious": n_dec_mal,
+        "decided_clean": n_dec_clean,
         "sweep": sweep_records,
         "sensitivity": sensitivity,
     }

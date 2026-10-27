@@ -53,7 +53,7 @@ def generate_report(stats: dict) -> str:
     lines = [
         "# OSPTrack Empirical Analysis & PS1-Bench Toy Planning (C10)",
         "",
-        "Empirical analysis of 20,269 malicious packages from **OSPTrack** (`data_metrics.csv`, CC-BY-4.0).",
+        f"Empirical analysis of {stats['total_rows']:,} malicious packages from **OSPTrack** (`data_metrics.csv`, CC-BY-4.0).",
         "Used for empirical validation of the PS1-Bench coverage matrix and planning additional synthetic planted toys.",
         "",
         "## 1. Dataset Overview",
@@ -70,7 +70,7 @@ def generate_report(stats: dict) -> str:
 
     lines.extend([
         "",
-        "## 2. PyPI Attack Techniques & Mechanisms (N = 6,683)",
+        f"## 2. PyPI Attack Techniques & Mechanisms (N = {pypi_n:,})",
         "",
         "### A. Trigger Mechanisms",
         "| Trigger Mechanism | Count | Share (%) | PS1-Bench Mapping & Coverage |",
@@ -79,14 +79,16 @@ def generate_report(stats: dict) -> str:
     for trig, count in stats["pypi_triggers"].most_common():
         pct = (count / max(pypi_n, 1)) * 100
         # Map to PS1-Bench
-        if "download" in trig.lower() or "installation" in trig.lower():
-            mapping = "`trigger: install` (`evil_slug`, `staged_dropper`, `obfuscated_xor`)"
-        elif "network" in trig.lower() or "connection" in trig.lower():
-            mapping = "`trigger: install / call` (`import_exfil`, `host_gate`)"
-        elif "function" in trig.lower() or "usage" in trig.lower():
-            mapping = "`trigger: call` (`delayed_slug`, `time_gate`)"
+        if "download" in trig.lower() or "installation" in trig.lower() or "install" in trig.lower():
+            mapping = "PS1-Bench `install` is `evil_slug` only"
+        elif "import" in trig.lower():
+            mapping = "PS1-Bench `import` is `import_exfil`"
+        elif "cli" in trig.lower() or "command" in trig.lower():
+            mapping = "PS1-Bench `cli` is `cli_payload`"
+        elif "network" in trig.lower() or "connection" in trig.lower() or "function" in trig.lower() or "usage" in trig.lower() or "call" in trig.lower():
+            mapping = "PS1-Bench `call`: `delayed_slug`, `time_gate`, `host_gate`, `staged_dropper`, `env_harvester`, `obfuscated_xor`"
         else:
-            mapping = "Uncovered trigger"
+            mapping = "see PS1-Bench triggers in docs/DATASETS.md"
         lines.append(f"| {trig} | {count:,} | {pct:.1f}% | {mapping} |")
 
     lines.extend([
@@ -131,10 +133,14 @@ def generate_report(stats: dict) -> str:
 
     lines.extend([
         "",
-        "## 3. PS1-Bench Alignment & Coverage Assessment",
-        "- **Install-time dominance:** OSPTrack demonstrates that 95.2% of PyPI attacks trigger during download/install. PS1-Bench aligns with this empirical distribution with 4 install-time planted toys (`evil_slug`, `staged_dropper`, `obfuscated_xor`, `pth_hook`).",
-        "- **Obfuscation prevalence:** Base64 encoding accounts for 81.1% of PyPI malware. PS1-Bench tests base64 payload decoding, XOR obfuscation (`chr()` transforms), and un-obfuscated baseline exfiltration.",
-        "- **Staged Droppers:** Droppers and second-stage fetchers represent 81.1% of PyPI attacks, directly matching our `staged_dropper` planted toy.",
+        "## 3. PS1-Bench Trigger Coverage",
+        "Percentage shares in the tables above are computed from this CSV.",
+        "PS1-Bench malicious toys use these triggers:",
+        "- `install`: `evil_slug` only",
+        "- `pth`: `pth_hook`",
+        "- `import`: `import_exfil`",
+        "- `cli`: `cli_payload`",
+        "- `call`: `delayed_slug`, `time_gate`, `host_gate`, `staged_dropper`, `env_harvester`, `obfuscated_xor`",
         "",
         "## 4. Planned Planted Toys (Informed by OSPTrack Gaps)",
         "Based on OSPTrack patterns, the following synthetic packages are planned for PS1-Bench expansion:",
@@ -161,6 +167,17 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
 
     csv_path = Path(a.csv)
+    out_path = Path(a.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    if not csv_path.exists():
+        report = (
+            "# OSPTrack Empirical Analysis\n\n"
+            "not computed\n\n"
+            f"No CSV at `{csv_path}`.\n"
+        )
+        out_path.write_text(report, encoding="utf-8")
+        print("not computed")
+        return 0
     stats = analyze_metrics(csv_path)
     report = generate_report(stats)
 

@@ -36,7 +36,19 @@ th:first-child, td:first-child { text-align: left; font-weight: 500; font-family
 """
 
 
-def _generate_roc_svg(sweep_records: list[dict], auc: float, nominal_t: float) -> str:
+def _fmt_auc(auc: float | None) -> str:
+    if auc is None:
+        return "null"
+    return f"{auc:.4f}"
+
+
+def _fmt_rate(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:.4f}"
+
+
+def _generate_roc_svg(sweep_records: list[dict], auc: float | None, nominal_t: float) -> str:
     """Generate inline SVG for the ROC curve."""
     # Plot geometry: width 520, height 400
     # Margins: left 60, right 30, top 30, bottom 60
@@ -74,8 +86,9 @@ def _generate_roc_svg(sweep_records: list[dict], auc: float, nominal_t: float) -
     svg.append(f'<line x1="{x0}" y1="{y0}" x2="{x0 + w_px}" y2="{30}" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="4 4" />')
     svg.append(f'<text x="{x0 + w_px - 8}" y="45" font-size="10" fill="#9ca3af" text-anchor="end">Random Chance (AUC=0.5)</text>')
 
-    # Sort sweep records by FPR asc, TPR asc
-    pts = sorted(sweep_records, key=lambda r: (r["fpr"], r["tpr"]))
+    # Sort decided-case points. Rates are null when that class has no decided rows.
+    pts = [p for p in sweep_records if p.get("fpr") is not None and p.get("tpr") is not None]
+    pts = sorted(pts, key=lambda r: (r["fpr"], r["tpr"]))
     curve_coords = [(x0 + p["fpr"] * w_px, y0 - p["tpr"] * h_px) for p in pts]
 
     # Shaded Area under curve
@@ -110,7 +123,7 @@ def _generate_roc_svg(sweep_records: list[dict], auc: float, nominal_t: float) -
 
     # AUC badge in top right
     svg.append(f'<rect x="{x0 + w_px - 110}" y="35" width="105" height="26" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />')
-    svg.append(f'<text x="{x0 + w_px - 58}" y="52" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">ROC AUC = {auc:.4f}</text>')
+    svg.append(f'<text x="{x0 + w_px - 58}" y="52" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">ROC AUC = {_fmt_auc(auc)}</text>')
 
     svg.append('</svg>')
     return "".join(svg)
@@ -154,7 +167,7 @@ def render(results: dict) -> str:
         if not coverage_data:
             coverage_data = compute_rule_coverage(pkg_list)
 
-    auc_val = sweep_data.get("auc", 0.5)
+    auc_val = sweep_data.get("auc") if "auc" in sweep_data else None
     nominal_t = sweep_data.get("nominal_threshold", 4.0)
     sweep_records = sweep_data.get("sweep", [])
     sensitivity = sweep_data.get("sensitivity", {})
@@ -278,7 +291,7 @@ def render(results: dict) -> str:
     h.append("<div class='roc-container'>")
     h.append("<h3 style='margin-top:0;'>Empirical ROC Curve</h3>")
     h.append(_generate_roc_svg(sweep_records, auc_val, nominal_t))
-    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve: <strong>ROC AUC = {auc_val:.4f}</strong></p>")
+    h.append(f"<p class='note' style='text-align:center;'>Empirical Area Under Curve (decided cases only; inconclusive: {sweep_data.get('inconclusive', 'n/a')}): <strong>ROC AUC = {_fmt_auc(auc_val)}</strong></p>")
     h.append("</div>")
 
     # Column 2: Sensitivity Summary
@@ -290,9 +303,9 @@ def render(results: dict) -> str:
 
     h.append("<table>")
     h.append("<tr><th>Operating Point</th><th>Threshold</th><th>TPR (Recall)</th><th>FPR (Wilson 95% CI)</th></tr>")
-    h.append(f"<tr><td>-20% Sensitivity</td><td><code>{sensitivity.get('minus_20_pct', {}).get('threshold')}</code></td><td><strong>{lo_rec.get('tpr', 0.0):.4f}</strong></td><td>{lo_rec.get('fpr', 0.0):.4f}</td></tr>")
-    h.append(f"<tr style='background:#eff6ff;'><td><strong>Nominal (weights.yaml)</strong></td><td><code><strong>{nominal_t}</strong></code></td><td><strong>{nom_rec.get('tpr', 0.0):.4f}</strong></td><td>{nom_rec.get('fpr', 0.0):.4f}</td></tr>")
-    h.append(f"<tr><td>+20% Sensitivity</td><td><code>{sensitivity.get('plus_20_pct', {}).get('threshold')}</code></td><td><strong>{hi_rec.get('tpr', 0.0):.4f}</strong></td><td>{hi_rec.get('fpr', 0.0):.4f}</td></tr>")
+    h.append(f"<tr><td>-20% Sensitivity</td><td><code>{sensitivity.get('minus_20_pct', {}).get('threshold')}</code></td><td><strong>{_fmt_rate(lo_rec.get('tpr'))}</strong></td><td>{_fmt_rate(lo_rec.get('fpr'))}</td></tr>")
+    h.append(f"<tr style='background:#eff6ff;'><td><strong>Nominal (weights.yaml)</strong></td><td><code><strong>{nominal_t}</strong></code></td><td><strong>{_fmt_rate(nom_rec.get('tpr'))}</strong></td><td>{_fmt_rate(nom_rec.get('fpr'))}</td></tr>")
+    h.append(f"<tr><td>+20% Sensitivity</td><td><code>{sensitivity.get('plus_20_pct', {}).get('threshold')}</code></td><td><strong>{_fmt_rate(hi_rec.get('tpr'))}</strong></td><td>{_fmt_rate(hi_rec.get('fpr'))}</td></tr>")
     h.append("</table>")
 
     flips = sensitivity.get("flipping_packages", [])
@@ -332,8 +345,8 @@ def render(results: dict) -> str:
         h.append(f"<td>{sw['fn']}</td>")
         h.append(f"<td>{sw['fp']}</td>")
         h.append(f"<td>{sw['tn']}</td>")
-        h.append(f"<td>{sw['tpr']:.4f}</td>")
-        h.append(f"<td>{sw['fpr']:.4f}</td>")
+        h.append(f"<td>{_fmt_rate(sw.get('tpr'))}</td>")
+        h.append(f"<td>{_fmt_rate(sw.get('fpr'))}</td>")
         h.append(f"<td>{ci_str}</td>")
         h.append(f"<td>{pr_str}</td>")
         h.append(f"<td>{f1_str}</td>")
