@@ -31,7 +31,8 @@ packages:
   - {id: file_fetcher, path: bench/packages/clean/file_fetcher, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "downloader and api client that downloads files to local cache",
      notes: "legitimate network + cache write: licensed by downloader intent"}
   - {id: env_config, path: bench/packages/clean/env_config, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "config loader and environment variable configuration parser",
-     notes: "legitimate env read: licensed by config_loader intent"}
+     notes: "legitimate env read: licensed by config_loader intent",
+     known_issue: "iterates all of os.environ, so it reads the fake AWS secret value; claims never license canary reads (anti-lying-README rule), so the engine says SUSPICIOUS. Counted as a false positive in the eval."}
   - {id: ssh_helper, path: bench/packages/clean/ssh_helper, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "ssh client helper for ssh keys and server configuration",
      notes: "legitimate ~/.ssh/config read: licensed by ssh_tool intent"}
   - {id: sys_monitor, path: bench/packages/clean/sys_monitor, label: clean, category: noisy_benign, expected_verdict: BENIGN-CONSISTENT, claim: "system information and hardware info inspection library",

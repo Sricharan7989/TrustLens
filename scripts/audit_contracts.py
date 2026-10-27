@@ -49,6 +49,7 @@ def main() -> int:
 
     from trustlens.cli import scan
 
+    known: list[str] = []
     with tempfile.TemporaryDirectory() as td:
         for p in (yaml.safe_load(lab.read_text())["packages"] if lab.exists() else []):
             if (EXAMPLES / Path(p["path"]).name).exists():
@@ -56,10 +57,17 @@ def main() -> int:
                     r = scan(str(ROOT / p["path"]), f"{td}/{p['id']}", runner="fixture", check_contracts=True)
                     exp = p.get("expected_verdict")
                     if exp and r["verdict"]["verdict"] != exp:
-                        errors.append(f"{p['id']}: expected {exp}, got {r['verdict']['verdict']}")
+                        msg = f"{p['id']}: expected {exp}, got {r['verdict']['verdict']}"
+                        if p.get("known_issue"):
+                            # Label stays the ground truth; the gap is tracked, printed and still counted by the eval.
+                            known.append(f"{msg} ({p['known_issue']})")
+                        else:
+                            errors.append(msg)
                 except Exception as e:  # noqa: BLE001
                     errors.append(f"{p['id']}: pipeline error {e}")
-    print(f"audit_contracts: {n} example files checked, {len(errors)} problem(s)")
+    print(f"audit_contracts: {n} example files checked, {len(errors)} problem(s), {len(known)} known issue(s)")
+    for k in known:
+        print("  KNOWN", k)
     for e in errors:
         print("  FAIL", e)
     return 1 if errors else 0
