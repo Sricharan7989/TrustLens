@@ -1,6 +1,6 @@
 # TrustLens AI
 
-**PS1 "Trust Nothing: Provenance for Your Own Dependencies"** — IOTA × Enigma hackathon, IIIT Sri City, Cybersecurity track.
+**PS1 "Trust Nothing: Provenance for Your Own Dependencies"**  IOTA × Enigma hackathon, IIIT Sri City, Cybersecurity track.
 
 TrustLens runs a Python package inside a **no-network sandbox with fake secrets (canaries)**, records what it *actually does* at install, interpreter startup, import, call and CLI, under a *dev-laptop* and a *CI* environment, compares that with what its **README/metadata claim**, and prints a verdict with an **evidence chain** and an honest **coverage** block. Rule-based, deterministic, offline, no LLM in the verdict path.
 
