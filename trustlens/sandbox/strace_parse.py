@@ -85,10 +85,16 @@ _SENSITIVE = (
 )
 
 
+_PROC_ENVIRON = re.compile(r"^/proc/(?:self|thread-self|\d+)/environ$")
+
+
 def _interesting_open(path: str) -> bool:
     """Canary and probe opens, plus native libraries shipped by the package."""
     if path.endswith(".pyc") or "/__pycache__/" in path:
         return False
+    # /proc/<pid>/environ is the whole environment; keep it even though /proc/ is skipped below.
+    if _PROC_ENVIRON.match(path):
+        return True
     if ".dist-info/" in path or ".egg-info/" in path:
         return False
     # Sensitive markers win over the /proc and /etc skips so native probes of

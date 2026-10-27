@@ -1918,3 +1918,65 @@ def test_regression_run_timeout_and_run_error_are_inconclusive(tmp_path):
         assert fp["coverage"]["run_timeout"] is True
         assert verdict["verdict"] == "INCONCLUSIVE"
         assert verdict["action"] == "REVIEW"
+
+
+# Known detection holes (bulk env dumps, /proc/*/environ, runtime-built names, path joins).
+_HOLE_SECRET_SNIPPETS = [
+    "payload = dict(os.environ)",
+    "x = {k: v for k, v in os.environ.items()}",
+    "json.dumps(dict(os.environ))",
+    "vars = {**os.environ}",
+    "e = os.environ._data",
+    "from os import environ\nd = dict(environ)",
+    "for k in os.environ:\n    send(k, os.environ[k])",
+    "open('/proc/self/environ').read()",
+    "open(f'/proc/{os.getpid()}/environ').read()",
+    "open('/proc/' + str(os.getpid()) + '/environ').read()",
+    "os.getenv(f'GITHUB_{t}')",
+    "os.environ.get(f\"{'AWS'}_SECRET_ACCESS_KEY\")",
+    "n = 'GITHUB_TOKEN'\nos.getenv(n)",
+    "os.environ[''.join(['AWS_', 'SECRET_ACCESS_KEY'])]",
+    "os.getenv('{}_TOKEN'.format('NPM'))",
+    "os.path.join(home, '.aws', 'credentials')",
+    "os.path.join(h, '.docker', 'config.json')",
+    "os.path.join(h, '.kube', 'config')",
+    "'/'.join(['', 'etc', 'shadow'])",
+    "Path.home().joinpath('.ssh', 'id_rsa')",
+]
+_HOLE_BENIGN_SNIPPETS = [
+    "print(len(os.environ))",
+    "'HOME' in os.environ",
+    "os.getenv(f'{prefix}_DEBUG')",
+    "Path.home() / '.cache' / 'mytool'",
+    "os.path.join(h, '.config', 'mytool', 'settings.toml')",
+    "open('/proc/self/status').read()",
+    "n = 'HOME'\nos.getenv(n)",
+    "os.environ.setdefault('LANG', 'C')",
+]
+
+
+@pytest.mark.parametrize("snippet", _HOLE_SECRET_SNIPPETS)
+def test_regression_detection_holes_are_secret(tmp_path, snippet):
+    claims = _cli_claims(tmp_path)
+    _expect_secret_contexts(tmp_path, claims, snippet)
+
+
+@pytest.mark.parametrize("snippet", _HOLE_BENIGN_SNIPPETS)
+def test_regression_detection_holes_benign_stay_benign(tmp_path, snippet):
+    claims = _cli_claims(tmp_path)
+    _expect_benign_contexts(tmp_path, claims, snippet)
+
+
+@pytest.mark.parametrize("path", ["/proc/self/environ", "/proc/1/environ", "/w/home/../../proc/self/environ"])
+def test_proc_environ_read_is_env_secret(path):
+    from trustlens.fingerprint.normalize import classify
+
+    cap, _ = classify({"kind": "file.read", "detail": {"path": path}})
+    assert cap == ("env_secrets" if path.startswith("/proc/") else None)
+
+
+def test_secret_scan_never_crashes_on_odd_code():
+    from trustlens.fingerprint.normalize import snippet_has_denylisted_secret
+
+    for text in ("", "(((", "x = '" + "a" * 30000, "def f(:\n", "\x00", "a" * 50 + "+" * 50, "f'{" * 40):
+        assert snippet_has_denylisted_secret(text) in (True, False)

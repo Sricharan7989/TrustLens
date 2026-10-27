@@ -146,3 +146,13 @@ def test_stitch_on_real_strace_log(tmp_path):
     keys = baseline_keys(log.read_text())
     assert any(k.startswith("execargv:/usr/bin/tr\0") or k.startswith("execargv:/bin/tr\0") for k in keys)
     assert any(k.startswith("execargv:/usr/bin/cut\0") or k.startswith("execargv:/bin/cut\0") for k in keys)
+
+
+def test_proc_environ_open_is_kept():
+    rows = parse_strace(
+        '5 openat(AT_FDCWD, "/proc/self/environ", O_RDONLY) = 3\n'
+        '5 openat(AT_FDCWD, "/proc/self/status", O_RDONLY) = 4\n',
+        set(), phase="call", trigger="call_all", profile="dev", variant="default",
+        file_canaries=[], match_ids=lambda text: [],
+    )
+    assert [r["detail"]["path"] for r in rows] == ["/proc/self/environ"]
