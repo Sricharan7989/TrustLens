@@ -1,9 +1,12 @@
 """Shared redaction for HTML, text, and SARIF reports.
 
 Canary token bytes (``TLCANARY…``) always become ``[canary]``. Canary ids such as
-``ssh_key`` are not tokens and are kept. After control stripping, HTML tags are
-dropped with ``<[^>]+>`` so a package name cannot carry ``<script>`` into JSON.
-HTML reports escape tags separately (``drop_tags=False``). When a finding or
+``ssh_key`` are not tokens and are kept. After control stripping, active HTML
+(``<script>``, ``<iframe>``, ``<svg>`` and similar, or any tag with an ``on…=``
+handler or ``javascript:``) is dropped so a package name cannot carry it into
+JSON. Other angle brackets are evidence and are kept: ``<string>``, ``<module>``
+and code such as ``a<b and c>d``. HTML reports escape tags separately
+(``drop_tags=False``). When a finding or
 event has ``canary_in_bytes``, URL/host/dest values and any ``http(s)://`` text
 become ``[url redacted]``.
 """
@@ -13,7 +16,18 @@ import re
 
 _CANARY_RE = re.compile(r"TLCANARY[A-Za-z0-9]+")
 _URL_RE = re.compile(r"https?://\S+")
-_TAG_RE = re.compile(r"<[^>]+>")
+# Active HTML only. A blanket <[^>]+> also ate "<string>" / "<module>" frame names
+# and code comparisons such as "a<b and c>d" from verdict.json and fingerprint.json.
+_ACTIVE_TAGS = (
+    "script|iframe|frame|frameset|object|embed|applet|svg|math|img|image|style|link|meta|base"
+    "|form|input|button|textarea|select|video|audio|source|track|body|html|head|template"
+    "|noscript|xmp|plaintext|portal|marquee"
+)
+_TAG_RE = re.compile(
+    rf"</?\s*(?:{_ACTIVE_TAGS})\b[^<>]*>"
+    r"|<[A-Za-z][\w-]*\s[^<>]*?(?:\bon\w+\s*=|javascript\s*:)[^<>]*>",
+    re.I,
+)
 _TRAILING_PUNCT = ".,;:"
 # CSI (ESC [ … final), C1 CSI (0x9B, with or without a second '['), OSC (ESC ] … BEL/ST
 # and C1 OSC 0x9D), then leftover controls except tab, LF, CR.
@@ -49,7 +63,7 @@ def _replace_url(match: re.Match[str]) -> str:
 
 
 def redact_text(value: object, *, urls: bool = False, drop_tags: bool = True) -> str:
-    """Replace canary token bytes with ``[canary]``. Drop HTML tags after control stripping.
+    """Replace canary token bytes with ``[canary]``. Drop active HTML tags after control stripping.
 
     Canary ids such as ``ssh_key`` are kept. HTML renderers pass ``drop_tags=False``
     and escape tags themselves. Also replace http(s) URLs when ``urls`` is set.

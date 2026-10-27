@@ -382,7 +382,7 @@ def test_hostile_package_name_sanitized(tmp_path):
 
 
 def test_redact_text_drops_html_tags_after_controls():
-    """strip_controls leaves tags. redact_text drops them afterwards and keeps canary ids."""
+    """strip_controls leaves tags. redact_text drops active HTML afterwards and keeps canary ids."""
     from trustlens.report.redact import redact_document, redact_text, strip_controls
 
     raw = "\x1b[31mPWN\x1b[0m<script>alert(1)</script>"
@@ -390,7 +390,9 @@ def test_redact_text_drops_html_tags_after_controls():
     assert stripped == "PWN<script>alert(1)</script>"
     assert redact_text(raw) == "PWNalert(1)"
     assert redact_text("ssh_key") == "ssh_key"
-    assert redact_text("<code>ssh_key</code>") == "ssh_key"
+    # Inert markup is kept (JSON is not rendered); only active HTML is dropped.
+    assert redact_text("<code>ssh_key</code>") == "<code>ssh_key</code>"
+    assert redact_text("<iframe src=//e></iframe>ssh_key") == "ssh_key"
     doc = redact_document({"package": {"name": raw}, "note": "id ssh_key"})
     assert doc["package"]["name"] == "PWNalert(1)"
     assert doc["note"] == "id ssh_key"
@@ -648,3 +650,31 @@ def test_no_color_on_pty():
     finally:
         os.close(master)
 
+
+
+def test_redact_text_keeps_angle_bracket_evidence():
+    """Frame names and code comparisons are evidence, not markup. Only active HTML is dropped."""
+    from trustlens.report.redact import redact_text
+
+    for keep in ('File "<string>", line 1', "<module>", "if a<b and c>d: run()", "List<String> x", "name <b>bold</b>"):
+        assert redact_text(keep) == keep
+    for raw, want in (
+        ("<script>alert(1)</script>", "alert(1)"),
+        ("<SCRIPT >x</script >", "x"),
+        ("<img src=x onerror=alert(1)>", ""),
+        ("<svg/onload=alert(1)>", ""),
+        ('<a href="javascript:alert(1)">x</a>', "x</a>"),
+    ):
+        assert redact_text(raw) == want
+
+
+def test_decoded_exec_report_keeps_string_frame(tmp_path):
+    """delayed_slug's evidence names the <string> frame; JSON outputs must keep it."""
+    out = tmp_path / "r"
+    subprocess.run(
+        [sys.executable, "-m", "trustlens", "scan", "bench/packages/malicious/delayed_slug",
+         "--runner", "fixture", "--offline", "--out", str(out), "--format", "text"],
+        capture_output=True, timeout=120,
+    )
+    assert "<string>" in (out / "verdict.json").read_text(encoding="utf-8")
+    assert "<string>" in (out / "fingerprint.json").read_text(encoding="utf-8")
