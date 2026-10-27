@@ -508,6 +508,22 @@ def _hole_name_is_secret(name: str) -> bool:
     return bool(_SECRET_NAME_PART_RE.search(fixed)) or fixed.endswith(("_TOKEN", "_KEY"))
 
 
+# Interpreter-provided library folders (e.g. Ubuntu's python3-attr). Read-only in the sandbox, so
+# code there cannot belong to the scanned package, which is installed under /w.
+_SYSTEM_LIB_RE = re.compile(r"^/usr/(?:local/)?lib(?:64)?/python3(?:\.\d+)?/(?:dist|site)-packages/")
+
+
+def _system_lib_codegen(e: dict) -> bool:
+    """dyn.exec/dyn.compile emitted from a system library's own code generation (attrs, etc.).
+
+    Older agents labelled these `pkg`. They are toolchain noise unless a canary is involved.
+    """
+    if e.get("kind") not in ("dyn.exec", "dyn.compile") or e.get("canary_match"):
+        return False
+    evidence_file = str((e.get("evidence") or {}).get("file") or "")
+    return bool(_SYSTEM_LIB_RE.match(evidence_file))
+
+
 def _home(p: str) -> str:
     p = p.replace("/w/home/", "~/").replace("/w/home", "~")
     return p
@@ -630,7 +646,7 @@ def build_fingerprint(raw_events_path: str, run_meta: dict, package: dict, stati
             continue
         if e.get("detail") is None:
             e["detail"] = {}
-        is_toolchain = e.get("attributed_to") == "toolchain"
+        is_toolchain = e.get("attributed_to") == "toolchain" or _system_lib_codegen(e)
         if e.get("kind") == "run.error":
             cov_coverage["run_error"] = True
             msg = str(e.get("detail", {}).get("message", ""))

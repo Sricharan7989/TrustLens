@@ -1980,3 +1980,64 @@ def test_secret_scan_never_crashes_on_odd_code():
 
     for text in ("", "(((", "x = '" + "a" * 30000, "def f(:\n", "\x00", "a" * 50 + "+" * 50, "f'{" * 40):
         assert snippet_has_denylisted_secret(text) in (True, False)
+
+
+# System-library code generation (Ubuntu python3-attr inside pip) was blamed on the package.
+def _syslib_event(kind: str, evidence_file: str, canary=None) -> dict:
+    detail = {"code_sha256": "x", "decoded_snippet": "def __repr__(self):\n  return 'x'", "source_kind": "compile"}
+    if kind == "dyn.exec":
+        detail = {"co_name": "__init__", "co_filename": "<attrs generated init x>", "decoded_snippet": "self"}
+    return {
+        "seq": 1, "t": 0.0, "phase": "install", "trigger": "install", "profile": "dev", "variant": "default",
+        "kind": kind, "detail": detail, "outcome": "succeeded", "attributed_to": "pkg",
+        "canary_match": canary or [], "evidence": {"layer": "audit", "file": evidence_file, "line": 318},
+    }
+
+
+@pytest.mark.parametrize("path", [
+    "/usr/lib/python3/dist-packages/attr/_make.py",
+    "/usr/lib/python3.12/dist-packages/attr/_make.py",
+    "/usr/local/lib/python3.13/site-packages/attr/_make.py",
+])
+@pytest.mark.parametrize("kind", ["dyn.exec", "dyn.compile"])
+def test_system_lib_codegen_is_toolchain(path, kind):
+    from trustlens.fingerprint.normalize import _system_lib_codegen
+
+    assert _system_lib_codegen(_syslib_event(kind, path))
+
+
+@pytest.mark.parametrize("path", [
+    "/w/installed/evilpkg/__init__.py",
+    "/w/site/setup.py",
+    "/usr/lib/python3.12/json/__init__.py",
+    "/home/user/usr/lib/python3/dist-packages/x.py",
+])
+def test_package_codegen_is_not_toolchain(path):
+    from trustlens.fingerprint.normalize import _system_lib_codegen
+
+    assert not _system_lib_codegen(_syslib_event("dyn.exec", path))
+
+
+def test_system_lib_codegen_with_canary_is_kept():
+    from trustlens.fingerprint.normalize import _system_lib_codegen
+
+    assert not _system_lib_codegen(_syslib_event("dyn.exec", "/usr/lib/python3/dist-packages/attr/_make.py", ["ssh_key"]))
+
+
+def test_system_lib_noise_does_not_flag_clean_package(tmp_path):
+    import json
+
+    from trustlens.engine import evaluate
+    from trustlens.fingerprint import build_fingerprint
+
+    raw = tmp_path / "raw_events.jsonl"
+    rows = [_syslib_event(k, "/usr/lib/python3/dist-packages/attr/_make.py") for k in ["dyn.exec", "dyn.compile"] * 106]
+    raw.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    claims = _cli_claims(tmp_path)
+    meta = {"run": {"sandbox": "bwrap", "stub": False}, "coverage": {
+        "phases_run": ["install", "import", "call"], "profiles_run": ["dev", "ci"], "install_completed": True,
+        "callables_total": 1, "callables_exercised": 1, "not_observed": []}}
+    fp = build_fingerprint(str(raw), meta, claims["package"])
+    verdict = evaluate(fp, claims)
+    assert not any(f["rule"] == "decoded_exec" for f in verdict["findings"])
+    assert verdict["verdict"] != "SUSPICIOUS"
