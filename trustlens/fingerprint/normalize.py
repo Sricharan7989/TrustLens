@@ -34,9 +34,6 @@ _OS_PATH_JOIN_RE = re.compile(
 _GETATTR_ENVIRON_RE = re.compile(r"""getattr\s*\(\s*os\s*,\s*(['"])environ\1\s*\)""")
 _ENV_COPY_RE = re.compile(r"""os\.environ\s*\.\s*copy\s*\(\s*\)""")
 _DICT_ENVIRON_RE = re.compile(r"""dict\s*\(\s*os\.environ\s*\)""")
-_FROM_OS_IMPORT_ENVIRON_RE = re.compile(r"""\bfrom\s+os\s+import\s+environ\b""")
-# Bare environ[ / environ.get( only after `from os import environ`. Do not touch os.environ.
-_BARE_ENVIRON_LOOKUP_RE = re.compile(r"""(?<![\w.])environ\s*(?P<tail>\[\s*|\.get\s*\()""")
 # Optional f/r/b (or fr/rf/rb/br) prefix so os.environ[f'NAME'] still yields NAME.
 _STR_PREFIX = r"""(?:[fFrRbB]{1,2})?"""
 _ENV_LOOKUP_RE = re.compile(
@@ -130,13 +127,36 @@ def _path_join_match(match: re.Match[str]) -> str:
     return left[0] + joined + left[0]
 
 
+_DUNDER_IMPORT_OS_RE = re.compile(r"""__import__\s*\(\s*(['"])os\1\s*\)\s*\.""")
+_IMPORT_OS_AS_RE = re.compile(r"""\bimport\s+(?:[\w.]+\s*(?:as\s+\w+)?\s*,\s*)*os\s+as\s+(?P<alias>\w+)""")
+_FROM_OS_IMPORT_RE = re.compile(
+    r"""\bfrom\s+os\s+import\s+(?:\((?P<paren>[\w\s,]+)\)|(?P<names>[\w \t,]+))"""
+)
+
+
 def _canonicalize_env_reads(text: str) -> str:
-    """Turn aliased environ reads into os.environ so the lookup regex can see them."""
+    """Turn aliased environ reads into os.environ / os.getenv so the lookup regex can see them.
+
+    Covers `import os as o`, `from os import environ as e, getenv as g`, `__import__('os')`,
+    `getattr(os, 'environ')`, `os.environ.copy()` and `dict(os.environ)`.
+    """
+    text = _DUNDER_IMPORT_OS_RE.sub("os.", text)
     text = _GETATTR_ENVIRON_RE.sub("os.environ", text)
     text = _ENV_COPY_RE.sub("os.environ", text)
     text = _DICT_ENVIRON_RE.sub("os.environ", text)
-    if _FROM_OS_IMPORT_ENVIRON_RE.search(text):
-        text = _BARE_ENVIRON_LOOKUP_RE.sub(lambda m: "os.environ" + m.group("tail"), text)
+    for match in _IMPORT_OS_AS_RE.finditer(text):
+        alias = re.escape(match.group("alias"))
+        text = re.sub(rf"(?<![\w.]){alias}\s*\.\s*(environ|getenv)\b", r"os.\1", text)
+    for match in _FROM_OS_IMPORT_RE.finditer(text):
+        for part in (match.group("paren") or match.group("names") or "").split(","):
+            bits = part.split()
+            if not bits or bits[0] not in ("environ", "getenv"):
+                continue
+            name = bits[2] if len(bits) == 3 and bits[1] == "as" else bits[0]
+            if bits[0] == "environ":
+                text = re.sub(rf"(?<![\w.]){re.escape(name)}\s*(\[|\.get\s*\()", r"os.environ\1", text)
+            else:
+                text = re.sub(rf"(?<![\w.]){re.escape(name)}\s*\(", "os.getenv(", text)
     return text
 
 
@@ -153,16 +173,23 @@ def normalize_decoded_snippet(snippet: str) -> str:
     return text
 
 
+_SECRET_NAME_PART_RE = re.compile(r"(?:^|_)(?:SECRET|PASSWORD|PASSWD|PASSPHRASE|CREDENTIALS?|PRIVATE_KEY|ACCESS_KEY|API_KEY)(?:_|$)")
+
+
 def _env_name_is_secret(name: str) -> bool:
-    """True for a curated secret name, a *_SECRET* name, or a *_TOKEN suffix."""
+    """True for a curated secret name, a secret word as a whole name part, or a *_TOKEN / *_KEY suffix.
+
+    Whole name parts only: DB_PASSWORD, SSH_PRIVATE_KEY and SERVICE_CREDENTIALS are secrets;
+    MY_TOKEN_COUNT and PRIMARY_KEYBOARD are not.
+    """
     upper = name.strip().upper()
     if not upper or upper in PROBE_ENV or upper in _NON_SECRET_ENV:
         return False
     if upper in _CURATED_SECRET_ENV:
         return True
-    if "_SECRET" in upper:
+    if _SECRET_NAME_PART_RE.search(upper):
         return True
-    return upper.endswith("_TOKEN")
+    return upper.endswith("_TOKEN") or upper.endswith("_KEY")
 
 
 def snippet_mentions_env_secret(snippet: str) -> bool:
