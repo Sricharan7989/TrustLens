@@ -68,7 +68,12 @@ def _extract_archive_safely(archive_path: Path, dest_dir: Path) -> Path:
                 target = (dest_dir / fname).resolve()
                 if not _is_safe_path(dest_dir, target):
                     raise ValueError(f"path escapes extraction directory: {fname}")
-            zf.extractall(dest_dir)
+            try:
+                zf.extractall(dest_dir)
+            except NotADirectoryError as exc:
+                raise ValueError(
+                    f"cannot extract '{archive_path.name}': a file member conflicts with a directory path"
+                ) from exc
         return _find_package_root(dest_dir)
 
     if any(name_lower.endswith(ext) for ext in (".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar")):
@@ -112,6 +117,7 @@ def scan(
     from trustlens.engine import evaluate
     from trustlens.fingerprint import build_fingerprint, collect_static_signals
     from trustlens.report import render_html, render_json, render_sarif
+    from trustlens.report.redact import redact_document
     from trustlens.sandbox import run_package
 
     p = Path(pkg_path).resolve()
@@ -145,8 +151,9 @@ def scan(
                 validate(kind, obj)
 
         (out / "claims.json").write_text(json.dumps(claims, indent=1), encoding="utf-8")
-        (out / "fingerprint.json").write_text(json.dumps(fp, indent=1), encoding="utf-8")
-        (out / "verdict.json").write_text(json.dumps(verdict, indent=1), encoding="utf-8")
+        # Copies only. scan() still returns the engine objects, which stay unredacted.
+        (out / "fingerprint.json").write_text(json.dumps(redact_document(fp), indent=1), encoding="utf-8")
+        (out / "verdict.json").write_text(json.dumps(redact_document(verdict), indent=1), encoding="utf-8")
         (out / "report.html").write_text(render_html(verdict, fp, claims), encoding="utf-8")
         (out / "report.json").write_text(render_json(verdict, fp, claims), encoding="utf-8")
         (out / "report.sarif").write_text(render_sarif(verdict, fp, claims), encoding="utf-8")
@@ -392,8 +399,15 @@ def main(argv=None) -> int:
                 return 2
             v = r["verdict"]
             from trustlens.report import render_html, render_text
+            from trustlens.report.redact import redact_document
             color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
-            print(render_html(v, r["fingerprint"], r["claims"]) if a.format == "html" else json.dumps(v, indent=1) if a.format == "json" else render_text(v, color=color_enabled))
+            if a.format == "html":
+                printed = render_html(v, r["fingerprint"], r["claims"])
+            elif a.format == "json":
+                printed = json.dumps(redact_document(v), indent=1)
+            else:
+                printed = render_text(v, color=color_enabled)
+            print(printed)
             if priority_map[v["action"]] > priority_map[worst_action]:
                 worst_action = v["action"]
 
@@ -414,13 +428,14 @@ def main(argv=None) -> int:
 
     v = r["verdict"]
     from trustlens.report import render_html, render_sarif, render_text
+    from trustlens.report.redact import redact_document
 
     if a.format == "html":
         print(render_html(v, r["fingerprint"], r["claims"]))
     elif a.format == "sarif":
         print(render_sarif(v, r["fingerprint"], r["claims"]))
     elif a.format == "json":
-        print(json.dumps(v, indent=1))
+        print(json.dumps(redact_document(v), indent=1))
     else:
         color_enabled = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
         print(render_text(v, color=color_enabled))

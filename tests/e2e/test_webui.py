@@ -48,6 +48,56 @@ def test_webui_get_status(webui_server):
         assert len(data.get("demo_packages", [])) >= 4
 
 
+def test_webui_scan_evil_slug_redacts_verdict_json(webui_server):
+    """/api/scan returns a redacted verdict copy. report_html stays redacted. ssh_key remains."""
+    payload = json.dumps({"package": "bench/packages/malicious/evil_slug", "profiles": "dev,ci"}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{webui_server}/api/scan",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+    verdict_body = json.dumps(data["verdict"])
+    assert "TLCANARY" not in verdict_body
+    assert "http://198.51.100" not in verdict_body
+    assert "ssh_key" in verdict_body
+    assert "TLCANARY" not in data["report_html"]
+    assert "http://198.51.100" not in data["report_html"]
+    assert "ssh_key" in data["report_html"]
+    assert data["verdict"]["action"] == "BLOCK"
+
+
+def test_webui_upload_evil_slug_redacts_verdict_json(webui_server):
+    """/api/upload returns the same redacted verdict copy."""
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    src_dir = ROOT / "bench/packages/malicious/evil_slug"
+    with zipfile.ZipFile(buf, "w") as zf:
+        for f in src_dir.rglob("*"):
+            if f.is_file():
+                zf.write(f, arcname=f.relative_to(src_dir))
+    body, boundary = _multipart("evil_slug.zip", buf.getvalue())
+    req = urllib.request.Request(
+        f"{webui_server}/api/upload",
+        data=body,
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+    verdict_body = json.dumps(data["verdict"])
+    assert "TLCANARY" not in verdict_body
+    assert "http://198.51.100" not in verdict_body
+    assert "ssh_key" in verdict_body
+    assert "TLCANARY" not in data["report_html"]
+
+
 def test_webui_post_scan(webui_server):
     payload = json.dumps({
         "package": "bench/packages/clean/clean_slug",

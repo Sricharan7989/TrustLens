@@ -19,6 +19,7 @@ from typing import Any
 from trustlens.cli import scan
 from trustlens.contracts import ROOT
 from trustlens.report import render_comparison_html
+from trustlens.report.redact import redact_document
 from trustlens.sandbox.env_check import check_env
 
 MAX_UPLOAD_SIZE = 20 * 1024 * 1024  # 20 MB
@@ -474,7 +475,7 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                 try:
                     res = scan(str(resolved), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
                     report_html = (Path(res["out_dir"]) / "report.html").read_text(encoding="utf-8")
-                    self._send_json({"verdict": res["verdict"], "report_html": report_html})
+                    self._send_json({"verdict": redact_document(res["verdict"]), "report_html": report_html})
                 except Exception as e:
                     self._send_json({"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return
@@ -538,7 +539,7 @@ class TrustLensWebHandler(BaseHTTPRequestHandler):
                     with scan_lock:
                         res = scan(str(tmp_file), str(out_dir), profiles=tuple(profiles), runner="auto", offline=True)
                         report_html = (Path(res["out_dir"]) / "report.html").read_text(encoding="utf-8")
-                        self._send_json({"verdict": res["verdict"], "report_html": report_html})
+                        self._send_json({"verdict": redact_document(res["verdict"]), "report_html": report_html})
             except Exception as e:
                 self._send_json({"error": f"Scan failed: {e}"}, HTTPStatus.INTERNAL_SERVER_ERROR)
             return

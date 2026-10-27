@@ -12,11 +12,19 @@ import re
 _CANARY_RE = re.compile(r"TLCANARY[A-Za-z0-9]+")
 _URL_RE = re.compile(r"https?://\S+")
 _TRAILING_PUNCT = ".,;:"
-# ESC/CSI (ESC [ … final), C1 CSI (0x9B), and other controls except tab, LF, CR.
+# CSI (ESC [ … final), C1 CSI (0x9B, with or without a second '['), OSC (ESC ] … BEL/ST
+# and C1 OSC 0x9D), then leftover controls except tab, LF, CR.
 _CONTROL_RE = re.compile(
-    r"\x1b\[[0-9;]*[A-Za-z]|\x9b\[[0-9;]*[A-Za-z]|[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"
+    r"\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]"
+    r"|\x9b\[?[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]"
+    r"|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)"
+    r"|\x9d[^\x07\x9c]*(?:\x07|\x9c)"
+    r"|[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"
 )
 _NET_FIELDS = ("url", "host", "dest")
+# Dicts that carry their own canary_in_bytes decision. Children of these are not
+# force-redacted just because a sibling finding or event was.
+_SCOPE_KEYS = frozenset({"detail", "evidence", "findings", "events", "canary_in_bytes", "signal_class", "event_id"})
 
 
 def strip_controls(value: object) -> str:
@@ -96,6 +104,51 @@ def detail_tooltip(detail: object) -> str:
     """Event-dot title text. URL/host/dest are placeholders when the event has canary bytes."""
     flagged = isinstance(detail, dict) and bool(detail.get("canary_in_bytes"))
     return redact_text(redact_detail(detail, urls=flagged), urls=flagged)
+
+
+def _is_scope(obj: object) -> bool:
+    return isinstance(obj, dict) and any(key in obj for key in _SCOPE_KEYS)
+
+
+def _collection_has_canary(obj: dict) -> bool:
+    """True when a verdict or fingerprint's own strings sit above a canary-byte finding or event."""
+    for key in ("findings", "events"):
+        for item in obj.get(key) or []:
+            if isinstance(item, dict) and has_canary_in_bytes(item):
+                return True
+    return False
+
+
+def redact_document(value: object) -> object:
+    """Deep-copy a report object with canary bytes and canary URLs removed. The input is not mutated."""
+    return _redact_node(value, inherit_urls=False)
+
+
+def _redact_node(value: object, *, inherit_urls: bool) -> object:
+    if isinstance(value, dict):
+        urls = inherit_urls or has_canary_in_bytes(value) or _collection_has_canary(value)
+        out: dict = {}
+        for key, child in value.items():
+            if urls and key in _NET_FIELDS and not isinstance(child, (dict, list)):
+                out[key] = "[url redacted]"
+            elif isinstance(child, dict) and _is_scope(child):
+                out[key] = _redact_node(child, inherit_urls=False)
+            elif isinstance(child, list):
+                out[key] = [
+                    _redact_node(item, inherit_urls=False) if isinstance(item, dict) and _is_scope(item) else _redact_node(item, inherit_urls=urls)
+                    for item in child
+                ]
+            else:
+                out[key] = _redact_node(child, inherit_urls=urls)
+        return out
+    if isinstance(value, list):
+        return [
+            _redact_node(item, inherit_urls=False) if isinstance(item, dict) and _is_scope(item) else _redact_node(item, inherit_urls=inherit_urls)
+            for item in value
+        ]
+    if isinstance(value, str):
+        return redact_text(value, urls=inherit_urls)
+    return value
 
 
 def redact_tree(value: object, *, urls: bool = False, key: str | None = None) -> object:

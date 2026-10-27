@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 
-from trustlens.report.redact import has_canary_in_bytes, redact_text
+from trustlens.report.redact import has_canary_in_bytes, redact_document, redact_text
 
 COLORS = {"PASS": "\033[32m", "REVIEW": "\033[33m", "BLOCK": "\033[31m"}
 
@@ -22,15 +22,16 @@ def _plain(value: object, *, urls: bool = False) -> str:
 
 
 def render_json(verdict: dict, fingerprint: dict | None = None, claims: dict | None = None) -> str:
-    return json.dumps(
+    """JSON report. Redacts a copy; the verdict, fingerprint, and claims objects are left unchanged."""
+    payload = redact_document(
         {
             "schema_version": "1.0",
             "verdict": verdict,
             "claims": claims,
             "fingerprint": fingerprint,
-        },
-        indent=1,
+        }
     )
+    return json.dumps(payload, indent=1)
 
 
 def render_text(verdict: dict, color: bool = False) -> str:

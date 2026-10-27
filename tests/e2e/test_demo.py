@@ -436,6 +436,147 @@ def test_canary_urls_redacted_evil_slug_and_shapes(tmp_path):
             assert "http://" not in title
 
 
+def _assert_redacted_json(text: str, *, label: str, keep: str | None = None) -> None:
+    """Written JSON must not carry canary token bytes or canary exfil URLs."""
+    assert "TLCANARY" not in text, label
+    assert "http://198.51.100" not in text, label
+    if keep is not None:
+        assert keep in text, label
+
+
+def test_json_artifacts_redact_canary_copies(tmp_path):
+    """verdict.json, fingerprint.json, and report.json are redacted copies. scan() returns the raw objects."""
+    from trustlens.cli import scan
+
+    out = tmp_path / "evil"
+    result = scan(str(ROOT / "bench/packages/malicious/evil_slug"), str(out), runner="fixture", offline=True)
+    assert "TLCANARY" in json.dumps(result["verdict"])
+    assert "TLCANARY" in json.dumps(result["fingerprint"])
+    assert "http://198.51.100" in json.dumps(result["verdict"])
+
+    for name in ("verdict.json", "fingerprint.json", "report.json", "report.html", "report.sarif"):
+        body = (out / name).read_text(encoding="utf-8")
+        _assert_redacted_json(body, label=name, keep="ssh_key")
+    validate("verdict", json.loads((out / "verdict.json").read_text(encoding="utf-8")))
+    validate("fingerprint", json.loads((out / "fingerprint.json").read_text(encoding="utf-8")))
+    report = json.loads((out / "report.json").read_text(encoding="utf-8"))
+    assert report["verdict"]["action"] == result["verdict"]["action"]
+    assert "TLCANARY" not in json.dumps(report)
+
+    cli = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "trustlens",
+            "scan",
+            str(ROOT / "bench/packages/malicious/evil_slug"),
+            "--runner",
+            "fixture",
+            "--offline",
+            "--format",
+            "json",
+            "--out",
+            str(tmp_path / "evil-stdout"),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert cli.returncode == 20, cli.stderr
+    _assert_redacted_json(cli.stdout, label="stdout json", keep="ssh_key")
+
+
+def test_canary_shapes_json_redacts_flagged_urls():
+    """canary_shapes report JSON drops token bytes and http://198.51.100 where canary_in_bytes is set."""
+    from trustlens.claims import extract_claims, read_package_info
+    from trustlens.engine import evaluate
+    from trustlens.fingerprint import build_fingerprint
+    from trustlens.report import render_json
+    from trustlens.report.redact import redact_document
+
+    pkg = ROOT / "tests/sandbox/data/canary_shapes"
+    recorded = ROOT / "tests/sandbox/recorded/canary_shapes"
+    meta = json.loads((recorded / "run_meta.json").read_text(encoding="utf-8"))
+    claims = extract_claims(str(pkg))
+    fp = build_fingerprint(str(recorded / "raw_events.jsonl"), meta, read_package_info(str(pkg)))
+    verdict = evaluate(fp, claims)
+    assert "TLCANARY" in json.dumps(fp)
+    report = render_json(verdict, fp, claims)
+    redacted_fp = json.dumps(redact_document(fp))
+    redacted_verdict = json.dumps(redact_document(verdict))
+    assert "TLCANARY" in json.dumps(fp)
+    assert "TLCANARY" in json.dumps(verdict)
+    for label, body in (("report.json", report), ("fingerprint", redacted_fp), ("verdict", redacted_verdict)):
+        _assert_redacted_json(body, label=label, keep="aws_secret_env")
+    validate("verdict", json.loads(redacted_verdict))
+    validate("fingerprint", json.loads(redacted_fp))
+
+
+def test_unflagged_destination_url_is_kept():
+    """cli_toy's http destination has no canary_in_bytes, so the URL stays. Catalog tokens still become [canary]."""
+    from trustlens.claims import extract_claims, read_package_info
+    from trustlens.engine import evaluate
+    from trustlens.fingerprint import build_fingerprint
+    from trustlens.report.redact import redact_document
+
+    pkg = ROOT / "tests/sandbox/data/cli_toy"
+    recorded = ROOT / "tests/sandbox/recorded/cli_toy"
+    meta = json.loads((recorded / "run_meta.json").read_text(encoding="utf-8"))
+    claims = extract_claims(str(pkg))
+    fp = build_fingerprint(str(recorded / "raw_events.jsonl"), meta, read_package_info(str(pkg)))
+    verdict = evaluate(fp, claims)
+    assert any(
+        ev.get("detail", {}).get("url") == "http://198.51.100.11/cli" and not ev.get("detail", {}).get("canary_in_bytes")
+        for ev in fp["events"]
+    )
+    redacted = redact_document({"verdict": verdict, "fingerprint": fp})
+    assert "TLCANARY" in json.dumps(fp)
+    body = json.dumps(redacted)
+    assert "TLCANARY" not in body
+    assert "http://198.51.100.11/cli" in body
+    assert "[canary]" in body
+
+
+def test_c1_csi_and_osc_are_stripped():
+    """A real C1 CSI and an OSC sequence are removed, not left as a trailing fragment."""
+    from trustlens.report.html import esc
+    from trustlens.report.redact import strip_controls
+
+    csi = strip_controls("\x9b31mPWN")
+    osc = strip_controls("before\x1b]0;evil\x07after")
+    assert csi == "PWN"
+    assert "31m" not in csi
+    assert osc == "beforeafter"
+    assert "]0;evil" not in osc
+    assert strip_controls("\x1b[31mOK\x1b[0m") == "OK"
+    html = esc("\x9b31m<script>\x1b]0;evil\x07")
+    assert "31m" not in html
+    assert "]0;evil" not in html
+    assert "\x1b" not in html
+    assert "\x9b" not in html
+    assert "&lt;script&gt;" in html
+
+
+def test_zip_file_member_shadowing_directory_exits_2(tmp_path):
+    """A zip member 'link' plus 'link/owned' is a usage error (exit 2), not a traceback."""
+    archive = tmp_path / "bad-link.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("link", b"not-a-directory")
+        zf.writestr("link/owned", b"child")
+    r = subprocess.run(
+        [sys.executable, "-m", "trustlens", "scan", str(archive), "--runner", "fixture", "--out", str(tmp_path / "out")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert r.returncode == 2
+    assert "Traceback" not in r.stderr
+    assert "trustlens: error:" in r.stderr
+    assert "cannot extract" in r.stderr
+
+
 def test_no_color_emits_no_ansi(monkeypatch):
     """(f) NO_COLOR=1 emits no \x1b."""
     import os

@@ -1,6 +1,6 @@
 # PPT_OUTLINE (Owner: Dev D; lead reviews against AUDIT.md §5) — 10 slides + 2 backup
 
-**Slide Presentation Guideline:** One primary takeaway per slide, high visual contrast, quantitative values cited directly from `reports/eval/results.json` (as of 2026-10-26).
+**Slide Presentation Guideline:** One primary takeaway per slide, high visual contrast. Quantitative values come from `make eval` output (`reports/eval/summary.md`, generated, not checked in).
 
 ---
 
@@ -77,12 +77,12 @@
 ---
 
 ### Slide 8: Evaluation & PS1-Bench Metrics
-* **Source:** `reports/eval/results.json` (as of 2026-10-26, fixture evaluation).
+* **Source:** `make eval` output (fixture runner). `reports/eval/summary.md` is produced by that command and is not checked in.
 * **Metrics Summary:**
   * **Malicious Packages Tested:** 2/2 detected (2/2 on tested variants).
   * **Clean Controls Tested:** 2/2 passed without false alarms.
   * **False-Positive Rate:** FP 0/2 with Wilson 95% CI [0.0, 0.6576].
-  * **Median Runtime:** 0.12s median for a CLI fixture scan of the four starter packages (measured; baselines not run).
+  * **Median Runtime:** about 0.1-0.15 s per CLI fixture scan (baselines not run).
   * **Honest Footnote:** Datasets are used exclusively for calibration and testing, never for model training.
 
 ---
@@ -108,10 +108,10 @@
   * Dynamic analysis only observes paths that actually execute.
   * Blocked network means we observe outbound attempts, not server replies.
   * Staged payloads requiring multi-step server interaction need loopback sinkholing.
+* **Shipped:** Localhost web UI for one-click package drops (`python -m trustlens serve`).
 * **Roadmap:**
-  * Phase 1 (Immediate): Localhost Web UI for one-click package drops.
-  * Phase 2: Loopback HTTP sinkhole for staged dropper emulation.
-  * Phase 3: Expansion to npm ecosystems.
+  * Loopback HTTP sinkhole for staged dropper emulation.
+  * Expansion to npm ecosystems.
 
 ---
 
